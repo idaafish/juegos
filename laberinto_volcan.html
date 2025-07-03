@@ -65,13 +65,6 @@
             color: #ffeb3b;
             margin-top: 18px;
         }
-        .scroll-container {
-            overflow: auto;
-            max-width: 95vw;
-            max-height: 80vh;
-            margin: 0 auto 20px auto;
-            border-radius: 10px;
-        }
     </style>
 </head>
 <body>
@@ -79,18 +72,37 @@
         <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
         <h1>Laberinto Volcán</h1>
         <div class="subtitle">¡Encuentra la salida en el laberinto!</div>
-        <div class="scroll-container">
-            <canvas id="mazeCanvas" width="2100" height="2100"></canvas>
-        </div>
+        <canvas id="mazeCanvas"></canvas>
         <div class="win-msg" id="winMsg" style="display:none;">¡Has escapado del volcán!<br><button class="back-btn" onclick="location.reload()">Jugar de nuevo</button></div>
     </div>
     <script>
     // Parámetros del laberinto
-    const rows = 75, cols = 75; // Mitad por cada lado respecto a antes (antes 150x150)
-    const cellSize = 28;
     const canvas = document.getElementById('mazeCanvas');
     const ctx = canvas.getContext('2d');
     const winMsg = document.getElementById('winMsg');
+
+    // Calcula el tamaño de celda para que el laberinto ocupe el 80% de la pantalla
+    function resizeMazeConfig() {
+        const rows = 63;
+        const cols = 78;
+        // 80% del menor entre ancho y alto de la ventana
+        const maxWidth = Math.floor(window.innerWidth * 0.8);
+        const maxHeight = Math.floor(window.innerHeight * 0.8);
+        const cellSize = Math.floor(Math.min(maxWidth / cols, maxHeight / rows));
+        return {
+            rows,
+            cols,
+            cellSize,
+            mazeRandomness: 0.85,
+            extraPathsRatio: 8,
+            eruptionDelay: 2000,
+            lavaSpeedMs: 2400
+        };
+    }
+
+    let config = resizeMazeConfig();
+    canvas.width = config.cols * config.cellSize;
+    canvas.height = config.rows * config.cellSize;
 
     // Generar laberinto con algoritmo DFS, con dificultad intermedia
     function generateMaze(rows, cols) {
@@ -114,7 +126,7 @@
             if (neighbors.length) {
                 // Dificultad intermedia: 85% aleatorio, 15% el más alejado
                 let chosen;
-                if (Math.random() < 0.85) {
+                if (Math.random() < config.mazeRandomness) {
                     chosen = neighbors[Math.floor(Math.random()*neighbors.length)];
                 } else {
                     chosen = neighbors.sort((a, b) => {
@@ -132,7 +144,7 @@
             }
         }
         // Añade algunos caminos extra para hacerlo menos lineal pero no tan caótico
-        for (let i = 0; i < rows*cols/8; i++) {
+        for (let i = 0; i < (rows * cols) / config.extraPathsRatio; i++) {
             let rx = Math.floor(Math.random()*(cols-2))+1;
             let ry = Math.floor(Math.random()*(rows-2))+1;
             maze[ry][rx] = 0;
@@ -140,33 +152,78 @@
         return maze;
     }
 
-    // Crear laberinto y definir entrada/salida
-    const maze = generateMaze(rows, cols);
-    maze[1][1] = 0; // Entrada
-    maze[rows-2][cols-2] = 0; // Salida
+    // --- Funciones auxiliares para posiciones aleatorias ---
+    function findRandomEmptyCell(maze, cols, rows) {
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * (cols - 2)) + 1;
+            y = Math.floor(Math.random() * (rows - 2)) + 1;
+        } while (maze[y][x] !== 0);
+        return { x, y };
+    }
+
+    function getDistance(p1, p2) {
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+
+    function isAreaClear(maze, x, y, size) {
+        if (x < 1 || y < 1 || x + size > config.cols - 1 || y + size > config.rows - 1) {
+            return false;
+        }
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (maze[y + j][x + i] !== 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Crear laberinto
+    const maze = generateMaze(config.rows, config.cols);
+
+    // Definir entrada y salida aleatorias y distantes
+    let startPos, exitPos;
+    const minDistance = Math.min(config.rows, config.cols) * 0.7; // Al menos 70% de la dimensión más pequeña
+
+    do {
+        startPos = findRandomEmptyCell(maze, config.cols, config.rows);
+        // La salida es un área de 3x3, buscamos la esquina superior izquierda
+        do {
+            exitPos = findRandomEmptyCell(maze, config.cols, config.rows);
+        } while (!isAreaClear(maze, exitPos.x, exitPos.y, 3));
+    } while (getDistance(startPos, exitPos) < minDistance || (startPos.x === exitPos.x && startPos.y === exitPos.y));
+
+    // Asegurarse de que el área del portal 3x3 esté completamente vacía
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            maze[exitPos.y + j][exitPos.x + i] = 0;
+        }
+    }
 
     // Jugador
-    let player = {x: 1, y: 1};
+    let player = {x: startPos.x, y: startPos.y};
 
     // Centro del volcán
     const volcano = {
-        x: Math.floor(cols / 2),
-        y: Math.floor(rows / 2)
+        x: Math.floor(config.cols / 2),
+        y: Math.floor(config.rows / 2)
     };
 
     // Lava: matriz con el tiempo en que la lava llega a cada celda, -1 si nunca llega
-    let lavaTime = Array.from({length: rows}, () => Array(cols).fill(-1));
+    let lavaTime = Array.from({length: config.rows}, () => Array(config.cols).fill(-1));
     let lavaFront = [{x: volcano.x, y: volcano.y}];
     if (maze[volcano.y][volcano.x] === 0) {
         lavaTime[volcano.y][volcano.x] = 0;
     } else {
         // Busca el camino más cercano al centro
         let found = false;
-        for (let r = 1; r < Math.max(rows, cols) && !found; r++) {
+        for (let r = 1; r < Math.max(config.rows, config.cols) && !found; r++) {
             for (let dx = -r; dx <= r && !found; dx++) {
                 for (let dy = -r; dy <= r && !found; dy++) {
                     let nx = volcano.x + dx, ny = volcano.y + dy;
-                    if (nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1 && maze[ny][nx] === 0) {
+                    if (nx > 0 && nx < config.cols-1 && ny > 0 && ny < config.rows-1 && maze[ny][nx] === 0) {
                         volcano.x = nx; volcano.y = ny;
                         lavaFront = [{x: nx, y: ny}];
                         lavaTime[ny][nx] = 0;
@@ -184,8 +241,7 @@
         for (const {x, y} of lavaFront) {
             for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
                 let nx = x + dx, ny = y + dy;
-                if (
-                    nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1 &&
+                if (nx > 0 && nx < config.cols-1 && ny > 0 && ny < config.rows-1 &&
                     maze[ny][nx] === 0 && lavaTime[ny][nx] === -1
                 ) {
                     lavaTime[ny][nx] = t;
@@ -201,126 +257,254 @@
     let eruptionStart = null;
     let lavaStep = 0;
 
+    // Nuevo: Estado para el marcador del jugador
+    let playerMarker = { active: false, life: 0 };
+
     // Modifica drawMaze para dibujar la lava
-    function drawMaze() {
+    function draw(timestamp) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         // Laberinto y lava
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < cols; x++) {
+        for (let y = 0; y < config.rows; y++) {
+            for (let x = 0; x < config.cols; x++) {
                 if (lavaTime[y][x] !== -1 && eruptionStart !== null && lavaStep >= lavaTime[y][x]) {
                     // Lava
                     ctx.fillStyle = "#ff3c00";
-                    ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
+                    ctx.fillRect(x*config.cellSize, y*config.cellSize, config.cellSize, config.cellSize);
                 } else if (maze[y][x] === 1) {
                     ctx.fillStyle = "#4e342e";
-                    ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
+                    ctx.fillRect(x*config.cellSize, y*config.cellSize, config.cellSize, config.cellSize);
                 } else {
                     ctx.fillStyle = "#ffecb3";
-                    ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
+                    ctx.fillRect(x*config.cellSize, y*config.cellSize, config.cellSize, config.cellSize);
                 }
             }
         }
-        // Salida (más visible: círculo verde brillante con borde)
-        const exitX = (cols-2)*cellSize + cellSize/2;
-        const exitY = (rows-2)*cellSize + cellSize/2;
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(exitX, exitY, cellSize/2 - 2, 0, 2*Math.PI);
-        ctx.fillStyle = "#00ff00";
-        ctx.shadowColor = "#00ff00";
-        ctx.shadowBlur = 24;
-        ctx.fill();
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = "#fff";
-        ctx.stroke();
-        ctx.restore();
+
+        // Nuevo: Dibujar el portal animado
+        drawPortal(timestamp);
 
         // Volcán (centro)
         ctx.save();
         ctx.beginPath();
-        ctx.arc(volcano.x*cellSize+cellSize/2, volcano.y*cellSize+cellSize/2, cellSize/2.2, 0, 2*Math.PI);
+        ctx.arc(volcano.x*config.cellSize+config.cellSize/2, volcano.y*config.cellSize+config.cellSize/2, config.cellSize/2.2, 0, 2*Math.PI);
         ctx.fillStyle = "#b71c1c";
         ctx.shadowColor = "#ff9800";
         ctx.shadowBlur = 18;
         ctx.fill();
         ctx.restore();
 
-        // Jugador (muñeco simple)
+        // Antes de ctx.save() para el aventurero:
+        let highlight = false;
+        if (gameStartTime && performance.now() - gameStartTime < 2000) {
+            highlight = true;
+        }
+
+        // Aventurero estilo Indiana Jones
         ctx.save();
-        ctx.translate(player.x*cellSize+cellSize/2, player.y*cellSize+cellSize/2);
+        ctx.translate(player.x * config.cellSize + config.cellSize / 2, player.y * config.cellSize + config.cellSize / 2);
+
+        // Resplandor inicial
+        if (highlight) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, config.cellSize * 0.9, 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(255,255,0,0.35)";
+            ctx.shadowColor = "#fff";
+            ctx.shadowBlur = 18;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Cuerpo (marrón claro)
         ctx.beginPath();
-        ctx.arc(0, 0, cellSize/2.5, 0, 2*Math.PI);
-        ctx.fillStyle = "#2196f3";
+        ctx.arc(0, 0, config.cellSize / 2.5, 0, 2 * Math.PI);
+        ctx.fillStyle = "#c2a370";
         ctx.shadowColor = "#fff8";
         ctx.shadowBlur = 8;
         ctx.fill();
-        // Ojo
+
+        // Cabeza (piel clara)
         ctx.beginPath();
-        ctx.arc(cellSize/8, -cellSize/8, cellSize/10, 0, 2*Math.PI);
-        ctx.fillStyle = "#fff";
+        ctx.arc(0, -config.cellSize / 4, config.cellSize / 4, 0, 2 * Math.PI);
+        ctx.fillStyle = "#f5d7b7";
+        ctx.fill();
+
+        // Sombrero marrón
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(0, -config.cellSize / 4 - config.cellSize / 12, config.cellSize / 4, config.cellSize / 10, 0, 0, 2 * Math.PI);
+        ctx.fillStyle = "#5b3a1e";
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(cellSize/8, -cellSize/8, cellSize/20, 0, 2*Math.PI);
-        ctx.fillStyle = "#222";
+        ctx.ellipse(0, -config.cellSize / 4 - config.cellSize / 7, config.cellSize / 8, config.cellSize / 12, 0, 0, 2 * Math.PI);
+        ctx.fillStyle = "#3e2723";
         ctx.fill();
         ctx.restore();
+
+        // Pañuelo rojo
+        ctx.beginPath();
+        ctx.moveTo(-config.cellSize / 8, 0);
+        ctx.lineTo(0, config.cellSize / 8);
+        ctx.lineTo(config.cellSize / 8, 0);
+        ctx.closePath();
+        ctx.fillStyle = "#d32f2f";
+        ctx.fill();
+
+        ctx.restore();
+
+        // Nuevo: Marcador del jugador al pulsar espacio
+        if (playerMarker.active && playerMarker.life > 0) {
+            ctx.save();
+            const alpha = playerMarker.life / 5; // Se desvanece en 5 ticks
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            const markerRadius = config.cellSize * 1.5 * (1.5 - alpha); // Pulsa hacia afuera
+            ctx.arc(
+                player.x * config.cellSize + config.cellSize / 2,
+                player.y * config.cellSize + config.cellSize / 2,
+                markerRadius, 0, 2 * Math.PI
+            );
+            ctx.strokeStyle = "#2196f3";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "#fff";
+            ctx.shadowBlur = 20;
+            ctx.stroke();
+            ctx.restore();
+            playerMarker.life--;
+        } else {
+            playerMarker.active = false;
+        }
     }
 
-    drawMaze();
+    function drawPortal(timestamp) {
+        const portalCenterX = (exitPos.x + 1.5) * config.cellSize;
+        const portalCenterY = (exitPos.y + 1.5) * config.cellSize;
+        const portalRadius = config.cellSize * 2.2;
+
+        ctx.save();
+        ctx.translate(portalCenterX, portalCenterY);
+
+        // Resplandor extra los primeros 2 segundos
+        if (gameStartTime && performance.now() - gameStartTime < 2000) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, portalRadius * 1.15, 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(255,255,0,0.25)";
+            ctx.shadowColor = "#fff";
+            ctx.shadowBlur = 40;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Anillos animados
+        for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            const r = portalRadius * (0.7 + i * 0.18 + Math.sin(timestamp / 400 + i) * 0.07);
+            ctx.arc(0, 0, r, 0, 2 * Math.PI);
+            ctx.strokeStyle = ["#00fff7", "#fff600", "#ff00c8", "#fff"][i % 4];
+            ctx.lineWidth = 4 + 2 * Math.sin(timestamp / 300 + i);
+            ctx.globalAlpha = 0.7;
+            ctx.stroke();
+        }
+
+        // Centro blanco
+        ctx.beginPath();
+        ctx.arc(0, 0, portalRadius * 0.45, 0, 2 * Math.PI);
+        ctx.fillStyle = "#fff";
+        ctx.globalAlpha = 0.9;
+        ctx.fill();
+
+        ctx.restore();
+    }
 
     // Movimiento del jugador y comprobación de lava
     document.addEventListener('keydown', e => {
         if (winMsg.style.display !== "none") return;
+
+        // Nuevo: Marcador con Espacio
+        if (e.key === " ") {
+            e.preventDefault();
+            playerMarker.active = true;
+            playerMarker.life = 5;
+            return;
+        }
+
         let dx = 0, dy = 0;
-        if (e.key === "ArrowLeft") dx = -1;
-        if (e.key === "ArrowRight") dx = 1;
-        if (e.key === "ArrowUp") dy = -1;
-        if (e.key === "ArrowDown") dy = 1;
+        const key = e.key.toLowerCase();
+        if (key === "a") dx = -1;
+        if (key === "d") dx = 1;
+        if (key === "w") dy = -1;
+        if (key === "s") dy = 1;
+
+        if (dx === 0 && dy === 0) return;
+
         const nx = player.x + dx, ny = player.y + dy;
         if (maze[ny] && maze[ny][nx] === 0) {
             player.x = nx;
             player.y = ny;
-            drawMaze();
-            // ¿Llegó a la salida?
-            if (player.x === cols-2 && player.y === rows-2) {
-                winMsg.innerHTML = "¡Has escapado del volcán!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
-                winMsg.style.display = "block";
-            }
-            // ¿Toca lava?
-            if (
-                eruptionStart !== null &&
-                lavaTime[player.y][player.x] !== -1 &&
-                lavaStep >= lavaTime[player.y][player.x]
-            ) {
-                winMsg.innerHTML = "¡La lava te alcanzó!<br><button class='back-btn' onclick='location.reload()'>Intentar de nuevo</button>";
-                winMsg.style.display = "block";
-            }
         }
     });
 
-    // Inicia la erupción tras 2 segundos
-    setTimeout(() => {
-        eruptionStart = Date.now();
-        advanceLava();
-    }, 2000);
+    let lastLavaUpdateTime = 0;
 
-    // Función para avanzar la lava poco a poco
-    function advanceLava() {
+    function update(timestamp) {
         if (winMsg.style.display !== "none") return;
-        lavaStep++;
-        drawMaze();
-        // ¿El jugador está en la lava?
+
+        // Iniciar erupción después del delay
+        if (eruptionStart === null && timestamp > config.eruptionDelay) {
+            eruptionStart = timestamp;
+            lastLavaUpdateTime = timestamp;
+        }
+
+        // Avanzar la lava
+        if (eruptionStart !== null && timestamp - lastLavaUpdateTime > config.lavaSpeedMs) {
+            lavaStep++;
+            lastLavaUpdateTime = timestamp;
+        }
+
+        // Comprobar si el jugador está en la lava
         if (
+            eruptionStart !== null &&
             lavaTime[player.y][player.x] !== -1 &&
             lavaStep >= lavaTime[player.y][player.x]
         ) {
             winMsg.innerHTML = "¡La lava te alcanzó!<br><button class='back-btn' onclick='location.reload()'>Intentar de nuevo</button>";
             winMsg.style.display = "block";
-            return;
         }
-        // La lava avanza cada 120ms * 100 = 12,000ms (100 veces más despacio)
-        setTimeout(advanceLava, 12000);
+
+        // Comprobar si llegó a la salida (portal 3x3)
+        if (
+            player.x >= exitPos.x && player.x < exitPos.x + 3 &&
+            player.y >= exitPos.y && player.y < exitPos.y + 3
+        ) {
+            winMsg.innerHTML = "¡Has escapado a través del portal!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
+            winMsg.style.display = "block";
+        }
     }
+
+    // --- Bucle principal del juego ---
+    let animationFrameId;
+    let gameStartTime = null;
+    function gameLoop(timestamp) {
+        if (gameStartTime === null) gameStartTime = timestamp;
+        update(timestamp);
+        draw(timestamp);
+
+        if (winMsg.style.display === "none") {
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+    }
+
+    // Iniciar el juego
+    requestAnimationFrame(gameLoop);
+
+    window.addEventListener('resize', () => {
+        config = resizeMazeConfig();
+        canvas.width = config.cols * config.cellSize;
+        canvas.height = config.rows * config.cellSize;
+        // Si quieres, puedes volver a generar el laberinto aquí o solo redibujar:
+        draw(performance.now());
+    });
     </script>
 </body>
 </html>

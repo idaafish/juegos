@@ -926,12 +926,12 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
         }
         
         function getChipColor(value) {
-            if (value >= 100) return 'linear-gradient(135deg, #d97706, #f59e0b)';
-            if (value >= 25) return 'linear-gradient(135deg, #059669, #10b981)';
-            if (value >= 10) return 'linear-gradient(135deg, #2563eb, #3b82f6)';
-            if (value >= 5) return 'linear-gradient(135deg, #dc2626, #ef4444)';
-            return 'linear-gradient(135deg, #4b5563, #6b7280)';
-        }
+            if (value >= 100) return '#FFD700'; // Oro (100)
+            if (value >= 25) return '#00FF00';  // Verde (25)
+            if (value >= 10) return '#0000FF';  // Azul (10)
+            if (value >= 5) return '#FF0000';   // Rojo (5)
+            return '#C0C0C0';                 // Plata (1, o menores)
+    }
 
         function drawChips() {
             const existingChips = canvasContainer.querySelectorAll('.chip-on-canvas');
@@ -1230,7 +1230,7 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
             if (isSpinning) {
                 animationFrameId = requestAnimationFrame(animate);
             } else {
-                ctx.clearRect(0, 0, canvas.width, 200);
+                // ctx.clearRect(0, 0, canvas.width, 200);  // Comentado: No limpiar inmediatamente
                 drawRouletteWheel(ctx, canvas.width / 2, 120, 110, targetNumber, ballAngle);
                 setTimeout(() => processSpinResult(targetNumber), 800);
             }
@@ -1248,13 +1248,18 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
             if (history.length > 15) history.pop();
             updateHistoryDisplay();
 
-            // Resaltar número ganador
+            // Resaltado sutil del número ganador
             const winningArea = bettingAreas.find(area => 
                 area.type === 'straight' && area.numbers.includes(winningNumber));
             
             if (winningArea) {
-                ctx.fillStyle = 'rgba(255, 215, 0, 0.5)';
+                // Resaltado más sutil
+                ctx.save();
+                ctx.globalAlpha = 0.3; // Menos opacidad
+                ctx.fillStyle = '#FFD700'; // Amarillo claro
                 ctx.fillRect(winningArea.x, winningArea.y, winningArea.w, winningArea.h);
+                ctx.restore();
+                
                 
                 const chips = canvasContainer.querySelectorAll('.chip-on-canvas');
                 chips.forEach(chip => chip.classList.add('winning-animation'));
@@ -1310,6 +1315,15 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
             });
         }, 1000);
 
+
+// --- Funciones auxiliares ---
+function getRandomFloat(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 let spinAngle = 0;
 let spinVelocity = 0;
 let ballAngle = 0;
@@ -1403,7 +1417,7 @@ function drawRouletteWheel(ctx, centerX, centerY, radius, highlightNumber = null
 }
 
 // Nueva función para animar el giro de la ruleta
-function animateSpin(targetNumber) {
+function animateWheelSpin(targetNumber) { // Cambiado el nombre para mayor claridad
     spinVelocity = 0.35 + Math.random() * 0.15;
     ballVelocity = -0.55 - Math.random() * 0.15;
     let duration = 3200 + Math.random() * 600;
