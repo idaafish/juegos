@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego del Gusano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1a1a2e; /* Azul oscuro espacial */
+            color: #e0e0e0; /* Texto gris claro */
+            overflow: hidden; /* Evitar barras de desplazamiento innecesarias */
+        }
+        .game-container {
+            background-color: #0f0f23; /* Azul aún más oscuro para el contenedor */
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        canvas {
+            border: 5px solid #4a4a8a; /* Borde morado neón */
+            background-color: #000; /* Fondo negro para el canvas */
+            border-radius: 10px;
+            display: block; /* Para centrar con margin auto si es necesario */
+            margin: 0 auto; /* Centra el canvas si su contenedor es más ancho */
+            max-width: 100%; /* Asegura que el canvas no se desborde en pantallas pequeñas */
+            height: auto; /* Mantiene la proporción del canvas */
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .control-button, .action-button {
+            background-color: #e94560; /* Rosa neón */
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px #a83246; /* Sombra para efecto 3D */
+        }
+        .control-button:active, .action-button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px #a83246;
+        }
+        .control-button:hover, .action-button:hover {
+            background-color: #ff5777; /* Rosa más claro al pasar el ratón */
+        }
+        #score, #highScore {
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #00f0ff; /* Cian neón */
+        }
+        #gameOverMessage {
+            color: #ff3030; /* Rojo neón */
+            font-size: 24px;
+            margin-top: 20px;
+            min-height: 30px; /* Para evitar saltos de layout */
+        }
+        .touch-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            width: 180px; /* Tamaño fijo para los controles táctiles */
+            margin: 20px auto 0; /* Centrar los controles táctiles */
+        }
+        .touch-button {
+            background-color: #4a4a8a; /* Morado neón */
+            color: white;
+            border: 2px solid #7a7acd; /* Borde morado más claro */
+            border-radius: 50%; /* Botones redondos */
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1 / 1; /* Para mantenerlos cuadrados/circulares */
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .touch-button:active {
+            transform: scale(0.95);
+        }
+        .touch-button:hover {
+            background-color: #6a6ad0;
+        }
+        .up { grid-column: 2; grid-row: 1; }
+        .left { grid-column: 1; grid-row: 2; }
+        .right { grid-column: 3; grid-row: 2; }
+        .down { grid-column: 2; grid-row: 3; }
+
+        /* Ocultar controles táctiles en pantallas más grandes */
+        @media (min-width: 768px) {
+            .touch-controls {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="text-3xl font-bold mb-4 text-center text-purple-400">Juego del Gusano</h1>
+        <div id="score" class="text-center">Puntuación: 0</div>
+        <div id="highScore" class="text-center">Máx. Puntuación: 0</div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="gameOverMessage" class="text-center"></div>
+        <div class="controls">
+            <button id="startButton" class="action-button">Iniciar Juego</button>
+        </div>
+        <div class="touch-controls">
+            <button class="touch-button up" data-direction="UP">▲</button>
+            <button class="touch-button left" data-direction="LEFT">◄</button>
+            <button class="touch-button right" data-direction="RIGHT">►</button>
+            <button class="touch-button down" data-direction="DOWN">▼</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const highScoreDisplay = document.getElementById('highScore');
+        const gameOverMessage = document.getElementById('gameOverMessage');
+        const startButton = document.getElementById('startButton');
+
+        // --- Configuración del Juego ---
+        const gridSize = 20; // Tamaño de cada celda del tablero
+        let canvasSize = 400; // Tamaño inicial del canvas
+        let tileCount = canvasSize / gridSize; // Número de celdas por fila/columna
+
+        // --- Estado del Juego ---
+        let snake = [];
+        let food = { x: 0, y: 0 };
+        let dx = gridSize; // Desplazamiento en x
+        let dy = 0;       // Desplazamiento en y
+        let score = 0;
+        let highScore = localStorage.getItem('snakeHighScore') || 0;
+        let changingDirection = false; // Para evitar que el gusano se invierta sobre sí mismo
+        let gameLoopTimeout;
+        let gameSpeed = 150; // Milisegundos entre actualizaciones, menor es más rápido
+        let gameStarted = false;
+
+        // --- Ajuste del Canvas ---
+        function resizeCanvas() {
+            const maxWidth = window.innerWidth * 0.9;
+            const maxHeight = window.innerHeight * 0.6; // Dejar espacio para controles y texto
+            
+            // Queremos que el canvas sea un múltiplo de gridSize
+            let newSize = Math.min(maxWidth, maxHeight);
+            newSize = Math.floor(newSize / gridSize) * gridSize;
+
+            canvas.width = newSize;
+            canvas.height = newSize;
+            canvasSize = newSize;
+            tileCount = canvasSize / gridSize;
+
+            // Si el juego está en curso, es mejor reiniciar o ajustar las posiciones
+            // Por simplicidad, si el juego ha comenzado, no re-inicializamos completamente
+            // pero sí redibujamos. Para un juego real, se necesitaría una lógica más robusta.
+            if (gameStarted) {
+                // Podrías intentar escalar las posiciones de la serpiente y la comida,
+                // o simplemente reiniciar el juego si el cambio es muy drástico.
+                // Por ahora, solo redibujamos.
+                drawEverything();
+            } else {
+                 // Si el juego no ha comenzado, podemos preparar el tablero para el nuevo tamaño
+                resetGame(); // O una función similar que no inicie el bucle
+                drawInitialState(); // Dibuja el estado inicial sin empezar el juego
+            }
+        }
+        
+        function drawInitialState() {
+            clearCanvas();
+            // Podrías dibujar un mensaje de "Presiona Iniciar" o similar
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = 'white';
+            ctx.font = `${gridSize*0.8}px 'Press Start 2P'`;
+            ctx.textAlign = 'center';
+            ctx.fillText('Pulsa Iniciar', canvas.width / 2, canvas.height / 2);
+        }
+
+
+        // --- Inicialización y Reinicio ---
+        function initializeGame() {
+            gameStarted = true;
+            gameOverMessage.textContent = '';
+            snake = [
+                { x: Math.floor(tileCount / 2) * gridSize, y: Math.floor(tileCount / 2) * gridSize },
+                { x: (Math.floor(tileCount / 2) - 1) * gridSize, y: Math.floor(tileCount / 2) * gridSize },
+                { x: (Math.floor(tileCount / 2) - 2) * gridSize, y: Math.floor(tileCount / 2) * gridSize }
+            ];
+            dx = gridSize;
+            dy = 0;
+            score = 0;
+            gameSpeed = 150;
+            updateScoreDisplay();
+            placeFood();
+            if (gameLoopTimeout) clearTimeout(gameLoopTimeout);
+            gameLoop();
+        }
+
+        function resetGame() {
+            gameStarted = false;
+            if (gameLoopTimeout) clearTimeout(gameLoopTimeout);
+            snake = [
+                { x: Math.floor(tileCount / 2) * gridSize, y: Math.floor(tileCount / 2) * gridSize }
+            ]; // Posición inicial simple
+            dx = gridSize;
+            dy = 0;
+            score = 0;
+            updateScoreDisplay();
+            placeFood(); // Coloca la comida para el estado inicial
+            drawInitialState(); // Dibuja el estado inicial
+        }
+
+        // --- Lógica del Juego ---
+        function gameLoop() {
+            if (!gameStarted) return;
+
+            gameLoopTimeout = setTimeout(() => {
+                changingDirection = false;
+                clearCanvas();
+                moveSnake();
+                drawEverything();
+
+                if (checkGameOver()) {
+                    handleGameOver();
+                    return;
+                }
+                gameLoop();
+            }, gameSpeed);
+        }
+
+        function moveSnake() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head); // Añade la nueva cabeza
+
+            // Comprobar si ha comido
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                updateScoreDisplay();
+                placeFood();
+                // Aumentar velocidad gradualmente
+                if (gameSpeed > 60) { // Límite de velocidad
+                    gameSpeed -= 2;
+                }
+            } else {
+                snake.pop(); // Elimina la cola si no ha comido
+            }
+        }
+
+        function placeFood() {
+            food.x = Math.floor(Math.random() * tileCount) * gridSize;
+            food.y = Math.floor(Math.random() * tileCount) * gridSize;
+
+            // Asegurarse de que la comida no aparezca sobre el gusano
+            snake.forEach(segment => {
+                if (segment.x === food.x && segment.y === food.y) {
+                    placeFood(); // Vuelve a intentarlo
+                }
+            });
+        }
+
+        function checkGameOver() {
+            const head = snake[0];
+            // Colisión con paredes
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+                return true;
+            }
+            // Colisión consigo mismo
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function handleGameOver() {
+            gameStarted = false;
+            gameOverMessage.textContent = '¡FIN DEL JUEGO!';
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('snakeHighScore', highScore);
+                updateScoreDisplay();
+            }
+            startButton.textContent = 'Reiniciar'; // Cambiar texto del botón
+        }
+
+        // --- Dibujo ---
+        function clearCanvas() {
+            ctx.fillStyle = '#000000'; // Negro
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawSnake() {
+            snake.forEach((segment, index) => {
+                // Cabeza de un color diferente
+                if (index === 0) {
+                    ctx.fillStyle = '#32cd32'; // Verde lima para la cabeza
+                } else {
+                    ctx.fillStyle = '#228b22'; // Verde bosque para el cuerpo
+                }
+                ctx.fillRect(segment.x, segment.y, gridSize, gridSize);
+                ctx.strokeStyle = '#006400'; // Verde oscuro para el borde
+                ctx.strokeRect(segment.x, segment.y, gridSize, gridSize);
+            });
+        }
+
+        function drawFood() {
+            ctx.fillStyle = '#ff4500'; // Naranja rojizo para la comida
+            ctx.fillRect(food.x, food.y, gridSize, gridSize);
+            ctx.strokeStyle = '#8b0000'; // Rojo oscuro para el borde
+            ctx.strokeRect(food.x, food.y, gridSize, gridSize);
+        }
+
+        function drawEverything() {
+            clearCanvas();
+            drawFood();
+            drawSnake();
+        }
+        
+        // --- UI y Controles ---
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Puntuación: ${score}`;
+            highScoreDisplay.textContent = `Máx. Puntuación: ${highScore}`;
+        }
+
+        function changeDirection(event) {
+            if (changingDirection) return;
+            changingDirection = true;
+
+            const keyPressed = event.key;
+            const goingUp = dy === -gridSize;
+            const goingDown = dy === gridSize;
+            const goingRight = dx === gridSize;
+            const goingLeft = dx === -gridSize;
+
+            if ((keyPressed === 'ArrowLeft' || keyPressed === 'a') && !goingRight) {
+                dx = -gridSize; dy = 0;
+            } else if ((keyPressed === 'ArrowUp' || keyPressed === 'w') && !goingDown) {
+                dx = 0; dy = -gridSize;
+            } else if ((keyPressed === 'ArrowRight' || keyPressed === 'd') && !goingLeft) {
+                dx = gridSize; dy = 0;
+            } else if ((keyPressed === 'ArrowDown' || keyPressed === 's') && !goingUp) {
+                dx = 0; dy = gridSize;
+            }
+        }
+        
+        function handleTouch(direction) {
+            if (changingDirection || !gameStarted) return;
+            changingDirection = true;
+
+            const goingUp = dy === -gridSize;
+            const goingDown = dy === gridSize;
+            const goingRight = dx === gridSize;
+            const goingLeft = dx === -gridSize;
+
+            if (direction === 'LEFT' && !goingRight) {
+                dx = -gridSize; dy = 0;
+            } else if (direction === 'UP' && !goingDown) {
+                dx = 0; dy = -gridSize;
+            } else if (direction === 'RIGHT' && !goingLeft) {
+                dx = gridSize; dy = 0;
+            } else if (direction === 'DOWN' && !goingUp) {
+                dx = 0; dy = gridSize;
+            }
+        }
+
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', () => {
+            if (!gameStarted || gameOverMessage.textContent) { // Si no ha empezado o terminó
+                initializeGame();
+                startButton.textContent = 'Iniciar Juego'; // Asegurar que diga Iniciar si se reinicia
+            }
+        });
+        document.addEventListener('keydown', changeDirection);
+        window.addEventListener('resize', resizeCanvas);
+
+        // Controles táctiles
+        document.querySelectorAll('.touch-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const direction = button.dataset.direction;
+                handleTouch(direction);
+            });
+             // Prevenir zoom en doble tap en móviles
+            button.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+            button.addEventListener('touchend', (e) => e.preventDefault(), { passive: false });
+        });
+
+
+        // --- Al Cargar la Página ---
+        window.onload = () => {
+            resizeCanvas(); // Ajusta el canvas al cargar
+            // No llamamos a initializeGame() aquí, esperamos al botón
+            updateScoreDisplay(); // Muestra la puntuación máxima guardada
+        };
+
+    </script>
+</body>
+</html>

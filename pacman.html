@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pac-Man - OnlyFun</title>
+    <link rel="stylesheet" href="estilos.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 40px auto 0 auto;
+            padding: 30px 20px 20px 20px;
+            background: rgba(30,30,60,0.95);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ffeb3b, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #a9a9d3;
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 25px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #ffeb3b, #ffa502);
+            color: #222;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .back-btn:hover {
+            background: linear-gradient(135deg, #ffe066, #ff8c00);
+            color: #000;
+        }
+        #gameCanvas {
+            display: block;
+            margin: 0 auto 20px auto;
+            background: #181830;
+            border: 3px solid #ffeb3b;
+            border-radius: 12px;
+            box-shadow: 0 0 24px #000a;
+        }
+        .score {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #ffeb3b;
+        }
+        .lives {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #b0b0ff;
+        }
+        .game-over {
+            text-align: center;
+            font-size: 2rem;
+            color: #ff6b6b;
+            margin-top: 20px;
+        }
+        .start-msg {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #ffeb3b;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
+        <h1>Pac-Man</h1>
+        <div class="subtitle">¡Come todos los puntos y esquiva a los fantasmas!</div>
+        <div class="score" id="score">Puntuación: 0</div>
+        <div class="lives" id="lives">Vidas: ❤️❤️❤️</div>
+        <div class="start-msg" id="startMsg">Pulsa cualquier flecha para empezar</div>
+        <canvas id="gameCanvas" width="784" height="784"></canvas>
+        <div class="game-over" id="gameOver" style="display:none;">¡Juego Terminado!<br><button class="back-btn" onclick="location.reload()">Jugar de nuevo</button></div>
+    </div>
+    <script>
+    // --- Parámetros del juego ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('score');
+    const livesDisplay = document.getElementById('lives');
+    const gameOverDisplay = document.getElementById('gameOver');
+    const startMsg = document.getElementById('startMsg');
+
+    // Mapa totalmente comunicado (sin zonas cerradas, todo conectado)
+    // 0: vacío, 1: pared, 2: punto, 3: bola de poder
+    // El mapa es cuadrado y todos los puntos son accesibles
+    const map = [
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,0,0,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,0,0,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+        [1,2,1,1,1,2,1,1,1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,2,2,1],
+        [1,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+    ];
+    const cellSize = 28;
+    const rows = map.length;
+    const cols = map[0].length;
+
+    // Pac-Man (empieza abajo a la izquierda)
+    let pacman = { x: 2, y: rows - 2, dir: {x:0, y:0}, nextDir: {x:0, y:0}, px: 2, py: rows - 2, angle: 0, mouth: 0, mouthDir: 1 };
+    let score = 0;
+    let lives = 3;
+    let gameOver = false;
+    let started = false;
+
+    // Fantasmas (en la "casa" central, lejos de Pac-Man)
+    let ghosts = [
+        { x: Math.floor(cols/2)-2, y: Math.floor(rows/2), px: Math.floor(cols/2)-2, py: Math.floor(rows/2), color: "#ff6b6b", dir: {x:1, y:0}, scatter: false, scatterTimer: 0, moveTick: 0 },
+        { x: Math.floor(cols/2)+2, y: Math.floor(rows/2), px: Math.floor(cols/2)+2, py: Math.floor(rows/2), color: "#00e6e6", dir: {x:-1, y:0}, scatter: false, scatterTimer: 0, moveTick: 0 }
+    ];
+
+    // --- Controles y arranque ---
+    document.addEventListener('keydown', e => {
+        if (!started && ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)) {
+            started = true;
+            startMsg.style.display = "none";
+            loop();
+        }
+        if (gameOver) return;
+        if (e.key === "ArrowLeft") pacman.nextDir = {x:-1, y:0};
+        if (e.key === "ArrowRight") pacman.nextDir = {x:1, y:0};
+        if (e.key === "ArrowUp") pacman.nextDir = {x:0, y:-1};
+        if (e.key === "ArrowDown") pacman.nextDir = {x:0, y:1};
+    });
+
+    // --- Lógica de movimiento y colisiones ---
+    function canMove(x, y) {
+        return map[y] && map[y][x] !== undefined && map[y][x] !== 1;
+    }
+
+    function update() {
+        if (gameOver || !started) return;
+
+        // Movimiento Pac-Man
+        let nx = pacman.x + pacman.nextDir.x;
+        let ny = pacman.y + pacman.nextDir.y;
+        if (canMove(nx, ny)) pacman.dir = pacman.nextDir;
+
+        nx = pacman.x + pacman.dir.x;
+        ny = pacman.y + pacman.dir.y;
+        if (canMove(nx, ny)) {
+            pacman.px = pacman.x;
+            pacman.py = pacman.y;
+            pacman.x = nx;
+            pacman.y = ny;
+        }
+
+        // Comer puntos y bolas de poder
+        if (map[pacman.y][pacman.x] === 2) {
+            map[pacman.y][pacman.x] = 0;
+            score += 10;
+        }
+        if (map[pacman.y][pacman.x] === 3) {
+            map[pacman.y][pacman.x] = 0;
+            score += 50;
+            ghosts.forEach(g => { g.scatter = true; g.scatterTimer = 60; });
+        }
+
+        // Movimiento fantasmas (mucho más lento)
+        ghosts.forEach(g => {
+            g.moveTick = (g.moveTick || 0) + 1;
+            if (g.moveTick % 8 !== 0) return; // Solo se mueven cada 8 frames
+
+            if (g.scatter) {
+                g.scatterTimer--;
+                if (g.scatterTimer <= 0) g.scatter = false;
+            }
+            // Movimiento simple: aleatorio o hacia Pac-Man
+            let dirs = [
+                {x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}
+            ].filter(d => canMove(g.x+d.x, g.y+d.y));
+            if (dirs.length) {
+                if (g.scatter) {
+                    // Huir de Pac-Man
+                    dirs.sort((a,b) => {
+                        let da = Math.abs((g.x+a.x)-pacman.x)+Math.abs((g.y+a.y)-pacman.y);
+                        let db = Math.abs((g.x+b.x)-pacman.x)+Math.abs((g.y+b.y)-pacman.y);
+                        return db-da;
+                    });
+                } else {
+                    // Perseguir Pac-Man
+                    dirs.sort((a,b) => {
+                        let da = Math.abs((g.x+a.x)-pacman.x)+Math.abs((g.y+a.y)-pacman.y);
+                        let db = Math.abs((g.x+b.x)-pacman.x)+Math.abs((g.y+b.y)-pacman.y);
+                        return da-db;
+                    });
+                }
+                let best = dirs[0];
+                g.px = g.x;
+                g.py = g.y;
+                g.x += best.x;
+                g.y += best.y;
+            }
+        });
+
+        // Colisión Pac-Man vs Fantasmas
+        ghosts.forEach(g => {
+            if (g.x === pacman.x && g.y === pacman.y) {
+                if (g.scatter) {
+                    g.x = Math.floor(cols/2); g.y = Math.floor(rows/2);
+                    score += 200;
+                } else {
+                    loseLife();
+                }
+            }
+        });
+
+        // Animación boca
+        pacman.mouth += pacman.mouthDir * 0.15;
+        if (pacman.mouth > 1) { pacman.mouth = 1; pacman.mouthDir = -1; }
+        if (pacman.mouth < 0) { pacman.mouth = 0; pacman.mouthDir = 1; }
+
+        scoreDisplay.textContent = "Puntuación: " + score;
+        livesDisplay.innerHTML = "Vidas: " + "❤️".repeat(lives);
+
+        // ¿Victoria?
+        if (map.flat().every(cell => cell !== 2 && cell !== 3)) {
+            gameOver = true;
+            setTimeout(() => {
+                gameOverDisplay.innerHTML = "¡Ganaste!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
+                gameOverDisplay.style.display = "block";
+            }, 500);
+        }
+    }
+
+    function loseLife() {
+        lives--;
+        if (lives <= 0) {
+            gameOver = true;
+            setTimeout(() => {
+                gameOverDisplay.innerHTML = "¡Juego Terminado!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
+                gameOverDisplay.style.display = "block";
+            }, 500);
+        } else {
+            pacman.x = 2; pacman.y = rows - 2; pacman.dir = {x:0,y:0}; pacman.nextDir = {x:0,y:0};
+            ghosts[0].x = Math.floor(cols/2)-2; ghosts[0].y = Math.floor(rows/2);
+            ghosts[1].x = Math.floor(cols/2)+2; ghosts[1].y = Math.floor(rows/2);
+        }
+    }
+
+    // --- Dibujo ---
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Mapa
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                if (map[y][x] === 1) {
+                    ctx.fillStyle = "#2e3192";
+                    ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
+                } else if (map[y][x] === 2) {
+                    ctx.fillStyle = "#fff";
+                    ctx.beginPath();
+                    ctx.arc(x*cellSize+cellSize/2, y*cellSize+cellSize/2, 4.5, 0, 2*Math.PI);
+                    ctx.fill();
+                } else if (map[y][x] === 3) {
+                    ctx.fillStyle = "#ffeb3b";
+                    ctx.beginPath();
+                    ctx.arc(x*cellSize+cellSize/2, y*cellSize+cellSize/2, 9, 0, 2*Math.PI);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // Fantasmas
+        ghosts.forEach(g => {
+            ctx.save();
+            ctx.translate(g.x*cellSize+cellSize/2, g.y*cellSize+cellSize/2);
+            // Cuerpo
+            ctx.beginPath();
+            ctx.arc(0, 0, 14, Math.PI, 0, false);
+            ctx.lineTo(14, 14);
+            for (let i = 12; i >= -12; i -= 8) {
+                ctx.quadraticCurveTo(i+3, 22, i, 14);
+            }
+            ctx.closePath();
+            ctx.fillStyle = g.scatter ? "#fff" : g.color;
+            ctx.shadowColor = "#fff8";
+            ctx.shadowBlur = 8;
+            ctx.fill();
+            // Ojos
+            ctx.beginPath();
+            ctx.arc(-6, -4, 4, 0, 2*Math.PI);
+            ctx.arc(6, -4, 4, 0, 2*Math.PI);
+            ctx.fillStyle = "#222";
+            ctx.globalAlpha = 0.8;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.restore();
+        });
+
+        // Pac-Man
+        ctx.save();
+        ctx.translate(pacman.x*cellSize+cellSize/2, pacman.y*cellSize+cellSize/2);
+
+        // Determinar ángulo de dirección
+        let angle = 0;
+        if (pacman.dir.x === 1) angle = 0; // Derecha
+        else if (pacman.dir.x === -1) angle = Math.PI; // Izquierda
+        else if (pacman.dir.y === -1) angle = -Math.PI/2; // Arriba
+        else if (pacman.dir.y === 1) angle = Math.PI/2; // Abajo
+
+        ctx.rotate(angle);
+
+        // Boca animada
+        let mouthOpen = 0.2 + Math.abs(Math.sin(Date.now()/160)) * 0.3; // Boca abre/cierra constantemente
+        let start = mouthOpen;
+        let end = 2 - mouthOpen;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, 14, Math.PI*start, Math.PI*end, false);
+        ctx.lineTo(0, 0);
+        ctx.closePath();
+        ctx.fillStyle = "#ffeb3b";
+        ctx.shadowColor = "#fff8";
+        ctx.shadowBlur = 8;
+        ctx.fill();
+
+        // Ojo
+        ctx.beginPath();
+        ctx.arc(5, -6, 2.5, 0, 2*Math.PI);
+        ctx.fillStyle = "#222";
+        ctx.shadowBlur = 0;
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    // --- Bucle principal ---
+    function loop() {
+        update();
+        draw();
+        if (!gameOver && started) setTimeout(loop, 360); // 360ms ≈ cuarta parte de velocidad original
+    }
+
+    // Primer dibujo (sin empezar)
+    draw();
+    </script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analizador de Frecuencia de Números (Ordenado)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+        h1 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1em;
+            resize: vertical;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #resultado {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+        #resultado strong {
+            color: #28a745; /* Verde para destacar el resultado */
+        }
+        .error {
+            color: #dc3545; /* Rojo para mensajes de error */
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #resultado ul {
+            list-style-type: none; /* Quitar viñetas predeterminadas */
+            padding: 0;
+        }
+        #resultado ul li {
+            background-color: #f8f9fa;
+            margin-bottom: 5px;
+            padding: 8px 10px;
+            border-radius: 3px;
+            border: 1px solid #e2e6ea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #resultado ul li span:first-child {
+            font-weight: bold;
+        }
+        #resultado ul li span:last-child {
+            color: #555;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Analizador de Frecuencia de Números (Ordenado)</h1>
+
+        <label for="numerosInput">Introduce tu secuencia de números separados por comas:</label>
+        <textarea id="numerosInput" rows="5" placeholder="Ejemplo: 1,5,3,2,5,8,3,5,1,9,2"></textarea>
+
+        <button onclick="analizarSecuencia()">Analizar Secuencia</button>
+
+        <div id="resultado">
+            <p>Aquí aparecerá el resultado del análisis.</p>
+        </div>
+    </div>
+
+    <script>
+        function analizarSecuencia() {
+            const numerosInput = document.getElementById('numerosInput').value;
+            const resultadoDiv = document.getElementById('resultado');
+            resultadoDiv.innerHTML = ''; // Limpiar resultados anteriores
+
+            // Validar que el campo no esté vacío
+            if (!numerosInput.trim()) {
+                resultadoDiv.innerHTML = '<p class="error">Por favor, introduce una secuencia de números.</p>';
+                return;
+            }
+
+            // Separar la cadena por comas y convertir a números
+            const numerosString = numerosInput.split(',');
+            const numeros = [];
+
+            // Limpiar espacios y convertir a números, validando que sean números
+            for (let i = 0; i < numerosString.length; i++) {
+                const numeroLimpio = numerosString[i].trim();
+                if (numeroLimpio === '') { // Permite comas extras como "1,,2" o "1, 2,"
+                    continue;
+                }
+                const num = parseInt(numeroLimpio, 10);
+                if (isNaN(num)) {
+                    resultadoDiv.innerHTML = `<p class="error">Error: "${numerosString[i]}" no es un número válido. Por favor, introduce solo números separados por comas.</p>`;
+                    return;
+                }
+                numeros.push(num);
+            }
+
+            if (numeros.length === 0) {
+                resultadoDiv.innerHTML = '<p class="error">No se encontraron números válidos en la secuencia.</p>';
+                return;
+            }
+
+            // Contar la frecuencia de cada número
+            const frecuencia = {};
+            for (let i = 0; i < numeros.length; i++) {
+                const num = numeros[i];
+                frecuencia[num] = (frecuencia[num] || 0) + 1;
+            }
+
+            // Convertir el objeto de frecuencia a un array para poder ordenarlo
+            const frecuenciaArray = [];
+            for (const num in frecuencia) {
+                frecuenciaArray.push({ numero: parseInt(num, 10), repeticiones: frecuencia[num] });
+            }
+
+            // Ordenar el array por el número de repeticiones de forma descendente (mayor a menor)
+            frecuenciaArray.sort((a, b) => b.repeticiones - a.repeticiones);
+
+            // Encontrar el/los número/s que más se repite/n (el primero o los primeros del array ordenado)
+            const maxFrecuencia = frecuenciaArray[0].repeticiones;
+            const numerosMasRepetidos = frecuenciaArray.filter(item => item.repeticiones === maxFrecuencia).map(item => item.numero);
+
+            // Mostrar el resultado
+            let mensaje = `<p>El/Los número/s que más se repite/n es/son: <strong>${numerosMasRepetidos.join(', ')}</strong>`;
+            mensaje += ` (aparece/n ${maxFrecuencia} vez/veces).</p>`;
+            
+            mensaje += '<p>Frecuencia de todos los números (ordenado de mayor a menor repeticiones):</p><ul>';
+            frecuenciaArray.forEach(item => {
+                mensaje += `<li><span>Número ${item.numero}</span> <span>${item.repeticiones} vez/veces</span></li>`;
+            });
+            mensaje += '</ul>';
+
+            resultadoDiv.innerHTML = mensaje;
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Texas Hold'em</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #1a202c; /* Tailwind gray-900 */
+            color: #e2e8f0; /* Tailwind slate-200 */
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+        canvas {
+            border: 2px solid #4a5568; /* Tailwind gray-600 */
+            border-radius: 8px;
+            background-color: #2d3748; /* Tailwind gray-800 */
+            width: 100%;
+            max-width: 800px; /* Max width for canvas */
+            height: auto; /* Maintain aspect ratio */
+        }
+        .controls, .player-actions, .messages, .setup-controls {
+            background-color: #2d3748; /* Tailwind gray-800 */
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            width: 100%;
+            max-width: 800px;
+        }
+        button, input[type="number"], select {
+            background-color: #4a5568; /* Tailwind gray-600 */
+            color: #e2e8f0; /* Tailwind slate-200 */
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #718096; /* Tailwind gray-500 */
+        }
+        button:disabled {
+            background-color: #2c333f; /* Darker gray for disabled */
+            color: #718096; /* Muted text for disabled */
+            cursor: not-allowed;
+        }
+        input[type="number"] {
+            width: 80px;
+            text-align: center;
+        }
+        .messages div {
+            width: 100%;
+            text-align: center;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #4a5568; /* Tailwind gray-600 */
+            margin-bottom: 5px;
+        }
+        .player-info {
+            text-align: center;
+        }
+        .card {
+            display: inline-block;
+            border: 1px solid #a0aec0; /* Tailwind gray-400 */
+            border-radius: 4px;
+            padding: 5px 3px;
+            margin: 2px;
+            background-color: white;
+            color: black;
+            font-weight: bold;
+            min-width: 30px; /* Ensure cards have some width */
+            text-align: center;
+        }
+        .card.red { color: red; }
+        .card.black { color: black; }
+
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            .controls, .player-actions, .messages, .setup-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            button, input[type="number"], select {
+                width: 100%;
+            }
+            input[type="number"] {
+                width: auto; /* Allow number input to take full width in column layout */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <h1 class="text-3xl font-bold text-center mb-4 text-emerald-400">Poker Texas Hold'em</h1>
+
+        <div class="setup-controls">
+            <label for="numAiPlayers" class="self-center">Número de oponentes IA (1-4):</label>
+            <select id="numAiPlayers" class="bg-gray-700 text-white rounded p-2">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+            </select>
+            <button id="startGameButton" class="bg-emerald-500 hover:bg-emerald-600">Iniciar Juego</button>
+        </div>
+
+        <canvas id="pokerCanvas"></canvas>
+
+        <div id="messages" class="messages"></div>
+
+        <div id="playerActions" class="player-actions" style="display: none;">
+            <button id="checkButton" class="bg-blue-500 hover:bg-blue-600">Pasar (Check)</button>
+            <button id="callButton" class="bg-green-500 hover:bg-green-600">Igualar (Call)</button>
+            <button id="betButton" class="bg-yellow-500 hover:bg-yellow-600">Apostar (Bet)</button>
+            <button id="raiseButton" class="bg-orange-500 hover:bg-orange-600">Subir (Raise)</button>
+            <input type="number" id="betAmount" value="20" min="1" class="bg-gray-700 text-white rounded p-2">
+            <button id="foldButton" class="bg-red-500 hover:bg-red-600">Retirarse (Fold)</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Game Constants ---
+        const SUITS = ["♠", "♥", "♦", "♣"];
+        const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "T", "J", "Q", "K", "A"];
+        const RANK_VALUES = { "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "T": 10, "J": 11, "Q": 12, "K": 13, "A": 14 };
+
+        const STAGES = { PREFLOP: 'preflop', FLOP: 'flop', TURN: 'turn', RIVER: 'river', SHOWDOWN: 'showdown' };
+        const ACTIONS = { CHECK: 'check', CALL: 'call', BET: 'bet', RAISE: 'raise', FOLD: 'fold' };
+
+        const SMALL_BLIND = 10;
+        const BIG_BLIND = 20;
+        const STARTING_CHIPS = 1000;
+
+        // --- Canvas Setup ---
+        const canvas = document.getElementById('pokerCanvas');
+        const ctx = canvas.getContext('2d');
+        let canvasWidth = 800; // Default, will be updated
+        let canvasHeight = 500; // Default, will be updated
+
+        // --- Game State Variables ---
+        let players = [];
+        let deck = [];
+        let communityCards = [];
+        let pot = 0;
+        let currentPlayerIndex = 0;
+        let currentStage = STAGES.PREFLOP;
+        let dealerIndex = 0;
+        let currentHighestBet = 0;
+        let lastRaiser = null; // To track who made the last aggressive action (bet/raise)
+        let minBet = BIG_BLIND; // Minimum bet or raise amount
+
+        // --- UI Elements ---
+        const messageLog = document.getElementById('messages');
+        const playerActionsDiv = document.getElementById('playerActions');
+        const checkButton = document.getElementById('checkButton');
+        const callButton = document.getElementById('callButton');
+        const betButton = document.getElementById('betButton');
+        const raiseButton = document.getElementById('raiseButton');
+        const foldButton = document.getElementById('foldButton');
+        const betAmountInput = document.getElementById('betAmount');
+        const startGameButton = document.getElementById('startGameButton');
+        const numAiPlayersSelect = document.getElementById('numAiPlayers');
+
+        // --- Game Logic Functions ---
+
+        function resizeCanvas() {
+            const containerWidth = document.getElementById('gameContainer').offsetWidth;
+            const maxWidth = 800;
+            canvasWidth = Math.min(containerWidth, maxWidth) * 0.95; // Use 95% of available width up to max
+            canvasHeight = canvasWidth * (5 / 8); // Maintain aspect ratio
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            if (players.length > 0) drawGame(); // Redraw if game is active
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+
+        function createDeck() {
+            const newDeck = [];
+            for (const suit of SUITS) {
+                for (const rank of RANKS) {
+                    newDeck.push({ suit, rank, value: RANK_VALUES[rank], color: (suit === "♥" || suit === "♦") ? 'red' : 'black' });
+                }
+            }
+            return newDeck;
+        }
+
+        function shuffleDeck(deckToShuffle) {
+            for (let i = deckToShuffle.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deckToShuffle[i], deckToShuffle[j]] = [deckToShuffle[j], deckToShuffle[i]];
+            }
+        }
+
+        function dealCard(deckToDealFrom) {
+            return deckToDealFrom.pop();
+        }
+
+        function addMessage(message, type = 'info') {
+            const msgDiv = document.createElement('div');
+            msgDiv.textContent = message;
+            if (type === 'error') msgDiv.style.backgroundColor = '#c53030'; // Tailwind red-700
+            else if (type === 'success') msgDiv.style.backgroundColor = '#2f855a'; // Tailwind green-700
+            else if (type === 'action') msgDiv.style.backgroundColor = '#b7791f'; // Tailwind yellow-700
+
+            // Limit message history
+            if (messageLog.children.length > 5) {
+                messageLog.removeChild(messageLog.firstChild);
+            }
+            messageLog.appendChild(msgDiv);
+            console.log(message); // Also log to console for debugging
+        }
+
+        function initPlayers(numAI) {
+            players = [];
+            players.push({ id: 0, name: "Tú", chips: STARTING_CHIPS, hand: [], currentBet: 0, hasFolded: false, isAI: false, hasActedThisRound: false, isAllIn: false });
+            for (let i = 1; i <= numAI; i++) {
+                players.push({ id: i, name: `IA ${i}`, chips: STARTING_CHIPS, hand: [], currentBet: 0, hasFolded: false, isAI: true, hasActedThisRound: false, isAllIn: false });
+            }
+            dealerIndex = Math.floor(Math.random() * players.length);
+        }
+
+        function startNewRound() {
+            // Reset players for the new round
+            players.forEach(p => {
+                p.hand = [];
+                p.currentBet = 0;
+                p.hasFolded = false;
+                p.hasActedThisRound = false;
+                p.isAllIn = false;
+                if (p.chips === 0) p.hasFolded = true; // Fold if out of chips
+            });
+
+            const activePlayers = players.filter(p => !p.hasFolded && p.chips > 0);
+            if (activePlayers.length < 2) {
+                endGame();
+                return;
+            }
+
+            deck = createDeck();
+            shuffleDeck(deck);
+            communityCards = [];
+            pot = 0;
+            currentStage = STAGES.PREFLOP;
+            currentHighestBet = 0;
+            minBet = BIG_BLIND;
+
+            dealerIndex = (dealerIndex + 1) % players.length;
+            while(players[dealerIndex].chips === 0 || players[dealerIndex].hasFolded) { // Skip broke players for dealer
+                dealerIndex = (dealerIndex + 1) % players.length;
+            }
+
+            // Determine blinds
+            let smallBlindPlayerIndex = (dealerIndex + 1) % players.length;
+            while(players[smallBlindPlayerIndex].chips === 0 || players[smallBlindPlayerIndex].hasFolded) {
+                smallBlindPlayerIndex = (smallBlindPlayerIndex + 1) % players.length;
+            }
+
+            let bigBlindPlayerIndex = (smallBlindPlayerIndex + 1) % players.length;
+             while(players[bigBlindPlayerIndex].chips === 0 || players[bigBlindPlayerIndex].hasFolded) {
+                bigBlindPlayerIndex = (bigBlindPlayerIndex + 1) % players.length;
+            }
+
+            // Post blinds
+            postBlind(smallBlindPlayerIndex, SMALL_BLIND, "Small Blind");
+            postBlind(bigBlindPlayerIndex, BIG_BLIND, "Big Blind");
+            currentHighestBet = BIG_BLIND;
+
+            // Deal hole cards
+            for (let i = 0; i < 2; i++) {
+                for (const player of players) {
+                    if (!player.hasFolded && player.chips > 0) {
+                        player.hand.push(dealCard(deck));
+                    }
+                }
+            }
+
+            currentPlayerIndex = (bigBlindPlayerIndex + 1) % players.length;
+            while(players[currentPlayerIndex].hasFolded || players[currentPlayerIndex].chips === 0 || players[currentPlayerIndex].isAllIn) {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            }
+            lastRaiser = players[bigBlindPlayerIndex]; // Big blind is the initial "raiser"
+
+            addMessage(`Nueva ronda. Dealer: ${players[dealerIndex].name}.`);
+            updatePlayerActions();
+            drawGame();
+            if (players[currentPlayerIndex].isAI) {
+                setTimeout(aiTurn, 1000);
+            }
+        }
+
+        function postBlind(playerIndex, amount, blindType) {
+            const player = players[playerIndex];
+            if (player.chips > 0) {
+                const blindAmount = Math.min(player.chips, amount);
+                player.chips -= blindAmount;
+                player.currentBet = blindAmount;
+                pot += blindAmount;
+                addMessage(`${player.name} pone ${blindType} de ${blindAmount}`);
+                if (player.chips === 0) {
+                    player.isAllIn = true;
+                    addMessage(`${player.name} está all-in!`);
+                }
+            }
+        }
+
+        function nextStage() {
+            // Reset player action status for the new betting round
+            players.forEach(p => {
+                if (!p.hasFolded && !p.isAllIn) p.hasActedThisRound = false;
+            });
+
+            currentHighestBet = 0; // Reset highest bet for the new round
+            minBet = BIG_BLIND; // Minimum bet is big blind unless a bet is made
+            players.forEach(p => p.currentBet = 0); // Bets are added to pot, reset for current round
+
+            let firstToAct = (dealerIndex + 1) % players.length;
+            while(players[firstToAct].hasFolded || players[firstToAct].isAllIn || players[firstToAct].chips === 0) {
+                firstToAct = (firstToAct + 1) % players.length;
+            }
+            currentPlayerIndex = firstToAct;
+            lastRaiser = null; // Reset last raiser for the new betting round
+
+            if (currentStage === STAGES.PREFLOP) {
+                currentStage = STAGES.FLOP;
+                dealCommunityCards(3);
+                addMessage("--- FLOP ---");
+            } else if (currentStage === STAGES.FLOP) {
+                currentStage = STAGES.TURN;
+                dealCommunityCards(1);
+                addMessage("--- TURN ---");
+            } else if (currentStage === STAGES.TURN) {
+                currentStage = STAGES.RIVER;
+                dealCommunityCards(1);
+                addMessage("--- RIVER ---");
+            } else if (currentStage === STAGES.RIVER) {
+                currentStage = STAGES.SHOWDOWN;
+                showdown();
+                return; // Showdown handles its own logic and starts next round
+            }
+
+            const activePlayersInRound = players.filter(p => !p.hasFolded && p.chips > 0 && !p.isAllIn);
+            if (activePlayersInRound.length <= 1) {
+                // If only one or zero non-all-in players left to act, go to next stage or showdown
+                // This can happen if players go all-in pre-flop, for example
+                if (currentStage !== STAGES.RIVER) {
+                    nextStage();
+                } else {
+                    showdown();
+                }
+                return;
+            }
+
+            updatePlayerActions();
+            drawGame();
+            if (players[currentPlayerIndex].isAI) {
+                setTimeout(aiTurn, 1000);
+            }
+        }
+
+        function dealCommunityCards(count) {
+            for (let i = 0; i < count; i++) {
+                communityCards.push(dealCard(deck));
+            }
+        }
+
+        function handlePlayerAction(action, amount = 0) {
+            const player = players[currentPlayerIndex];
+            if (player.isAI || player.hasFolded || player.isAllIn) return; // Should not happen if UI is correct
+
+            switch (action) {
+                case ACTIONS.FOLD:
+                    player.hasFolded = true;
+                    addMessage(`${player.name} se retira.`);
+                    break;
+                case ACTIONS.CHECK:
+                    if (player.currentBet < currentHighestBet) {
+                        addMessage("No puedes pasar, hay una apuesta.", "error");
+                        return; // Invalid action
+                    }
+                    addMessage(`${player.name} pasa.`);
+                    break;
+                case ACTIONS.CALL:
+                    const callAmount = currentHighestBet - player.currentBet;
+                    if (callAmount > 0) {
+                        if (player.chips <= callAmount) { // Player goes all-in
+                            pot += player.chips;
+                            player.currentBet += player.chips;
+                            player.chips = 0;
+                            player.isAllIn = true;
+                            addMessage(`${player.name} iguala y está all-in con ${player.currentBet}.`);
+                        } else {
+                            player.chips -= callAmount;
+                            pot += callAmount;
+                            player.currentBet += callAmount;
+                            addMessage(`${player.name} iguala ${callAmount}.`);
+                        }
+                    } else {
+                         addMessage(`${player.name} pasa (ya había igualado).`); // Effectively a check
+                    }
+                    break;
+                case ACTIONS.BET:
+                    if (currentHighestBet > 0) {
+                         addMessage("No puedes apostar, debes subir (Raise) o igualar (Call).", "error");
+                         return; // Invalid action if there's already a bet
+                    }
+                    amount = parseInt(betAmountInput.value);
+                    if (isNaN(amount) || amount < minBet || amount > player.chips) {
+                        addMessage(`Apuesta inválida. Mínimo: ${minBet}, Máximo: ${player.chips}.`, "error");
+                        return;
+                    }
+                    player.chips -= amount;
+                    pot += amount;
+                    player.currentBet = amount;
+                    currentHighestBet = amount;
+                    lastRaiser = player;
+                    minBet = amount * 2; // Minimum raise is now double the bet
+                    addMessage(`${player.name} apuesta ${amount}.`);
+                    if (player.chips === 0) {
+                        player.isAllIn = true;
+                        addMessage(`${player.name} está all-in!`);
+                    }
+                    break;
+                case ACTIONS.RAISE:
+                    const raiseAmountInput = parseInt(betAmountInput.value);
+                     // A raise must be at least the size of the previous bet/raise.
+                     // Or, if it's the first raise over a bet, it must be at least double the original bet.
+                    const minRaiseAmount = currentHighestBet + Math.max(minBet, currentHighestBet);
+
+                    if (isNaN(raiseAmountInput) || raiseAmountInput < minRaiseAmount || raiseAmountInput > player.chips + player.currentBet ) {
+                         addMessage(`Subida inválida. Debe ser al menos ${minRaiseAmount} (total). Tienes ${player.chips} fichas.`, "error");
+                         return;
+                    }
+
+                    const amountToRaise = raiseAmountInput - player.currentBet; // Actual chips to add to pot
+                    if (player.chips <= amountToRaise) { // Player goes all-in
+                        pot += player.chips;
+                        player.currentBet += player.chips;
+                        currentHighestBet = player.currentBet;
+                        player.chips = 0;
+                        player.isAllIn = true;
+                        lastRaiser = player;
+                        addMessage(`${player.name} sube y está all-in con ${player.currentBet}.`);
+                    } else {
+                        player.chips -= amountToRaise;
+                        pot += amountToRaise;
+                        player.currentBet += amountToRaise;
+                        currentHighestBet = player.currentBet;
+                        lastRaiser = player;
+                        minBet = currentHighestBet + (currentHighestBet - (currentHighestBet - amountToRaise)); // Min next raise
+                        addMessage(`${player.name} sube a ${currentHighestBet}.`);
+                    }
+                    break;
+            }
+            player.hasActedThisRound = true;
+            proceedToNextPlayer();
+        }
+
+        function proceedToNextPlayer() {
+            drawGame(); // Update visuals immediately
+
+            const activePlayers = players.filter(p => !p.hasFolded);
+            if (activePlayers.length <= 1) {
+                // If only one player left, they win the pot
+                endBettingRound(); // This will award pot and start new round or next stage
+                return;
+            }
+
+            // Check if betting round is over
+            // Round ends if all active (non-folded, non-all-in) players have acted AND their current bets are equal,
+            // OR if all but one player are all-in/folded.
+            const nonFoldedNonAllInPlayers = players.filter(p => !p.hasFolded && !p.isAllIn && p.chips > 0);
+            const allActed = nonFoldedNonAllInPlayers.every(p => p.hasActedThisRound);
+            const betsEqual = nonFoldedNonAllInPlayers.every(p => p.currentBet === currentHighestBet || p.isAllIn);
+
+            if (allActed && betsEqual) {
+                endBettingRound();
+                return;
+            }
+            
+            // Special case: if only one player is not all-in and everyone else has acted or is all-in
+            if (nonFoldedNonAllInPlayers.length === 1 && nonFoldedNonAllInPlayers[0].hasActedThisRound) {
+                const allOthersAllInOrFolded = players.every(p => p === nonFoldedNonAllInPlayers[0] || p.isAllIn || p.hasFolded);
+                if (allOthersAllInOrFolded) {
+                     endBettingRound();
+                     return;
+                }
+            }
+
+
+            // Move to the next player
+            do {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            } while (players[currentPlayerIndex].hasFolded || players[currentPlayerIndex].isAllIn || players[currentPlayerIndex].chips === 0);
+
+
+            // If we've looped back to the last raiser (or first player if no raise yet) and everyone has acted, round is over
+            // This condition is tricky. A simpler check: if current player is the one who made the last highest bet,
+            // and everyone else has had a chance to act (call/raise/fold to it).
+            if (lastRaiser && players[currentPlayerIndex].id === lastRaiser.id) {
+                 // Everyone has acted since the last raise
+                endBettingRound();
+                return;
+            }
+            // If no raise yet, and we are back to the player after big blind (preflop) or dealer (postflop)
+            if (!lastRaiser && currentStage === STAGES.PREFLOP) {
+                const bigBlindPlayerIndex = (dealerIndex + 2) % players.length; // Assuming normal player count
+                if (players[currentPlayerIndex].id === players[bigBlindPlayerIndex].id && players[currentPlayerIndex].currentBet === currentHighestBet) {
+                    // Big blind has option to check or raise if no one raised
+                    if (players[currentPlayerIndex].hasActedThisRound && players[currentPlayerIndex].currentBet === BIG_BLIND && currentHighestBet === BIG_BLIND) {
+                         addMessage(`${players[currentPlayerIndex].name} (Big Blind) tiene la opción.`);
+                         // Allow BB to act even if currentHighestBet is BB and they haven't raised yet.
+                    } else if (players[currentPlayerIndex].hasActedThisRound) {
+                        endBettingRound();
+                        return;
+                    }
+                }
+            } else if (!lastRaiser && currentStage !== STAGES.PREFLOP) {
+                // Post-flop, if we return to the first actor and no bets, round might end
+                let firstActorThisRound = (dealerIndex + 1) % players.length;
+                while(players[firstActorThisRound].hasFolded || players[firstActorThisRound].isAllIn) {
+                    firstActorThisRound = (firstActorThisRound + 1) % players.length;
+                }
+                if (players[currentPlayerIndex].id === players[firstActorThisRound].id && players[currentPlayerIndex].hasActedThisRound && currentHighestBet === 0) {
+                    endBettingRound();
+                    return;
+                }
+            }
+
+
+            updatePlayerActions();
+            drawGame();
+
+            if (players[currentPlayerIndex].isAI) {
+                setTimeout(aiTurn, 1500); // Delay for AI thinking
+            }
+        }
+
+        function endBettingRound() {
+            addMessage(`Fin de la ronda de apuestas. Bote: ${pot}`);
+            players.forEach(p => {
+                // p.currentBet is already added to pot during action
+                // For next round, currentBet will be reset, but for now it reflects this round's contribution
+            });
+
+            const activePlayers = players.filter(p => !p.hasFolded);
+            if (activePlayers.length <= 1) {
+                // Award pot to the sole remaining player
+                if (activePlayers.length === 1) {
+                    activePlayers[0].chips += pot;
+                    addMessage(`${activePlayers[0].name} gana ${pot} fichas.`, "success");
+                } else {
+                    addMessage("Nadie gana el bote (todos se retiraron). El bote se queda para la siguiente ronda o se reparte si es el final.");
+                    // This case should ideally not happen if game ends properly.
+                    // For simplicity, if all fold, pot might carry over or be lost. Let's assume it's won by last non-folder.
+                }
+                setTimeout(startNewRound, 3000);
+            } else {
+                // Check if all remaining players are all-in
+                const nonAllInPlayers = activePlayers.filter(p => !p.isAllIn && p.chips > 0);
+                if (nonAllInPlayers.length < 2 && (currentStage === STAGES.PREFLOP || currentStage === STAGES.FLOP || currentStage === STAGES.TURN)) {
+                    // If one or zero players can still bet, fast-forward through remaining community cards
+                    addMessage("Jugadores all-in, revelando el resto de las cartas...");
+                    while(currentStage !== STAGES.RIVER) {
+                        if (currentStage === STAGES.PREFLOP) { currentStage = STAGES.FLOP; dealCommunityCards(3); }
+                        else if (currentStage === STAGES.FLOP) { currentStage = STAGES.TURN; dealCommunityCards(1); }
+                        else if (currentStage === STAGES.TURN) { currentStage = STAGES.RIVER; dealCommunityCards(1); }
+                        drawGame(); // Show cards being dealt
+                    }
+                    showdown();
+                } else {
+                    nextStage(); // Proceed to flop, turn, river, or showdown
+                }
+            }
+        }
+
+
+        function aiTurn() {
+            const player = players[currentPlayerIndex];
+            if (!player || !player.isAI || player.hasFolded || player.isAllIn) return;
+
+            addMessage(`Turno de ${player.name}...`);
+            drawGame(); // Highlight current AI player
+
+            // Basic AI logic:
+            // 1. Evaluate hand strength (very simplified for now)
+            // 2. Decide action based on strength, pot, and current bet.
+            // 3. Add some randomness for bluffing.
+
+            const handStrength = evaluateHandStrength(player.hand.concat(communityCards)); // Simplified
+            let action;
+            let amount = 0;
+
+            const callAmount = currentHighestBet - player.currentBet;
+            const canCheck = callAmount <= 0;
+
+            // Bluffing chance (e.g., 15% chance to be aggressive)
+            const isBluffing = Math.random() < 0.15;
+
+
+            if (isBluffing && player.chips > BIG_BLIND * 2) { // Only bluff if has some chips
+                if (canCheck && Math.random() < 0.5) { // Bluff bet
+                    action = ACTIONS.BET;
+                    amount = Math.min(player.chips, Math.floor(Math.random() * (pot / 2)) + BIG_BLIND);
+                    amount = Math.max(BIG_BLIND, amount); // Ensure at least min bet
+                } else if (!canCheck && Math.random() < 0.3) { // Bluff raise
+                    action = ACTIONS.RAISE;
+                    amount = Math.min(player.chips + player.currentBet, currentHighestBet + Math.floor(Math.random() * pot / 2) + BIG_BLIND * 2);
+                    amount = Math.max(currentHighestBet + BIG_BLIND, amount); // Ensure valid raise
+                } else { // Fallback to normal logic if bluff conditions not met
+                    isBluffing = false; // Reset flag
+                }
+            }
+
+            if (!isBluffing) {
+                if (handStrength > 0.7 && player.chips > 0) { // Strong hand
+                    if (canCheck) {
+                        action = ACTIONS.BET;
+                        amount = Math.min(player.chips, Math.floor(pot * 0.5) + BIG_BLIND);
+                        amount = Math.max(BIG_BLIND, amount);
+                    } else {
+                        action = ACTIONS.RAISE;
+                        amount = Math.min(player.chips + player.currentBet, currentHighestBet + Math.floor(pot * 0.5) + BIG_BLIND);
+                        amount = Math.max(currentHighestBet + BIG_BLIND, amount);
+                    }
+                } else if (handStrength > 0.4 && player.chips > 0) { // Decent hand
+                    if (canCheck) {
+                        action = ACTIONS.CHECK;
+                    } else {
+                        if (callAmount < player.chips / 3) { // Call if not too expensive
+                            action = ACTIONS.CALL;
+                        } else {
+                            action = ACTIONS.FOLD;
+                        }
+                    }
+                } else { // Weak hand
+                    if (canCheck) {
+                        action = ACTIONS.CHECK;
+                    } else {
+                        // Fold if bet is significant portion of chips, or high chance to fold
+                        if (callAmount > player.chips / 5 || Math.random() < 0.6) {
+                             action = ACTIONS.FOLD;
+                        } else {
+                             action = ACTIONS.CALL; // Reluctant call
+                        }
+                    }
+                }
+            }
+
+
+            // Ensure AI doesn't bet/raise less than minimum or more than it has
+            if (action === ACTIONS.BET || action === ACTIONS.RAISE) {
+                if (action === ACTIONS.BET) {
+                    amount = Math.max(minBet, amount); // Ensure at least minBet
+                } else if (action === ACTIONS.RAISE) {
+                    // Raise amount is total new bet.
+                    const minRaiseTotal = currentHighestBet + Math.max(minBet, (lastRaiser ? lastRaiser.currentBet - (players.find(p => p.id === lastRaiser.id && p.currentBet < lastRaiser.currentBet)?.currentBet || 0) : BIG_BLIND) );
+                    amount = Math.max(minRaiseTotal, amount);
+                }
+                amount = Math.min(player.chips + (action === ACTIONS.RAISE ? player.currentBet : 0), amount);
+                
+                if (action === ACTIONS.RAISE) {
+                    // if amount is not enough for a valid raise over currentHighestBet, consider call or fold
+                    if (amount <= currentHighestBet) {
+                        if (callAmount > 0 && player.chips >= callAmount) action = ACTIONS.CALL;
+                        else if (callAmount === 0) action = ACTIONS.CHECK;
+                        else action = ACTIONS.FOLD;
+                    }
+                }
+            }
+
+
+            // Final check for AI going all-in
+            if ((action === ACTIONS.BET || action === ACTIONS.RAISE) && amount >= player.chips + (action === ACTIONS.RAISE ? player.currentBet : 0) ) {
+                if (action === ACTIONS.BET) amount = player.chips;
+                if (action === ACTIONS.RAISE) amount = player.chips + player.currentBet; // Total bet becomes all chips
+            }
+            if (action === ACTIONS.CALL && callAmount >= player.chips) {
+                // AI calls and goes all-in
+            }
+
+
+            // Perform the action
+            const aiPlayer = players[currentPlayerIndex];
+            aiPlayer.hasActedThisRound = true;
+
+            switch (action) {
+                case ACTIONS.FOLD:
+                    aiPlayer.hasFolded = true;
+                    addMessage(`${aiPlayer.name} se retira.`);
+                    break;
+                case ACTIONS.CHECK:
+                    addMessage(`${aiPlayer.name} pasa.`);
+                    break;
+                case ACTIONS.CALL:
+                    const actualCallAmount = currentHighestBet - aiPlayer.currentBet;
+                    if (aiPlayer.chips <= actualCallAmount) { // All-in call
+                        pot += aiPlayer.chips;
+                        aiPlayer.currentBet += aiPlayer.chips;
+                        aiPlayer.chips = 0;
+                        aiPlayer.isAllIn = true;
+                        addMessage(`${aiPlayer.name} iguala y está all-in con ${aiPlayer.currentBet}.`);
+                    } else {
+                        aiPlayer.chips -= actualCallAmount;
+                        pot += actualCallAmount;
+                        aiPlayer.currentBet += actualCallAmount;
+                        addMessage(`${aiPlayer.name} iguala ${actualCallAmount}.`);
+                    }
+                    break;
+                case ACTIONS.BET:
+                    const betVal = Math.min(aiPlayer.chips, amount); // Cannot bet more than chips
+                    aiPlayer.chips -= betVal;
+                    pot += betVal;
+                    aiPlayer.currentBet = betVal;
+                    currentHighestBet = betVal;
+                    lastRaiser = aiPlayer;
+                    minBet = betVal * 2;
+                    addMessage(`${aiPlayer.name} apuesta ${betVal}.`);
+                    if (aiPlayer.chips === 0) {
+                        aiPlayer.isAllIn = true;
+                        addMessage(`${aiPlayer.name} está all-in!`);
+                    }
+                    break;
+                case ACTIONS.RAISE:
+                    // amount is the total new bet for the AI
+                    const raiseNeeded = amount - aiPlayer.currentBet; // chips to add to pot
+                    if (aiPlayer.chips <= raiseNeeded) { // All-in raise
+                        pot += aiPlayer.chips;
+                        aiPlayer.currentBet += aiPlayer.chips;
+                        currentHighestBet = aiPlayer.currentBet;
+                        aiPlayer.chips = 0;
+                        aiPlayer.isAllIn = true;
+                        lastRaiser = aiPlayer;
+                        addMessage(`${aiPlayer.name} sube y está all-in con ${aiPlayer.currentBet}.`);
+                    } else {
+                        aiPlayer.chips -= raiseNeeded;
+                        pot += raiseNeeded;
+                        aiPlayer.currentBet += raiseNeeded;
+                        currentHighestBet = aiPlayer.currentBet;
+                        lastRaiser = aiPlayer;
+                        minBet = currentHighestBet + (currentHighestBet - (currentHighestBet - raiseNeeded));
+                        addMessage(`${aiPlayer.name} sube a ${currentHighestBet}.`);
+                    }
+                    break;
+                default: // Should default to check or fold if logic is flawed
+                    if (canCheck) {
+                         addMessage(`${aiPlayer.name} pasa (fallback).`);
+                    } else {
+                        aiPlayer.hasFolded = true;
+                        addMessage(`${aiPlayer.name} se retira (fallback).`);
+                    }
+            }
+            setTimeout(proceedToNextPlayer, 500); // Short delay after AI action
+        }
+
+        // Simplified hand strength evaluation (0 to 1)
+        // This is very basic, a real poker AI needs much more sophisticated evaluation
+        function evaluateHandStrength(cards) {
+            if (!cards || cards.length < 2) return 0;
+            const combinedCards = [...cards]; // Use a copy
+            const handEvalResult = getBestHand(combinedCards); // Use the full hand evaluator
+
+            if (!handEvalResult) return 0;
+
+            // Normalize based on hand rank (very rough)
+            // Royal Flush (9) -> 1.0
+            // Straight Flush (8) -> 0.9
+            // Four of a Kind (7) -> 0.8
+            // Full House (6) -> 0.7
+            // Flush (5) -> 0.6
+            // Straight (4) -> 0.5
+            // Three of a Kind (3) -> 0.4
+            // Two Pair (2) -> 0.3
+            // Pair (1) -> 0.2
+            // High Card (0) -> 0.1
+            let strength = (handEvalResult.rankValue / 9) * 0.8 + 0.1; // Scale rank to 0.1-0.9 range
+
+            // Add a small bonus for high cards in hand if it's just high card or pair
+            if (handEvalResult.rankValue <= 1) {
+                const highCardValue = Math.max(...cards.filter(c => RANK_VALUES[c.rank]).map(c => RANK_VALUES[c.rank]));
+                strength += (highCardValue / 14) * 0.1; // Max 0.1 bonus
+            }
+            return Math.min(1, strength); // Cap at 1
+        }
+
+
+        function showdown() {
+            addMessage("--- SHOWDOWN ---");
+            currentStage = STAGES.SHOWDOWN;
+            drawGame(); // Show all cards
+
+            const involvedPlayers = players.filter(p => !p.hasFolded);
+            if (involvedPlayers.length === 0) {
+                 addMessage("Error: No hay jugadores en el showdown.");
+                 setTimeout(startNewRound, 3000);
+                 return;
+            }
+            if (involvedPlayers.length === 1) {
+                involvedPlayers[0].chips += pot;
+                addMessage(`${involvedPlayers[0].name} gana ${pot} fichas (único restante).`, "success");
+                pot = 0;
+                setTimeout(startNewRound, 3000);
+                return;
+            }
+
+            let winners = [];
+            let bestHandDetails = null;
+
+            for (const player of involvedPlayers) {
+                if (player.hand.length === 0 && communityCards.length < 5) { // Should not happen if dealt correctly
+                    addMessage(`${player.name} no tiene suficientes cartas para formar una mano.`);
+                    continue;
+                }
+                const playerCards = player.hand.concat(communityCards);
+                const handDetails = getBestHand(playerCards);
+                player.bestHandDetails = handDetails; // Store for display
+
+                addMessage(`${player.name} tiene: ${handDetails.name} (${handDetails.cards.map(c => c.rank + c.suit).join(', ')})`);
+
+                if (!bestHandDetails || compareHands(handDetails, bestHandDetails) > 0) {
+                    winners = [player];
+                    bestHandDetails = handDetails;
+                } else if (compareHands(handDetails, bestHandDetails) === 0) {
+                    winners.push(player);
+                }
+            }
+
+            if (winners.length > 0) {
+                const winAmount = Math.floor(pot / winners.length);
+                winners.forEach(winner => {
+                    winner.chips += winAmount;
+                    addMessage(`${winner.name} gana ${winAmount} con ${winner.bestHandDetails.name}!`, "success");
+                });
+                pot = 0; // pot is distributed
+            } else {
+                addMessage("No se pudo determinar un ganador.", "error");
+            }
+
+            // Check for game over
+            const playersWithChips = players.filter(p => p.chips > 0);
+            if (playersWithChips.length <= 1) {
+                endGame(playersWithChips.length === 1 ? playersWithChips[0] : null);
+            } else {
+                setTimeout(startNewRound, 5000); // Wait before starting new round
+            }
+        }
+
+        function endGame(winner = null) {
+            if (winner) {
+                addMessage(`¡JUEGO TERMINADO! ${winner.name} ha ganado todas las fichas!`, "success");
+            } else {
+                addMessage("¡JUEGO TERMINADO! No hay un único ganador o todos se quedaron sin fichas.", "info");
+            }
+            playerActionsDiv.style.display = 'none';
+            startGameButton.disabled = false;
+            startGameButton.textContent = "Jugar de Nuevo";
+            // Optionally, reset more game state or offer to start a new game.
+        }
+
+
+        // --- Hand Evaluation Logic (Poker Hands) ---
+        // This is a critical and complex part.
+        // Returns an object like { name: "Royal Flush", rankValue: 9, cards: [Card,...], kickers: [...] }
+
+        function getBestHand(allCards) {
+            if (allCards.length < 5) return { name: "No Hand", rankValue: -1, cards: [], kickers: [] };
+
+            const all5CardCombinations = getCombinations(allCards, 5);
+            let bestHandOverall = null;
+
+            for (const combo of all5CardCombinations) {
+                const currentHandEval = evaluate5CardHand(combo);
+                if (!bestHandOverall || compareHands(currentHandEval, bestHandOverall) > 0) {
+                    bestHandOverall = currentHandEval;
+                }
+            }
+            return bestHandOverall;
+        }
+
+        function evaluate5CardHand(hand) { // hand is an array of 5 cards
+            hand.sort((a, b) => b.value - a.value); // Sort by rank descending
+
+            const isFlush = hand.every(card => card.suit === hand[0].suit);
+            const rankCounts = {};
+            hand.forEach(card => rankCounts[card.rank] = (rankCounts[card.rank] || 0) + 1);
+
+            const values = hand.map(c => c.value).sort((a,b) => a - b); // sorted ascending for straight check
+            const isStraight = values.every((val, i) => i === 0 || val === values[i-1] + 1) ||
+                               (values[0] === 2 && values[1] === 3 && values[2] === 4 && values[3] === 5 && values[4] === 14); // A-5 straight (wheel)
+
+            if (isStraight && values[0] === 2 && values[4] === 14) { // Ace low straight (A,2,3,4,5)
+                 // Reorder cards for display/comparison: 5,4,3,2,A
+                const ace = hand.find(c => c.rank === 'A');
+                const otherCards = hand.filter(c => c.rank !== 'A').sort((a,b) => b.value - a.value);
+                hand = [...otherCards, ace]; // for correct kicker comparison later
+            }
+
+
+            const counts = Object.values(rankCounts).sort((a, b) => b - a); // [4,1], [3,2], [3,1,1], [2,2,1], [2,1,1,1]
+            const ranksByCount = {}; // {4: ['K'], 1: ['A']}
+            for(const rank in rankCounts) {
+                if(!ranksByCount[rankCounts[rank]]) ranksByCount[rankCounts[rank]] = [];
+                ranksByCount[rankCounts[rank]].push(RANK_VALUES[rank]);
+            }
+            for(const count in ranksByCount) { // Sort ranks within each count group
+                ranksByCount[count].sort((a,b) => b - a);
+            }
+
+
+            let handDetails = { name: "High Card", rankValue: 0, cards: hand, kickers: hand.map(c => c.value).sort((a,b) => b-a) };
+
+            if (isStraight && isFlush) {
+                handDetails = { name: values[4] === 14 && values[3] === 13 ? "Royal Flush" : "Straight Flush", rankValue: 8, cards: hand, kickers: [values[4]] }; // Kicker is highest card in straight
+                if (handDetails.name === "Royal Flush") handDetails.rankValue = 9;
+                 // For A-5 straight flush, kicker is 5
+                if (values[0] === 2 && values[4] === 14) handDetails.kickers = [values[3]]; // 5 is the high card
+                return handDetails;
+            }
+            if (counts[0] === 4) { // Four of a Kind
+                const fourRank = ranksByCount[4][0];
+                const kicker = ranksByCount[1][0];
+                return { name: "Four of a Kind", rankValue: 7, cards: hand, kickers: [fourRank, kicker] };
+            }
+            if (counts[0] === 3 && counts[1] === 2) { // Full House
+                const threeRank = ranksByCount[3][0];
+                const pairRank = ranksByCount[2][0];
+                return { name: "Full House", rankValue: 6, cards: hand, kickers: [threeRank, pairRank] };
+            }
+            if (isFlush) {
+                return { name: "Flush", rankValue: 5, cards: hand, kickers: hand.map(c => c.value).sort((a,b) => b-a) };
+            }
+            if (isStraight) {
+                 // For A-5 straight, kicker is 5
+                const kicker = (values[0] === 2 && values[4] === 14) ? values[3] : values[4];
+                return { name: "Straight", rankValue: 4, cards: hand, kickers: [kicker] };
+            }
+            if (counts[0] === 3) { // Three of a Kind
+                const threeRank = ranksByCount[3][0];
+                const kickers = ranksByCount[1].sort((a,b)=>b-a);
+                return { name: "Three of a Kind", rankValue: 3, cards: hand, kickers: [threeRank, ...kickers] };
+            }
+            if (counts[0] === 2 && counts[1] === 2) { // Two Pair
+                const pairRanks = ranksByCount[2].sort((a,b)=>b-a);
+                const kicker = ranksByCount[1][0];
+                return { name: "Two Pair", rankValue: 2, cards: hand, kickers: [...pairRanks, kicker] };
+            }
+            if (counts[0] === 2) { // One Pair
+                const pairRank = ranksByCount[2][0];
+                const kickers = ranksByCount[1].sort((a,b)=>b-a);
+                return { name: "Pair", rankValue: 1, cards: hand, kickers: [pairRank, ...kickers] };
+            }
+            // High Card is default
+            return handDetails;
+        }
+
+        function compareHands(handA, handB) {
+            if (handA.rankValue !== handB.rankValue) {
+                return handA.rankValue - handB.rankValue;
+            }
+            // Same rank, compare kickers
+            for (let i = 0; i < Math.min(handA.kickers.length, handB.kickers.length); i++) {
+                if (handA.kickers[i] !== handB.kickers[i]) {
+                    return handA.kickers[i] - handB.kickers[i];
+                }
+            }
+            return 0; // Tie
+        }
+
+        function getCombinations(array, k) {
+            const result = [];
+            function backtrack(startIndex, currentCombination) {
+                if (currentCombination.length === k) {
+                    result.push([...currentCombination]);
+                    return;
+                }
+                if (startIndex === array.length) {
+                    return;
+                }
+                // Include array[startIndex]
+                currentCombination.push(array[startIndex]);
+                backtrack(startIndex + 1, currentCombination);
+                currentCombination.pop();
+                // Exclude array[startIndex]
+                backtrack(startIndex + 1, currentCombination);
+            }
+            backtrack(0, []);
+            // Filter out combinations that are not of length k (backtrack might produce shorter ones if not careful)
+            return result.filter(combo => combo.length === k);
+        }
+
+
+        // --- Drawing Functions ---
+        function drawGame() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            ctx.fillStyle = '#2d3748'; // Tailwind gray-800
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // --- Draw Table Outline ---
+            const tableRadiusX = canvasWidth * 0.4;
+            const tableRadiusY = canvasHeight * 0.35;
+            const tableCenterX = canvasWidth / 2;
+            const tableCenterY = canvasHeight / 2;
+
+            ctx.beginPath();
+            ctx.ellipse(tableCenterX, tableCenterY, tableRadiusX, tableRadiusY, 0, 0, 2 * Math.PI);
+            ctx.fillStyle = '#38A169'; // Tailwind green-600
+            ctx.fill();
+            ctx.strokeStyle = '#2F855A'; // Tailwind green-700
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+
+            // --- Draw Players ---
+            const numTotalPlayers = players.length;
+            const playerPositions = [];
+            const angleStep = (2 * Math.PI) / numTotalPlayers;
+            const playerAreaRadiusX = tableRadiusX * 0.95;
+            const playerAreaRadiusY = tableRadiusY * 1.1;
+
+
+            players.forEach((player, index) => {
+                let angle = (Math.PI / 2) - (index * angleStep); // Start from top and go clockwise
+                if (numTotalPlayers === 2 && index === 1) angle = -Math.PI / 2; // Player 2 at bottom
+                if (numTotalPlayers === 3) { // Triangle-like
+                    if (index === 0) angle = Math.PI / 2; // Top
+                    if (index === 1) angle = Math.PI + Math.PI / 4 + Math.PI/8; // Bottom-left
+                    if (index === 2) angle = -Math.PI / 4 - Math.PI/8;    // Bottom-right
+                }
+                 if (numTotalPlayers === 4) { // Diamond
+                    if (index === 0) angle = Math.PI / 2; // Top
+                    if (index === 1) angle = Math.PI;     // Left
+                    if (index === 2) angle = -Math.PI / 2;// Bottom
+                    if (index === 3) angle = 0;           // Right
+                }
+                 if (numTotalPlayers === 5) { // Pentagon-like
+                    // Angle adjustment to make player 0 (human) at the bottom center
+                    angle = (-Math.PI / 2) - (index * angleStep);
+                }
+
+
+                const x = tableCenterX + playerAreaRadiusX * Math.cos(angle);
+                const y = tableCenterY - playerAreaRadiusY * Math.sin(angle); // Y is inverted in canvas
+                playerPositions[player.id] = { x, y };
+
+                ctx.fillStyle = player.id === currentPlayerIndex && !player.hasFolded ? '#ECC94B' : '#A0AEC0'; // Tailwind yellow-400 : gray-400
+                ctx.textAlign = 'center';
+                ctx.font = `${canvasWidth * 0.025}px Arial`; // Responsive font size
+                ctx.fillText(player.name, x, y - canvasHeight * 0.08);
+                ctx.font = `${canvasWidth * 0.022}px Arial`;
+                ctx.fillStyle = player.hasFolded ? '#718096' : (player.isAllIn ? '#FC8181' : '#E2E8F0'); // gray-500 : red-400 : slate-200
+                ctx.fillText(`Fichas: ${player.chips}`, x, y - canvasHeight * 0.05);
+                if (player.currentBet > 0) {
+                    ctx.fillText(`Apuesta: ${player.currentBet}`, x, y - canvasHeight * 0.02);
+                }
+                if (player.hasFolded) {
+                    ctx.fillStyle = 'red';
+                    ctx.fillText("RETIRADO", x, y + canvasHeight * 0.01);
+                }
+                if (player.isAllIn && !player.hasFolded) {
+                    ctx.fillStyle = 'orange';
+                    ctx.fillText("ALL-IN", x, y + canvasHeight * 0.01);
+                }
+
+
+                // Draw player cards
+                const cardWidth = canvasWidth * 0.05;
+                const cardHeight = cardWidth * 1.4;
+                if (player.hand.length > 0) {
+                    player.hand.forEach((card, cardIdx) => {
+                        const cardX = x + (cardIdx * (cardWidth + 5)) - (player.hand.length * (cardWidth + 5) / 2) + cardWidth/2;
+                        const cardY = y + canvasHeight * 0.03;
+                        if (player.isAI && currentStage !== STAGES.SHOWDOWN && !player.isAllIn) {
+                            drawCardBack(cardX, cardY, cardWidth, cardHeight);
+                        } else {
+                            drawCard(card, cardX, cardY, cardWidth, cardHeight);
+                        }
+                    });
+                }
+
+                // Draw dealer button
+                if (player.id === dealerIndex) {
+                    ctx.beginPath();
+                    ctx.arc(x + cardWidth * 1.5, y - canvasHeight * 0.05, canvasWidth * 0.015, 0, 2 * Math.PI);
+                    ctx.fillStyle = 'white';
+                    ctx.fill();
+                    ctx.fillStyle = 'black';
+                    ctx.font = `${canvasWidth * 0.015}px Arial`;
+                    ctx.fillText("D", x + cardWidth * 1.5, y - canvasHeight * 0.05 + (canvasWidth * 0.015 * 0.35));
+                }
+            });
+
+
+            // --- Draw Community Cards ---
+            const communityCardWidth = canvasWidth * 0.06;
+            const communityCardHeight = communityCardWidth * 1.4;
+            const communityCardsStartX = tableCenterX - (communityCards.length * (communityCardWidth + 5) / 2) + communityCardWidth/2;
+            const communityCardsY = tableCenterY - communityCardHeight / 2;
+
+            communityCards.forEach((card, index) => {
+                drawCard(card, communityCardsStartX + index * (communityCardWidth + 5), communityCardsY, communityCardWidth, communityCardHeight);
+            });
+
+            // --- Draw Pot ---
+            ctx.fillStyle = '#E2E8F0'; // slate-200
+            ctx.font = `bold ${canvasWidth * 0.03}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(`Bote: ${pot}`, tableCenterX, tableCenterY + tableRadiusY * 0.8);
+
+            // --- Draw Current Stage ---
+            ctx.fillStyle = '#CBD5E0'; // slate-300
+            ctx.font = `${canvasWidth * 0.025}px Arial`;
+            ctx.fillText(currentStage.toUpperCase(), tableCenterX, canvasHeight * 0.1);
+
+            // --- Draw Player Turn Indicator (if needed beyond name highlight) ---
+            if (players.length > 0 && players[currentPlayerIndex] && !players[currentPlayerIndex].hasFolded) {
+                const activePlayerPos = playerPositions[players[currentPlayerIndex].id];
+                if (activePlayerPos) {
+                    ctx.strokeStyle = 'yellow';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    // Simple box around player name area, adjust as needed
+                    ctx.rect(activePlayerPos.x - canvasWidth * 0.1, activePlayerPos.y - canvasHeight * 0.12, canvasWidth * 0.2, canvasHeight * 0.1);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawCard(card, x, y, width, height) {
+            ctx.fillStyle = 'white';
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            roundRect(ctx, x - width / 2, y - height / 2, width, height, 5);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = card.color;
+            ctx.font = `bold ${height * 0.4}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText(card.rank, x, y - height * 0.1);
+            ctx.font = `${height * 0.3}px Arial`;
+            ctx.fillText(card.suit, x, y + height * 0.25);
+        }
+
+        function drawCardBack(x, y, width, height) {
+            ctx.fillStyle = '#4A5568'; // gray-600
+            ctx.strokeStyle = '#2D3748'; // gray-800
+            ctx.lineWidth = 2;
+            roundRect(ctx, x - width / 2, y - height / 2, width, height, 5);
+            ctx.fill();
+            ctx.stroke();
+
+            // Simple design on back
+            ctx.fillStyle = '#A0AEC0'; // gray-400
+            ctx.beginPath();
+            ctx.arc(x, y, width * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Helper for rounded rectangles
+        function roundRect(ctx, x, y, width, height, radius) {
+            if (typeof radius === 'number') {
+                radius = {tl: radius, tr: radius, br: radius, bl: radius};
+            } else {
+                const defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
+                for (let side in defaultRadius) {
+                    radius[side] = radius[side] || defaultRadius[side];
+                }
+            }
+            ctx.beginPath();
+            ctx.moveTo(x + radius.tl, y);
+            ctx.lineTo(x + width - radius.tr, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+            ctx.lineTo(x + width, y + height - radius.br);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+            ctx.lineTo(x + radius.bl, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+            ctx.lineTo(x, y + radius.tl);
+            ctx.quadraticCurveTo(x, y, x + radius.tl, y);
+            ctx.closePath();
+        }
+
+
+        // --- UI Update Functions ---
+        function updatePlayerActions() {
+            if (players.length === 0 || currentStage === STAGES.SHOWDOWN) {
+                playerActionsDiv.style.display = 'none';
+                return;
+            }
+
+            const player = players[currentPlayerIndex];
+            if (player.isAI || player.hasFolded || player.isAllIn) {
+                playerActionsDiv.style.display = 'none';
+                return;
+            }
+
+            playerActionsDiv.style.display = 'flex';
+
+            const canCheckOrBet = player.currentBet >= currentHighestBet;
+            checkButton.disabled = !canCheckOrBet;
+            betButton.disabled = !canCheckOrBet || currentHighestBet > 0; // Can only bet if no one has bet yet
+
+            callButton.disabled = canCheckOrBet || player.chips === 0; // Can call if there's a bet higher than yours
+            raiseButton.disabled = currentHighestBet === 0 || player.chips === 0; // Can only raise if there's a bet
+
+            foldButton.disabled = false; // Always allow fold
+
+            betAmountInput.min = minBet;
+            betAmountInput.max = player.chips + player.currentBet; // Max is all their chips (for raise, it's total bet)
+            if (betAmountInput.value < minBet) betAmountInput.value = minBet;
+
+            // Adjust button text for call
+            if (currentHighestBet > player.currentBet) {
+                callButton.textContent = `Igualar ${currentHighestBet - player.currentBet}`;
+            } else {
+                callButton.textContent = "Igualar"; // Or effectively "Check" if no bet
+            }
+        }
+
+        // --- Event Listeners ---
+        startGameButton.addEventListener('click', () => {
+            const numAI = parseInt(numAiPlayersSelect.value);
+            initPlayers(numAI);
+            startNewRound();
+            startGameButton.disabled = true;
+            startGameButton.textContent = "Juego en Progreso";
+            messageLog.innerHTML = ""; // Clear previous messages
+            addMessage("¡Juego iniciado!");
+            resizeCanvas(); // Call resizeCanvas to set initial dimensions correctly
+        });
+
+        checkButton.addEventListener('click', () => handlePlayerAction(ACTIONS.CHECK));
+        callButton.addEventListener('click', () => handlePlayerAction(ACTIONS.CALL));
+        betButton.addEventListener('click', () => handlePlayerAction(ACTIONS.BET, parseInt(betAmountInput.value)));
+        raiseButton.addEventListener('click', () => handlePlayerAction(ACTIONS.RAISE, parseInt(betAmountInput.value)));
+        foldButton.addEventListener('click', () => handlePlayerAction(ACTIONS.FOLD));
+
+
+        // --- Initial Call ---
+        addMessage("Configura el número de oponentes y presiona 'Iniciar Juego'.");
+        resizeCanvas(); // Set initial canvas size based on container
+        drawGame(); // Draw empty table initially
+    </script>
+</body>
+</html>

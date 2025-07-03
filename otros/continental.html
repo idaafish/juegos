@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Continental (Canvas)</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #333;
+            margin: 0;
+            font-family: sans-serif;
+            color: white;
+        }
+        canvas {
+            border: 2px solid #555;
+            background-color: #2a6a42; /* Color de tapete de juego */
+        }
+        #game-info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-info">
+        <h1>Juego de Continental</h1>
+        <p>Fase: <span id="fase-actual">1</span></p>
+        <p>Turno de: <span id="turno-actual">Jugador</span></p>
+    </div>
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+    <script>
+        // --- Configuración del Canvas ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- Variables del Juego (simplificadas) ---
+        let cartasEnMesa = []; // Aquí dibujaríamos las cartas de los jugadores y las combinaciones
+        let cartaDescarte = null;
+        let manoJugador = [];
+        let mazoVisible = { x: 50, y: 50, width: 70, height: 100 }; // Posición y tamaño del mazo
+
+        // --- Clase para dibujar una Carta (muy básica) ---
+        class CartaGrafica {
+            constructor(valor, palo, x, y, width = 70, height = 100) {
+                this.valor = valor;
+                this.palo = palo;
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.isDragging = false; // Para arrastrar y soltar
+            }
+
+            draw() {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.strokeStyle = 'black';
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+
+                ctx.fillStyle = (this.palo === 'Corazones' || this.palo === 'Diamantes') ? 'red' : 'black';
+                ctx.font = '20px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.valor, this.x + this.width / 2, this.y + this.height / 2 - 10);
+                ctx.font = '12px Arial';
+                ctx.fillText(this.palo, this.x + this.width / 2, this.y + this.height / 2 + 10);
+            }
+
+            // Método para comprobar si un punto (ej. el ratón) está sobre la carta
+            isPointInCard(mouseX, mouseY) {
+                return mouseX > this.x && mouseX < this.x + this.width &&
+                       mouseY > this.y && mouseY < this.y + this.height;
+            }
+        }
+
+        // --- Funciones de Dibujo ---
+        function drawMazo() {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(mazoVisible.x, mazoVisible.y, mazoVisible.width, mazoVisible.height);
+            ctx.strokeStyle = 'white';
+            ctx.strokeRect(mazoVisible.x, mazoVisible.y, mazoVisible.width, mazoVisible.height);
+            ctx.fillStyle = 'white';
+            ctx.font = '16px Arial';
+            ctx.fillText('Mazo', mazoVisible.x + mazoVisible.width / 2, mazoVisible.y + mazoVisible.height / 2);
+        }
+
+        function drawDescarte() {
+            if (cartaDescarte) {
+                cartaDescarte.draw();
+            } else {
+                ctx.fillStyle = '#666';
+                ctx.fillRect(mazoVisible.x + mazoVisible.width + 20, mazoVisible.y, mazoVisible.width, mazoVisible.height);
+                ctx.strokeStyle = 'white';
+                ctx.strokeRect(mazoVisible.x + mazoVisible.width + 20, mazoVisible.y, mazoVisible.width, mazoVisible.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.fillText('Descarte', mazoVisible.x + mazoVisible.width + 20 + mazoVisible.width / 2, mazoVisible.y + mazoVisible.height / 2);
+            }
+        }
+
+        function drawManoJugador() {
+            let startX = (canvas.width - (manoJugador.length * 80)) / 2; // Centrar las cartas
+            for (let i = 0; i < manoJugador.length; i++) {
+                manoJugador[i].x = startX + i * 80; // Espaciado entre cartas
+                manoJugador[i].y = canvas.height - 120; // Cerca del borde inferior
+                manoJugador[i].draw();
+            }
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpiar el canvas
+            drawMazo();
+            drawDescarte();
+            drawManoJugador();
+            // Aquí se dibujarían las combinaciones bajadas de todos los jugadores
+            // y las manos de las IA (opcionalmente cubiertas)
+        }
+
+        // --- Lógica del Juego (muy simplificada) ---
+        // Aquí iría tu lógica de juego de Python, adaptada a JavaScript
+        // (Clases Carta, Mazo, Jugador, JuegoContinental)
+
+        // Simulación inicial
+        function inicializarJuegoCanvas() {
+            // Crear algunas cartas de prueba
+            manoJugador.push(new CartaGrafica('7', 'Corazones', 0, 0));
+            manoJugador.push(new CartaGrafica('K', 'Picas', 0, 0));
+            manoJugador.push(new CartaGrafica('A', 'Diamantes', 0, 0));
+            cartaDescarte = new CartaGrafica('5', 'Tréboles', mazoVisible.x + mazoVisible.width + 20, mazoVisible.y);
+            drawGame();
+        }
+
+        // --- Eventos del Ratón (para interactividad) ---
+        canvas.addEventListener('click', (event) => {
+            const mouseX = event.clientX - canvas.getBoundingClientRect().left;
+            const mouseY = event.clientY - canvas.getBoundingClientRect().top;
+
+            // Lógica para robar del mazo
+            if (mouseX > mazoVisible.x && mouseX < mazoVisible.x + mazoVisible.width &&
+                mouseY > mazoVisible.y && mouseY < mazoVisible.y + mazoVisible.height) {
+                console.log('Robar del mazo');
+                // Aquí llamarías a la función de robar del mazo de tu lógica de juego
+                // Por ejemplo: let nuevaCarta = juego.mazo.robar_carta();
+                // manoJugador.push(new CartaGrafica(nuevaCarta.valor, nuevaCarta.palo, 0, 0));
+                // drawGame();
+            }
+
+            // Lógica para robar del descarte
+            if (cartaDescarte && cartaDescarte.isPointInCard(mouseX, mouseY)) {
+                console.log('Robar del descarte');
+                // Aquí llamarías a la función de robar del descarte
+                // manoJugador.push(cartaDescarte);
+                // cartaDescarte = null; // O la siguiente del descarte
+                // drawGame();
+            }
+
+            // Lógica para seleccionar una carta de la mano para descartar/jugar
+            for (let i = 0; i < manoJugador.length; i++) {
+                if (manoJugador[i].isPointInCard(mouseX, mouseY)) {
+                    console.log(`Has hecho click en la carta: ${manoJugador[i].valor} de ${manoJugador[i].palo}`);
+                    // Aquí implementarías la lógica para:
+                    // 1. Marcar la carta para descarte
+                    // 2. Intentar bajar una combinación
+                    // 3. Colocar en una combinación existente
+                    break;
+                }
+            }
+        });
+
+        // Iniciar el juego en el canvas
+        inicializarJuegoCanvas();
+
+        // Puedes usar setInterval para animaciones o actualizaciones regulares,
+        // pero para un juego por turnos, se redibuja después de cada acción.
+        // setInterval(drawGame, 1000/60); // Ejemplo para 60 FPS
+    </script>
+</body>
+</html>

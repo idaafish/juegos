@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameHub - Tu portal de juegos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #f0f0f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            text-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff6b6b, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a9a9d3;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 40px;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(20, 20, 40, 0.7);
+            border-radius: 50px;
+            max-width: 900px;
+            margin: 0 auto 40px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab-btn {
+            padding: 15px 30px;
+            background: rgba(40, 40, 80, 0.5);
+            border: none;
+            border-radius: 30px;
+            color: #b0b0ff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tab-btn:hover {
+            background: rgba(80, 80, 160, 0.6);
+            transform: translateY(-3px);
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #ff6b6b, #ffa502);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 20px;
+        }
+        
+        .game-card {
+            background: rgba(30, 30, 60, 0.8);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+        
+        .game-image {
+            height: 180px;
+            width: 100%;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .game-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            display: flex;
+            align-items: flex-end;
+            padding: 15px;
+        }
+        
+        .game-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .game-content {
+            padding: 20px;
+        }
+        
+        .game-description {
+            color: #b0b0d0;
+            margin: 15px 0 20px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        .play-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #ff6b6b, #ffa502);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+        }
+        
+        .play-btn:hover {
+            background: linear-gradient(135deg, #ff5252, #ff8c00);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .category-icon {
+            font-size: 1.3rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 0 20px;
+            color: #a9a9d3;
+            font-size: 0.9rem;
+            margin-top: 50px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+                border-radius: 15px;
+                padding: 15px;
+            }
+            
+            .tab-btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <h1>GameHub - Tu Portal de Juegos</h1>
+            <p class="subtitle">Descubre cientos de juegos en diferentes categorías. ¡Diviértete y gana increíbles premios!</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="cards">
+                <i class="fas fa-cards category-icon"></i> Cartas
+            </button>
+            <button class="tab-btn" data-tab="luck">
+                <i class="fas fa-dice category-icon"></i> Azar
+            </button>
+            <button class="tab-btn" data-tab="casino">
+                <i class="fas fa-coins category-icon"></i> Casino
+            </button>
+            <button class="tab-btn" data-tab="retro">
+                <i class="fas fa-ghost category-icon"></i> Retro
+            </button>
+            <button class="tab-btn" data-tab="strategy">
+                <i class="fas fa-chess category-icon"></i> Estrategia
+            </button>
+            <button class="tab-btn" data-tab="sports">
+                <i class="fas fa-football-ball category-icon"></i> Deportes
+            </button>
+        </div>
+        
+        <div class="tab-content active" id="cards-content">
+            <div class="games-grid">
+                <!-- Juegos de Cartas -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1543538175-4d149d9e9a3c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Póker Texas Hold'em</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El clásico juego de póker que desafía tu estrategia y capacidad de lectura de oponentes. ¡Apuesta, sube y gana el bote!</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Blackjack 21</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El clásico juego contra el crupier. Supera al dealer sin pasarte de 21 para ganar. ¡Dobla, divide y gana!</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1519669556878-63bdad8a1a49?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Solitario Clásico</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El juego de cartas en solitario más famoso del mundo. Ordena todas las cartas por palo en orden ascendente.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1600857062241-98d45b81d78b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Bridge Maestro</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El juego de estrategia y comunicación por equipos. Haz tus bazas y comunícate con tu compañero sin palabras.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="luck-content">
+            <div class="games-grid">
+                <!-- Juegos de Azar -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1615361200141-f45040f367be?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Ruleta Europea</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">La ruleta clásica con un solo cero. Apuesta a números, colores, pares o impares. ¡Que la suerte esté de tu lado!</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1561361513-2d000a50f0dc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Tragaperras Diamante</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Máquina tragamonedas con temática de diamantes. Gira los rodillos y combina símbolos para ganar grandes premios.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1519817650390-64a93db51149?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Bingo 75 Bolas</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El clásico juego de bingo con 75 bolas. Marca los números en tu cartón y grita ¡Bingo! cuando completes un patrón.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1582653299850-81fbb2d87648?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Lotería Instantánea</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Rasca y gana premios instantáneos. Descubre símbolos iguales debajo de las casillas para ganar premios en efectivo.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="casino-content">
+            <div class="games-grid">
+                <!-- Juegos de Casino -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1582657118090-af35eefb9958?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Ruleta en Vivo</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Ruleta en vivo con crupier real. Experimenta la emoción de un casino real desde la comodidad de tu hogar.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1616627981487-5d21c7a1c540?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Baccarat Clásico</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El juego favorito de James Bond. Apuesta por el jugador, la banca o empate. ¡El que tenga el 9 gana!</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1593118247619-e2d6f056869e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Póker Caribbean</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Variante de póker contra la casa. Recibe 5 cartas y decide si apostar o retirarte después de ver las cartas.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1519817650390-64a93db51149?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Craps</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El emocionante juego de dados del casino. Apuesta en el pase, no pase, o en combinaciones específicas.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="retro-content">
+            <div class="games-grid">
+                <!-- Juegos Retro -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Space Invaders</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El clásico arcade de 1978. Defiende la Tierra de una invasión alienígena. ¡Destruye todas las naves para ganar!</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Pac-Man</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El juego de laberintos más famoso. Come todos los puntos mientras evitas a los fantasmas. ¡Come las bolas de poder!</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1593305841991-05c297ba4575?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Tetris Clásico</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El adictivo juego de puzzle. Gira y coloca las piezas que caen para completar líneas horizontales sin huecos.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1586816879360-004f5b0c51d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Donkey Kong</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Salva a Pauline de Donkey Kong. Escala estructuras y evita barriles mientras subes para rescatar a tu amada.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="strategy-content">
+            <div class="games-grid">
+                <!-- Juegos de Estrategia -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1612287230202-1ff1d85d1bdf?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Ajedrez Maestro</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El juego de estrategia por excelencia. Planifica tus movimientos, controla el centro y da jaque mate al rey enemigo.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1593720219276-0b1eacd0aef4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Civilization VI</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Construye un imperio que perdure a través de los siglos. Desarrolla tecnología, cultura y ejércitos para dominar el mundo.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1598550476439-6847785fcea6?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Age of Empires</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Dirige una civilización desde la Edad de Piedra hasta la Edad de Hierro. Recolecta recursos, construye ciudades y conquista.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">StarCraft II</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Guerra interestelar entre tres razas. Construye bases, recolecta recursos y derrota a tus enemigos con tácticas avanzadas.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="sports-content">
+            <div class="games-grid">
+                <!-- Juegos de Deportes -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1541252260730-0412e8e2108e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">FIFA 2023</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El simulador de fútbol más realista. Juega con tus equipos favoritos, compite en ligas y gana la Copa del Mundo.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1575361204480-aadea25e6e68?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">NBA 2K23</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Vive la experiencia de la NBA. Juega con las estrellas del baloncesto, crea tu jugador y domina la cancha.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1511882150382-421056c89033?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">F1 2023</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Conviértete en piloto de Fórmula 1. Compite en los circuitos más famosos del mundo y gana el campeonato mundial.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1575365717666-1a0fbaa16ed7?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">PGA Tour 2K23</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El mejor juego de golf. Disfruta de campos espectaculares, crea tu propio campo y compite en torneos profesionales.</p>
+                        <a href="#" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 GameHub - Tu portal de juegos. Todos los derechos reservados.</p>
+            <p>Diseñado con <i class="fas fa-heart" style="color: #ff6b6b;"></i> para amantes de los juegos</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Función para cambiar entre pestañas
+        document.querySelectorAll('.tab-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remover clase active de todos los botones y contenidos
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // Agregar clase active al botón clickeado
+                button.classList.add('active');
+                
+                // Mostrar el contenido correspondiente
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(`${tabId}-content`).classList.add('active');
+            });
+        });
+        
+        // Efecto hover en las tarjetas
+        const gameCards = document.querySelectorAll('.game-card');
+        gameCards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-10px)';
+                card.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.4)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+            });
+        });
+    </script>
+</body>
+</html>

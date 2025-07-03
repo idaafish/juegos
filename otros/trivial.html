@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivial Dinámico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Un fondo suave */
+        }
+        .category-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .category-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn {
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        #messageBox {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            pointer-events: none;
+        }
+        #messageBox.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        #messageBox.error {
+            background-color: #f87171; /* Rojo Tailwind */
+            color: white;
+        }
+        #messageBox.success {
+            background-color: #34d399; /* Verde Tailwind */
+            color: white;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-white">
+
+    <div class="container mx-auto p-6 bg-white/90 backdrop-blur-md rounded-xl shadow-2xl max-w-2xl w-full">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">Trivial Interminable</h1>
+            <p class="text-slate-600 mt-2">¡Pon a prueba tus conocimientos con preguntas ilimitadas!</p>
+        </header>
+
+        <div id="categorySelection" class="mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-slate-700 text-center">Elige una Categoría</h2>
+            <div id="categoriesContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                </div>
+        </div>
+
+        <div id="gameArea" class="hidden text-slate-800">
+            <button id="backToCategories" class="mb-4 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md btn">
+                &larr; Volver a Categorías
+            </button>
+            <div id="currentCategoryDisplay" class="text-center text-2xl font-semibold mb-4 text-purple-600"></div>
+            
+            <div id="questionArea" class="p-6 bg-purple-100 rounded-lg shadow mb-4 min-h-[100px] flex items-center justify-center">
+                <p id="questionText" class="text-lg"></p>
+            </div>
+
+            <div id="answerArea" class="p-6 bg-green-100 rounded-lg shadow mb-6 min-h-[80px] hidden flex items-center justify-center">
+                <p id="answerText" class="text-lg font-semibold"></p>
+            </div>
+            
+            <div id="loader" class="loader hidden"></div>
+
+            <div class="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <button id="showAnswerBtn" class="w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg shadow-md btn">
+                    Mostrar Respuesta
+                </button>
+                <button id="nextQuestionBtn" class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-md btn hidden">
+                    Siguiente Pregunta
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageBox"></div>
+
+    <script>
+        const categories = [
+            { name: "Geografía", color: "bg-sky-500", promptValue: "Geografía" },
+            { name: "Entretenimiento", color: "bg-rose-500", promptValue: "Entretenimiento (películas, música, series de TV, cultura pop)" },
+            { name: "Historia", color: "bg-amber-500", promptValue: "Historia Universal" },
+            { name: "Arte y Literatura", color: "bg-violet-500", promptValue: "Arte y Literatura" },
+            { name: "Ciencia y Naturaleza", color: "bg-emerald-500", promptValue: "Ciencia y Naturaleza" },
+            { name: "Deportes y Ocio", color: "bg-orange-500", promptValue: "Deportes y Ocio" }
+        ];
+
+        const categorySelectionDiv = document.getElementById('categorySelection');
+        const categoriesContainer = document.getElementById('categoriesContainer');
+        const gameAreaDiv = document.getElementById('gameArea');
+        const questionArea = document.getElementById('questionArea');
+        const questionText = document.getElementById('questionText');
+        const answerArea = document.getElementById('answerArea');
+        const answerText = document.getElementById('answerText');
+        const showAnswerBtn = document.getElementById('showAnswerBtn');
+        const nextQuestionBtn = document.getElementById('nextQuestionBtn');
+        const backToCategoriesBtn = document.getElementById('backToCategories');
+        const currentCategoryDisplay = document.getElementById('currentCategoryDisplay');
+        const loader = document.getElementById('loader');
+        const messageBox = document.getElementById('messageBox');
+
+        let currentCategory = null;
+        let currentQuestionData = null;
+        let askedQuestions = {}; // Objeto para almacenar preguntas por categoría
+
+        // --- Inicialización ---
+        function initializeCategories() {
+            categoriesContainer.innerHTML = ''; 
+            categories.forEach(category => {
+                const card = document.createElement('button');
+                card.className = `category-card p-6 rounded-lg text-white font-semibold text-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white ${category.color}`;
+                card.textContent = category.name;
+                card.onclick = () => selectCategory(category);
+                categoriesContainer.appendChild(card);
+                if (!askedQuestions[category.promptValue]) { // Inicializar lista para cada categoría
+                    askedQuestions[category.promptValue] = [];
+                }
+            });
+        }
+
+        // --- Lógica del Juego ---
+        async function selectCategory(category) {
+            currentCategory = category;
+            // Si no existe una lista para esta categoría (por si se añaden dinámicamente o algo raro), la crea.
+            if (!askedQuestions[currentCategory.promptValue]) {
+                askedQuestions[currentCategory.promptValue] = [];
+            }
+            categorySelectionDiv.classList.add('hidden');
+            gameAreaDiv.classList.remove('hidden');
+            currentCategoryDisplay.textContent = `Categoría: ${category.name}`;
+            currentCategoryDisplay.className = `text-center text-2xl font-semibold mb-4 ${category.color.replace('bg-', 'text-')}-600`;
+            await fetchNewQuestion();
+        }
+
+        function backToCategories() {
+            currentCategory = null;
+            // No reseteamos askedQuestions aquí para que recuerde las preguntas entre selecciones de categoría
+            // Si se quisiera reiniciar el historial al volver, se haría aquí.
+            currentQuestionData = null;
+            gameAreaDiv.classList.add('hidden');
+            categorySelectionDiv.classList.remove('hidden');
+            questionText.textContent = '';
+            answerText.textContent = '';
+            answerArea.classList.add('hidden');
+            showAnswerBtn.classList.remove('hidden');
+            nextQuestionBtn.classList.add('hidden');
+        }
+
+        async function fetchNewQuestion() {
+            if (!currentCategory) return;
+
+            questionText.textContent = '';
+            answerText.textContent = '';
+            answerArea.classList.add('hidden');
+            showAnswerBtn.classList.remove('hidden');
+            nextQuestionBtn.classList.add('hidden');
+            loader.classList.remove('hidden');
+            questionArea.classList.add('hidden');
+
+            try {
+                const previousQuestionsInCategory = askedQuestions[currentCategory.promptValue] || [];
+                let exclusionPrompt = "";
+                if (previousQuestionsInCategory.length > 0) {
+                    // Limitamos el número de preguntas enviadas para no alargar demasiado el prompt
+                    const questionsToExclude = previousQuestionsInCategory.slice(-10).join('; '); // Enviar las últimas 10 como referencia
+                    exclusionPrompt = ` Evita generar preguntas que ya se hayan formulado. Estas son algunas de las preguntas recientes para esta categoría: "${questionsToExclude}". Intenta ser original.`;
+                }
+                
+                const prompt = `Genera una pregunta de trivia y su respuesta para la categoría: '${currentCategory.promptValue}'. La pregunta debe ser interesante y no demasiado oscura. La respuesta debe ser concisa.${exclusionPrompt} Devuelve la respuesta en formato JSON con las claves "pregunta" y "respuesta". Ejemplo de formato: {"pregunta": "¿Cuál es la capital de Francia?", "respuesta": "París"}`;
+
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = {
+                    contents: chatHistory,
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "pregunta": { "type": "STRING" },
+                                "respuesta": { "type": "STRING" }
+                            },
+                            required: ["pregunta", "respuesta"]
+                        }
+                    }
+                };
+                const apiKey = ""; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    throw new Error(`Error de la API: ${response.status} - ${errorBody}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    
+                    const rawJsonText = result.candidates[0].content.parts[0].text;
+                    currentQuestionData = JSON.parse(rawJsonText); 
+
+                    if (currentQuestionData && currentQuestionData.pregunta && currentQuestionData.respuesta) {
+                        questionText.textContent = currentQuestionData.pregunta;
+                        // Añadir la nueva pregunta al historial de la categoría actual
+                        if (!askedQuestions[currentCategory.promptValue].includes(currentQuestionData.pregunta)) {
+                           askedQuestions[currentCategory.promptValue].push(currentQuestionData.pregunta);
+                        }
+                        showMessage('¡Nueva pregunta lista!', 'success');
+                    } else {
+                        throw new Error("La respuesta de la API no tiene el formato esperado.");
+                    }
+                } else {
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                         throw new Error(`Pregunta bloqueada por la API: ${result.promptFeedback.blockReason} - ${result.promptFeedback.blockReasonMessage || ''}`);
+                    } else {
+                        throw new Error("No se recibió contenido válido de la API.");
+                    }
+                }
+
+            } catch (error) {
+                console.error("Error fetching question:", error);
+                questionText.textContent = "Error al cargar la pregunta. Intenta de nuevo.";
+                showMessage(`Error: ${error.message}`, 'error');
+            } finally {
+                loader.classList.add('hidden');
+                questionArea.classList.remove('hidden'); 
+            }
+        }
+
+        function showAnswer() {
+            if (currentQuestionData && currentQuestionData.respuesta) {
+                answerText.textContent = currentQuestionData.respuesta;
+                answerArea.classList.remove('hidden');
+                showAnswerBtn.classList.add('hidden');
+                nextQuestionBtn.classList.remove('hidden');
+            }
+        }
+
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.className = ''; 
+            messageBox.classList.add(type, 'show');
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+
+        showAnswerBtn.addEventListener('click', showAnswer);
+        nextQuestionBtn.addEventListener('click', fetchNewQuestion);
+        backToCategoriesBtn.addEventListener('click', backToCategories);
+
+        initializeCategories();
+        showMessage("Bienvenido al Trivial Interminable", "success");
+
+    </script>
+</body>
+</html>

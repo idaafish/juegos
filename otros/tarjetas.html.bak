@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego de Memoria Kawaii Animado</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- ESTILOS CSS --- */
+        :root {
+            --color-fondo-inicio: #e0f7fa; /* Un celeste suave */
+            --color-fondo-fin: #fce4ec;   /* Un rosa muy claro */
+            --color-principal: #29b6f6; /* Un azul más vibrante y legible */
+            --color-secundario: #f06292; /* Un rosa para acentos */
+            --color-carta: #ffffff;
+            --color-sombra: rgba(0, 0, 0, 0.1);
+            --color-texto: #37474f; /* Un gris oscuro azulado para mejor lectura */
+            --color-texto-resaltado: var(--color-secundario);
+            --fuente-kawaii: 'Mochiy Pop One', sans-serif;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--color-texto);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            background: linear-gradient(45deg, var(--color-fondo-inicio), var(--color-fondo-fin));
+            background-size: 400% 400%;
+            animation: fondoAnimado 15s ease infinite;
+        }
+
+        @keyframes fondoAnimado {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1, h2 {
+            font-family: var(--fuente-kawaii);
+            color: var(--color-principal);
+            text-shadow: 1px 1px 2px var(--color-sombra);
+        }
+
+        .controles {
+            display: flex;
+            flex-wrap: wrap; /* Para que se ajuste en pantallas pequeñas */
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px var(--color-sombra);
+            margin-bottom: 30px;
+        }
+
+        .control-parejas {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+        }
+
+        #valorParejas {
+            font-family: var(--fuente-kawaii);
+            color: var(--color-texto-resaltado);
+            font-size: 1.2em;
+        }
+
+        button {
+            font-family: var(--fuente-kawaii);
+            background-color: var(--color-principal);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            box-shadow: 0 2px 5px var(--color-sombra);
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            background-color: #03a9f4; /* Un azul un poco más claro al pasar el mouse */
+        }
+        
+        #cambiarTema {
+            background-color: var(--color-secundario);
+        }
+        #cambiarTema:hover {
+            background-color: #ec407a;
+        }
+
+        .tablero {
+            display: grid;
+            grid-template-columns: repeat(var(--columnas, 4), 1fr);
+            gap: 12px;
+            perspective: 1000px;
+        }
+
+        .carta {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            cursor: pointer;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            border-radius: 10px;
+        }
+        
+        @media (max-width: 600px) {
+            .carta {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        
+        @media (max-width: 400px) {
+            .carta {
+                width: 50px;
+                height: 50px;
+            }
+        }
+
+        .carta.volteada, .carta.pareja-encontrada {
+            transform: rotateY(180deg);
+        }
+        
+        .carta.pareja-encontrada {
+            cursor: default;
+        }
+
+        .carta-cara {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(24px, 5vw, 40px);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px var(--color-sombra);
+        }
+
+        .carta-frontal {
+            background: white;
+            color: var(--color-texto);
+        }
+
+        .carta-trasera {
+            background-color: var(--color-carta);
+            transform: rotateY(180deg);
+        }
+
+        #mensaje-victoria {
+            text-align: center;
+            padding: 30px;
+            background-color: var(--color-carta);
+            border-radius: 20px;
+            box-shadow: 0 4px 15px var(--color-sombra);
+            margin-top: 30px;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Juego de Memoria</h1>
+        <p>Encuentra todas las parejas</p>
+    </header>
+
+    <main>
+        <div class="controles">
+            <div class="control-parejas">
+                <label for="numeroParejas">Parejas: <span id="valorParejas">8</span></label>
+                <input type="range" id="numeroParejas" min="4" max="30" value="8">
+            </div>
+            <button id="cambiarTema">Cambiar Tema</button>
+            <button id="reiniciar">Reiniciar</button>
+        </div>
+
+        <div id="tablero-juego" class="tablero">
+            </div>
+
+        <div id="mensaje-victoria" class="hidden">
+            <h2>¡Felicidades, ganaste!</h2>
+            <p>¡Has encontrado todas las parejas!</p>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- ICONOS DEL JUEGO ---
+            const setsDeIconos = {
+                kawaii: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🦄', '🌈', '⭐', '💖', '🌸', '🎀', '💎', '🍓', '🍰', '🍭', '🍦', '🍩', '🍪', ' Gato', '🦖'],
+                mahjong: ['🀄', '🀅', '🀆', '🀇', '🀈', '🀉', '🀊', '🀋', '🀌', '🀍', '🀎', '🀏', '🀐', '🀑', '🀒', '🀓', '🀔', '🀕', '🀖', '🀗', '🀘', '🀙', '🀚', '🀛', '🀜', '🀝', '🀞', '🀟', '🀠', '🀡']
+            };
+            let temaActual = 'kawaii';
+
+            // --- ELEMENTOS DEL DOM ---
+            const tableroJuego = document.getElementById('tablero-juego');
+            const sliderParejas = document.getElementById('numeroParejas');
+            const valorParejasSpan = document.getElementById('valorParejas');
+            const btnReiniciar = document.getElementById('reiniciar');
+            const btnCambiarTema = document.getElementById('cambiarTema');
+            const mensajeVictoria = document.getElementById('mensaje-victoria');
+
+            // --- ESTADO DEL JUEGO ---
+            let cartasVolteadas = [];
+            let parejasEncontradas = 0;
+            let totalParejas = 0;
+            let puedeVoltear = true;
+
+            // --- FUNCIONES DEL JUEGO ---
+            function barajar(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            function crearTablero() {
+                tableroJuego.innerHTML = '';
+                mensajeVictoria.classList.add('hidden');
+                
+                totalParejas = parseInt(sliderParejas.value);
+                parejasEncontradas = 0;
+                puedeVoltear = true;
+
+                let iconosBase = setsDeIconos[temaActual];
+                let iconosDisponibles = iconosBase.slice(0, totalParejas);
+                let cartasArray = barajar([...iconosDisponibles, ...iconosDisponibles]);
+                
+                // Ajusta el número de columnas de forma más inteligente
+                let columnas;
+                if (window.innerWidth < 500) {
+                     columnas = 4;
+                } else if (totalParejas * 2 > 36) {
+                    columnas = 10;
+                } else if (totalParejas * 2 > 24) {
+                    columnas = 8;
+                } else if (totalParejas * 2 > 12) {
+                    columnas = 6;
+                } else {
+                    columnas = 4;
+                }
+                
+                tableroJuego.style.setProperty('--columnas', columnas);
+
+                cartasArray.forEach(icono => {
+                    const carta = document.createElement('div');
+                    carta.classList.add('carta');
+                    carta.dataset.icono = icono;
+
+                    carta.innerHTML = `
+                        <div class="carta-cara carta-frontal">?</div>
+                        <div class="carta-cara carta-trasera">${icono}</div>
+                    `;
+
+                    carta.addEventListener('click', () => voltearCarta(carta));
+                    tableroJuego.appendChild(carta);
+                });
+            }
+
+            function voltearCarta(carta) {
+                if (!puedeVoltear || carta.classList.contains('volteada') || carta.classList.contains('pareja-encontrada')) {
+                    return;
+                }
+
+                carta.classList.add('volteada');
+                cartasVolteadas.push(carta);
+
+                if (cartasVolteadas.length === 2) {
+                    comprobarPareja();
+                }
+            }
+
+            function comprobarPareja() {
+                puedeVoltear = false;
+                const [carta1, carta2] = cartasVolteadas;
+
+                if (carta1.dataset.icono === carta2.dataset.icono) {
+                    setTimeout(() => {
+                        carta1.classList.add('pareja-encontrada');
+                        carta2.classList.add('pareja-encontrada');
+                        parejasEncontradas++;
+                        resetearTurno();
+                        comprobarVictoria();
+                    }, 500);
+                } else {
+                    setTimeout(() => {
+                        carta1.classList.remove('volteada');
+                        carta2.classList.remove('volteada');
+                        resetearTurno();
+                    }, 1200);
+                }
+            }
+
+            function resetearTurno() {
+                cartasVolteadas = [];
+                puedeVoltear = true;
+            }
+
+            function comprobarVictoria() {
+                if (parejasEncontradas === totalParejas) {
+                    setTimeout(() => {
+                        mensajeVictoria.classList.remove('hidden');
+                    }, 500);
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+            sliderParejas.addEventListener('input', (e) => {
+                valorParejasSpan.textContent = e.target.value;
+            });
+            sliderParejas.addEventListener('change', crearTablero);
+
+            btnReiniciar.addEventListener('click', crearTablero);
+            
+            btnCambiarTema.addEventListener('click', () => {
+                temaActual = temaActual === 'kawaii' ? 'mahjong' : 'kawaii';
+                crearTablero();
+            });
+            
+            // Recrear el tablero si cambia el tamaño de la ventana (para ajustar columnas)
+            window.addEventListener('resize', crearTablero);
+
+            // --- INICIO DEL JUEGO ---
+            crearTablero();
+        });
+    </script>
+</body>
+</html>

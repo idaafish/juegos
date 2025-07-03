@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajedrez Simple</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #1f2937; /* bg-gray-800 */
+            color: #f3f4f6; /* text-gray-100 */
+            margin: 0;
+            padding: 1rem;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, minmax(0, 1fr));
+            grid-template-rows: repeat(8, minmax(0, 1fr));
+            width: 90vw;
+            max-width: 500px;
+            height: 90vw;
+            max-height: 500px;
+            border: 2px solid #4b5563; /* border-gray-600 */
+            border-radius: 0.5rem; /* rounded-lg */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1.5rem, 5vw, 2.5rem); /* Responsive font size */
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .square.light {
+            background-color: #f3f4f6; /* bg-gray-100 */
+        }
+        .square.dark {
+            background-color: #6b7280; /* bg-gray-500 */
+        }
+        .square.selected {
+            background-color: #34d399 !important; /* bg-green-400 */
+            outline: 3px solid #10b981; /* outline-green-600 */
+        }
+        .square.valid-move {
+            background-color: #60a5fa !important; /* bg-blue-400 */
+            opacity: 0.7;
+        }
+        .piece {
+            user-select: none; /* Prevent text selection */
+        }
+        .info-panel {
+            margin-top: 1.5rem; /* mt-6 */
+            padding: 1rem; /* p-4 */
+            background-color: #374151; /* bg-gray-700 */
+            border-radius: 0.5rem; /* rounded-lg */
+            text-align: center;
+            width: 90vw;
+            max-width: 500px;
+        }
+        .info-panel h2 {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600; /* font-semibold */
+            margin-bottom: 0.5rem; /* mb-2 */
+        }
+        .info-panel p {
+            font-size: 1rem; /* text-base */
+            margin-bottom: 0.5rem; /* mb-2 */
+        }
+        button {
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: white;
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.375rem; /* rounded-md */
+            font-weight: 600; /* font-semibold */
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        button:hover {
+            background-color: #2563eb; /* bg-blue-600 */
+        }
+        button:disabled {
+            background-color: #9ca3af; /* bg-gray-400 */
+            cursor: not-allowed;
+        }
+        .captured-pieces {
+            margin-top: 0.5rem;
+            font-size: 0.875rem; /* text-sm */
+        }
+        .captured-pieces span {
+            margin-right: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container" class="flex flex-col items-center">
+        <div id="board" class="board"></div>
+        <div id="info-panel" class="info-panel">
+            <h2 id="status-message">Turno de las Blancas</h2>
+            <p id="game-over-message"></p>
+            <div class="captured-pieces">
+                <strong>Capturadas por Blancas:</strong> <span id="captured-by-white"></span>
+            </div>
+            <div class="captured-pieces">
+                <strong>Capturadas por Negras:</strong> <span id="captured-by-black"></span>
+            </div>
+            <button id="reset-button" class="mt-4">Nuevo Juego</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Constantes y Configuración del Juego ---
+        const boardElement = document.getElementById('board');
+        const statusMessageElement = document.getElementById('status-message');
+        const gameOverMessageElement = document.getElementById('game-over-message');
+        const resetButton = document.getElementById('reset-button');
+        const capturedByWhiteElement = document.getElementById('captured-by-white');
+        const capturedByBlackElement = document.getElementById('captured-by-black');
+
+        const ROWS = 8;
+        const COLS = 8;
+
+        // Representación de las piezas (Unicode)
+        const PIECES = {
+            'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔', // Blancas
+            'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚'  // Negras
+        };
+        const EMPTY = null;
+
+        let boardState = []; // Estado actual del tablero (matriz 8x8)
+        let currentPlayer = 'white'; // 'white' o 'black'
+        let selectedPiece = null; // { piece, row, col }
+        let validMoves = []; // Array de movimientos válidos para la pieza seleccionada
+        let gameOver = false;
+        let capturedByWhite = [];
+        let capturedByBlack = [];
+
+        // --- Lógica del Juego ---
+
+        /**
+         * Inicializa el tablero a su estado inicial.
+         */
+        function initializeBoard() {
+            boardState = [
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+                [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+                [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+                [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY],
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+            ];
+            currentPlayer = 'white';
+            selectedPiece = null;
+            validMoves = [];
+            gameOver = false;
+            capturedByWhite = [];
+            capturedByBlack = [];
+            updateStatusMessage("Turno de las Blancas");
+            gameOverMessageElement.textContent = "";
+            renderBoard();
+            updateCapturedPiecesDisplay();
+        }
+
+        /**
+         * Dibuja el tablero y las piezas en el HTML.
+         */
+        function renderBoard() {
+            boardElement.innerHTML = ''; // Limpiar tablero existente
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    square.classList.add((r + c) % 2 === 0 ? 'light' : 'dark');
+                    square.dataset.row = r;
+                    square.dataset.col = c;
+
+                    const pieceSymbol = boardState[r][c];
+                    if (pieceSymbol) {
+                        const pieceElement = document.createElement('span');
+                        pieceElement.classList.add('piece');
+                        pieceElement.textContent = PIECES[pieceSymbol];
+                        pieceElement.style.color = isWhitePiece(pieceSymbol) ? '#374151' : '#000000'; // Color de piezas
+                        square.appendChild(pieceElement);
+                    }
+
+                    square.addEventListener('click', () => onSquareClick(r, c));
+                    boardElement.appendChild(square);
+                }
+            }
+            highlightSelectedAndValidMoves();
+        }
+
+        /**
+         * Maneja el clic en una casilla del tablero.
+         * @param {number} row - Fila de la casilla clickeada.
+         * @param {number} col - Columna de la casilla clickeada.
+         */
+        function onSquareClick(row, col) {
+            if (gameOver) return;
+
+            const clickedPieceSymbol = boardState[row][col];
+
+            if (selectedPiece) {
+                // Intentar mover la pieza seleccionada
+                const isValidMoveTarget = validMoves.some(move => move.row === row && move.col === col);
+                if (isValidMoveTarget) {
+                    movePiece(selectedPiece.row, selectedPiece.col, row, col);
+                    selectedPiece = null;
+                    validMoves = [];
+                    renderBoard(); // Re-render para quitar resaltados
+                    if (!gameOver) {
+                        switchPlayer();
+                        if (currentPlayer === 'black' && !gameOver) {
+                            setTimeout(aiMove, 500); // Pequeño retraso para el movimiento de la IA
+                        }
+                    }
+                } else if (clickedPieceSymbol && getPieceColor(clickedPieceSymbol) === currentPlayer) {
+                    // Seleccionar otra pieza del mismo color
+                    selectPiece(row, col);
+                } else {
+                    // Deseleccionar si se hace clic en una casilla vacía o inválida
+                    selectedPiece = null;
+                    validMoves = [];
+                    renderBoard();
+                }
+            } else if (clickedPieceSymbol && getPieceColor(clickedPieceSymbol) === currentPlayer) {
+                // Seleccionar una pieza si no hay ninguna seleccionada
+                selectPiece(row, col);
+            }
+        }
+
+        /**
+         * Selecciona una pieza y calcula sus movimientos válidos.
+         * @param {number} row - Fila de la pieza.
+         * @param {number} col - Columna de la pieza.
+         */
+        function selectPiece(row, col) {
+            const piece = boardState[row][col];
+            if (piece && getPieceColor(piece) === currentPlayer) {
+                selectedPiece = { piece, row, col };
+                validMoves = getValidMovesForPiece(piece, row, col);
+                renderBoard(); // Re-render para mostrar resaltados
+            }
+        }
+
+        /**
+         * Mueve una pieza de (fromRow, fromCol) a (toRow, toCol).
+         * @param {number} fromRow - Fila origen.
+         * @param {number} fromCol - Columna origen.
+         * @param {number} toRow - Fila destino.
+         * @param {number} toCol - Columna destino.
+         */
+        function movePiece(fromRow, fromCol, toRow, toCol) {
+            const pieceToMove = boardState[fromRow][fromCol];
+            const capturedPiece = boardState[toRow][toCol];
+
+            if (capturedPiece) {
+                if (isWhitePiece(pieceToMove)) {
+                    capturedByWhite.push(PIECES[capturedPiece]);
+                } else {
+                    capturedByBlack.push(PIECES[capturedPiece]);
+                }
+                updateCapturedPiecesDisplay();
+
+                // Comprobar si el rey es capturado
+                if (capturedPiece.toLowerCase() === 'k') {
+                    endGame(currentPlayer === 'white' ? 'Blancas' : 'Negras');
+                    return;
+                }
+            }
+
+            boardState[toRow][toCol] = pieceToMove;
+            boardState[fromRow][fromCol] = EMPTY;
+
+            // Promoción de peón (simplificada: siempre a Reina)
+            if (pieceToMove.toLowerCase() === 'p') {
+                if (isWhitePiece(pieceToMove) && toRow === 0) {
+                    boardState[toRow][toCol] = 'Q';
+                } else if (!isWhitePiece(pieceToMove) && toRow === 7) {
+                    boardState[toRow][toCol] = 'q';
+                }
+            }
+        }
+
+        /**
+         * Cambia el turno del jugador.
+         */
+        function switchPlayer() {
+            currentPlayer = (currentPlayer === 'white') ? 'black' : 'white';
+            updateStatusMessage(currentPlayer === 'white' ? "Turno de las Blancas" : "Turno de las Negras");
+        }
+
+        /**
+         * Actualiza el mensaje de estado del juego.
+         * @param {string} message - El mensaje a mostrar.
+         */
+        function updateStatusMessage(message) {
+            statusMessageElement.textContent = message;
+        }
+
+        /**
+         * Actualiza la visualización de las piezas capturadas.
+         */
+        function updateCapturedPiecesDisplay() {
+            capturedByWhiteElement.textContent = capturedByWhite.join(' ');
+            capturedByBlackElement.textContent = capturedByBlack.join(' ');
+        }
+
+        /**
+         * Resalta la pieza seleccionada y sus movimientos válidos.
+         */
+        function highlightSelectedAndValidMoves() {
+            // Limpiar resaltados previos
+            document.querySelectorAll('.square.selected, .square.valid-move').forEach(sq => {
+                sq.classList.remove('selected', 'valid-move');
+            });
+
+            if (selectedPiece) {
+                const selectedSquare = boardElement.querySelector(`.square[data-row='${selectedPiece.row}'][data-col='${selectedPiece.col}']`);
+                if (selectedSquare) {
+                    selectedSquare.classList.add('selected');
+                }
+            }
+            validMoves.forEach(move => {
+                const moveSquare = boardElement.querySelector(`.square[data-row='${move.row}'][data-col='${move.col}']`);
+                if (moveSquare) {
+                    moveSquare.classList.add('valid-move');
+                }
+            });
+        }
+
+        // --- Lógica de Movimientos de Piezas (Simplificada) ---
+
+        /**
+         * Obtiene los movimientos válidos para una pieza específica.
+         * @param {string} piece - Símbolo de la pieza (ej. 'P', 'r').
+         * @param {number} r - Fila actual de la pieza.
+         * @param {number} c - Columna actual de la pieza.
+         * @returns {Array<{row: number, col: number}>} - Lista de movimientos válidos.
+         */
+        function getValidMovesForPiece(piece, r, c) {
+            const moves = [];
+            const pieceType = piece.toLowerCase();
+            const color = getPieceColor(piece);
+
+            switch (pieceType) {
+                case 'p': // Peón
+                    const direction = color === 'white' ? -1 : 1;
+                    const startRow = color === 'white' ? 6 : 1;
+
+                    // Movimiento normal (1 casilla)
+                    if (isValidSquare(r + direction, c) && !boardState[r + direction][c]) {
+                        moves.push({ row: r + direction, col: c });
+                        // Movimiento inicial (2 casillas)
+                        if (r === startRow && isValidSquare(r + 2 * direction, c) && !boardState[r + 2 * direction][c]) {
+                            moves.push({ row: r + 2 * direction, col: c });
+                        }
+                    }
+                    // Capturas diagonales
+                    [-1, 1].forEach(dc => {
+                        if (isValidSquare(r + direction, c + dc) && boardState[r + direction][c + dc] && getPieceColor(boardState[r + direction][c + dc]) !== color) {
+                            moves.push({ row: r + direction, col: c + dc });
+                        }
+                    });
+                    break;
+
+                case 'r': // Torre
+                    addLinearMoves(moves, piece, r, c, [[-1, 0], [1, 0], [0, -1], [0, 1]]);
+                    break;
+
+                case 'n': // Caballo
+                    const knightMoves = [
+                        [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+                        [1, -2], [1, 2], [2, -1], [2, 1]
+                    ];
+                    knightMoves.forEach(([dr, dc]) => {
+                        const newR = r + dr;
+                        const newC = c + dc;
+                        if (isValidSquare(newR, newC) && (!boardState[newR][newC] || getPieceColor(boardState[newR][newC]) !== color)) {
+                            moves.push({ row: newR, col: newC });
+                        }
+                    });
+                    break;
+
+                case 'b': // Alfil
+                    addLinearMoves(moves, piece, r, c, [[-1, -1], [-1, 1], [1, -1], [1, 1]]);
+                    break;
+
+                case 'q': // Reina
+                    addLinearMoves(moves, piece, r, c, [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]]);
+                    break;
+
+                case 'k': // Rey
+                    const kingMoves = [
+                        [-1, -1], [-1, 0], [-1, 1],
+                        [0, -1],           [0, 1],
+                        [1, -1], [1, 0], [1, 1]
+                    ];
+                    kingMoves.forEach(([dr, dc]) => {
+                        const newR = r + dr;
+                        const newC = c + dc;
+                        if (isValidSquare(newR, newC) && (!boardState[newR][newC] || getPieceColor(boardState[newR][newC]) !== color)) {
+                            // Aquí faltaría la validación de no moverse a una casilla amenazada (jaque)
+                            moves.push({ row: newR, col: newC });
+                        }
+                    });
+                    break;
+            }
+            return moves;
+        }
+
+        /**
+         * Añade movimientos lineales (torre, alfil, reina).
+         */
+        function addLinearMoves(moves, piece, r, c, directions) {
+            const color = getPieceColor(piece);
+            directions.forEach(([dr, dc]) => {
+                for (let i = 1; i < ROWS; i++) {
+                    const newR = r + dr * i;
+                    const newC = c + dc * i;
+                    if (!isValidSquare(newR, newC)) break;
+                    if (boardState[newR][newC]) {
+                        if (getPieceColor(boardState[newR][newC]) !== color) {
+                            moves.push({ row: newR, col: newC }); // Captura
+                        }
+                        break; // Bloqueado por pieza propia o enemiga
+                    }
+                    moves.push({ row: newR, col: newC }); // Movimiento a casilla vacía
+                }
+            });
+        }
+
+        /**
+         * Verifica si una casilla está dentro del tablero.
+         * @param {number} r - Fila.
+         * @param {number} c - Columna.
+         * @returns {boolean} - True si es válida, false si no.
+         */
+        function isValidSquare(r, c) {
+            return r >= 0 && r < ROWS && c >= 0 && c < COLS;
+        }
+
+        /**
+         * Obtiene el color de una pieza.
+         * @param {string} pieceSymbol - Símbolo de la pieza.
+         * @returns {string|null} - 'white', 'black', o null si no es una pieza.
+         */
+        function getPieceColor(pieceSymbol) {
+            if (!pieceSymbol) return null;
+            return pieceSymbol === pieceSymbol.toUpperCase() ? 'white' : 'black';
+        }
+
+        /**
+         * Verifica si una pieza es blanca.
+         * @param {string} pieceSymbol - Símbolo de la pieza.
+         * @returns {boolean}
+         */
+        function isWhitePiece(pieceSymbol) {
+            return getPieceColor(pieceSymbol) === 'white';
+        }
+
+        // --- Lógica de la IA (Muy Simple: Movimiento Aleatorio Válido) ---
+        function aiMove() {
+            if (gameOver || currentPlayer !== 'black') return;
+
+            const possibleMoves = [];
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const piece = boardState[r][c];
+                    if (piece && getPieceColor(piece) === 'black') {
+                        const moves = getValidMovesForPiece(piece, r, c);
+                        moves.forEach(move => possibleMoves.push({ from: { piece, row: r, col: c }, to: move }));
+                    }
+                }
+            }
+
+            if (possibleMoves.length > 0) {
+                const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                movePiece(randomMove.from.row, randomMove.from.col, randomMove.to.row, randomMove.to.col);
+                renderBoard();
+                if (!gameOver) {
+                    switchPlayer();
+                }
+            } else {
+                // No hay movimientos válidos para la IA (podría ser jaque mate o ahogado)
+                // Para esta versión simple, asumimos que las blancas ganan si la IA no puede moverse.
+                endGame("Blancas");
+            }
+        }
+
+        // --- Fin del Juego ---
+        /**
+         * Termina el juego y muestra un mensaje.
+         * @param {string} winner - 'Blancas', 'Negras', o 'Empate'.
+         */
+        function endGame(winner) {
+            gameOver = true;
+            let message = "";
+            if (winner === "Empate") {
+                message = "¡Empate!";
+            } else {
+                message = `¡Ganan las ${winner}!`;
+            }
+            gameOverMessageElement.textContent = message;
+            updateStatusMessage("Juego Terminado");
+            // Deshabilitar interacciones adicionales si es necesario
+        }
+
+
+        // --- Inicialización ---
+        resetButton.addEventListener('click', initializeBoard);
+        initializeBoard(); // Iniciar el juego al cargar la página
+    </script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- ... (el head se mantiene igual) ... -->
+    <style>
+        /* ... (los estilos anteriores se mantienen) ... */
+
+        /* Nuevos estilos añadidos */
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: rgba(30, 30, 60, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+        }
+
+        .controls-compact {
+            display: grid;
+            grid-template-areas:
+                "left rotate right"
+                "down down drop";
+            gap: 8px;
+        }
+
+        .controls-compact .control-btn {
+            padding: 8px;
+            font-size: 0.9rem;
+            min-width: 40px;
+        }
+
+        #leftBtn { grid-area: left; }
+        #rotateBtn { grid-area: rotate; }
+        #rightBtn { grid-area: right; }
+        #downBtn { grid-area: down; }
+        #dropBtn { grid-area: drop; }
+
+        .next-piece-container {
+            background: rgba(20, 20, 40, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .next-piece-label {
+            font-size: 0.9rem;
+            color: #ffa502;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .controls-container {
+                position: static;
+                width: 100%;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ... (el body anterior se mantiene hasta el game-info) ... -->
+    
+    <!-- Modificamos el game-info para hacerlo más compacto -->
+    <div class="controls-container">
+        <div class="next-piece-container">
+            <div class="next-piece-label">SIGUIENTE</div>
+            <div class="next-piece" id="nextPiece"></div>
+        </div>
+        
+        <div class="controls-compact">
+            <button class="control-btn" id="leftBtn"><i class="fas fa-arrow-left"></i></button>
+            <button class="control-btn" id="rotateBtn"><i class="fas fa-redo"></i></button>
+            <button class="control-btn" id="rightBtn"><i class="fas fa-arrow-right"></i></button>
+            <button class="control-btn" id="downBtn"><i class="fas fa-arrow-down"></i></button>
+            <button class="control-btn" id="dropBtn"><i class="fas fa-angle-double-down"></i></button>
+        </div>
+        
+        <div class="music-controls">
+            <button class="music-btn" id="musicToggle">
+                <i class="fas fa-music"></i>
+            </button>
+            <input type="range" min="0" max="1" step="0.1" value="0.5" class="volume-slider" id="volumeSlider">
+            <button class="music-btn" id="sfxToggle">
+                <i class="fas fa-volume-up"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ... (el resto del body se mantiene igual) ... -->
+
+    <script>
+        // ... (el script anterior se mantiene igual hasta el event listener del teclado) ...
+
+        // Modificamos el event listener del teclado para evitar el desplazamiento con espacio
+        document.addEventListener('keydown', e => {
+            if (gameOver) return;
+            
+            switch(e.key.toLowerCase()) {
+                case 'a': // A
+                    movePiece(-1, 0);
+                    break;
+                case 'd': // D
+                    movePiece(1, 0);
+                    break;
+                case 's': // S
+                    movePiece(0, 1);
+                    break;
+                case 'w': // W
+                    rotatePiece();
+                    break;
+                case ' ': // Espacio
+                    e.preventDefault(); // Esto evita que la página se desplace
+                    dropPiece();
+                    break;
+                case 'p': // P
+                    togglePause();
+                    break;
+            }
+        });
+
+        // ... (el resto del script se mantiene igual) ...
+    </script>
+</body>
+</html>

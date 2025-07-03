@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Laberinto Volcán</title>
+    <style>
+        body {
+            background: #2d1a0b;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            margin-top: 30px;
+            background: #3e2723;
+            border-radius: 18px;
+            padding: 24px 32px 32px 32px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #ff9800;
+        }
+        .subtitle {
+            text-align: center;
+            color: #ffcc80;
+            margin-bottom: 20px;
+        }
+        #mazeCanvas {
+            display: block;
+            margin: 0 auto 20px auto;
+            background: #1b0c02;
+            border: 3px solid #ff9800;
+            border-radius: 10px;
+            box-shadow: 0 0 24px #000a;
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 18px;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: #222;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .back-btn:hover {
+            background: linear-gradient(135deg, #ffd54f, #ff7043);
+            color: #000;
+        }
+        .win-msg {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #ffeb3b;
+            margin-top: 18px;
+        }
+        .scroll-container {
+            overflow: auto;
+            max-width: 95vw;
+            max-height: 80vh;
+            margin: 0 auto 20px auto;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
+        <h1>Laberinto Volcán</h1>
+        <div class="subtitle">¡Encuentra la salida en el laberinto!</div>
+        <div class="scroll-container">
+            <canvas id="mazeCanvas" width="2100" height="2100"></canvas>
+        </div>
+        <div class="win-msg" id="winMsg" style="display:none;">¡Has escapado del volcán!<br><button class="back-btn" onclick="location.reload()">Jugar de nuevo</button></div>
+    </div>
+    <script>
+    // Parámetros del laberinto
+    const rows = 75, cols = 75; // Mitad por cada lado respecto a antes (antes 150x150)
+    const cellSize = 28;
+    const canvas = document.getElementById('mazeCanvas');
+    const ctx = canvas.getContext('2d');
+    const winMsg = document.getElementById('winMsg');
+
+    // Generar laberinto con algoritmo DFS, con dificultad intermedia
+    function generateMaze(rows, cols) {
+        const maze = Array.from({length: rows}, () => Array(cols).fill(1)); // 1 = pared, 0 = camino
+        const stack = [];
+        let cx = 1, cy = 1;
+        maze[cy][cx] = 0;
+        stack.push([cx, cy]);
+        const dirs = [
+            [0, -2], [2, 0], [0, 2], [-2, 0]
+        ];
+        while (stack.length) {
+            const [x, y] = stack[stack.length-1];
+            let neighbors = [];
+            for (const [dx, dy] of dirs) {
+                const nx = x + dx, ny = y + dy;
+                if (nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1 && maze[ny][nx] === 1) {
+                    neighbors.push([nx, ny, dx, dy]);
+                }
+            }
+            if (neighbors.length) {
+                // Dificultad intermedia: 85% aleatorio, 15% el más alejado
+                let chosen;
+                if (Math.random() < 0.85) {
+                    chosen = neighbors[Math.floor(Math.random()*neighbors.length)];
+                } else {
+                    chosen = neighbors.sort((a, b) => {
+                        const da = Math.abs(a[0]-1) + Math.abs(a[1]-1);
+                        const db = Math.abs(b[0]-1) + Math.abs(b[1]-1);
+                        return db-da;
+                    })[0];
+                }
+                const [nx, ny, dx, dy] = chosen;
+                maze[ny][nx] = 0;
+                maze[y+dy/2][x+dx/2] = 0;
+                stack.push([nx, ny]);
+            } else {
+                stack.pop();
+            }
+        }
+        // Añade algunos caminos extra para hacerlo menos lineal pero no tan caótico
+        for (let i = 0; i < rows*cols/8; i++) {
+            let rx = Math.floor(Math.random()*(cols-2))+1;
+            let ry = Math.floor(Math.random()*(rows-2))+1;
+            maze[ry][rx] = 0;
+        }
+        return maze;
+    }
+
+    // Crear laberinto y definir entrada/salida
+    const maze = generateMaze(rows, cols);
+    maze[1][1] = 0; // Entrada
+    maze[rows-2][cols-2] = 0; // Salida
+
+    // Jugador
+    let player = {x: 1, y: 1};
+
+    // Centro del volcán
+    const volcano = {
+        x: Math.floor(cols / 2),
+        y: Math.floor(rows / 2)
+    };
+
+    // Lava: matriz con el tiempo en que la lava llega a cada celda, -1 si nunca llega
+    let lavaTime = Array.from({length: rows}, () => Array(cols).fill(-1));
+    let lavaFront = [{x: volcano.x, y: volcano.y}];
+    if (maze[volcano.y][volcano.x] === 0) {
+        lavaTime[volcano.y][volcano.x] = 0;
+    } else {
+        // Busca el camino más cercano al centro
+        let found = false;
+        for (let r = 1; r < Math.max(rows, cols) && !found; r++) {
+            for (let dx = -r; dx <= r && !found; dx++) {
+                for (let dy = -r; dy <= r && !found; dy++) {
+                    let nx = volcano.x + dx, ny = volcano.y + dy;
+                    if (nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1 && maze[ny][nx] === 0) {
+                        volcano.x = nx; volcano.y = ny;
+                        lavaFront = [{x: nx, y: ny}];
+                        lavaTime[ny][nx] = 0;
+                        found = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Propaga la lava (BFS) y guarda el tiempo en que llega a cada celda
+    let t = 1;
+    while (lavaFront.length) {
+        let nextFront = [];
+        for (const {x, y} of lavaFront) {
+            for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                let nx = x + dx, ny = y + dy;
+                if (
+                    nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1 &&
+                    maze[ny][nx] === 0 && lavaTime[ny][nx] === -1
+                ) {
+                    lavaTime[ny][nx] = t;
+                    nextFront.push({x: nx, y: ny});
+                }
+            }
+        }
+        lavaFront = nextFront;
+        t++;
+    }
+
+    // Tiempo de inicio de la erupción
+    let eruptionStart = null;
+    let lavaStep = 0;
+
+    // Modifica drawMaze para dibujar la lava
+    function drawMaze() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Laberinto y lava
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                if (lavaTime[y][x] !== -1 && eruptionStart !== null && lavaStep >= lavaTime[y][x]) {
+                    // Lava
+                    ctx.fillStyle = "#ff3c00";
+                    ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
+                } else if (maze[y][x] === 1) {
+                    ctx.fillStyle = "#4e342e";
+                    ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
+                } else {
+                    ctx.fillStyle = "#ffecb3";
+                    ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
+                }
+            }
+        }
+        // Salida (más visible: círculo verde brillante con borde)
+        const exitX = (cols-2)*cellSize + cellSize/2;
+        const exitY = (rows-2)*cellSize + cellSize/2;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(exitX, exitY, cellSize/2 - 2, 0, 2*Math.PI);
+        ctx.fillStyle = "#00ff00";
+        ctx.shadowColor = "#00ff00";
+        ctx.shadowBlur = 24;
+        ctx.fill();
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = "#fff";
+        ctx.stroke();
+        ctx.restore();
+
+        // Volcán (centro)
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(volcano.x*cellSize+cellSize/2, volcano.y*cellSize+cellSize/2, cellSize/2.2, 0, 2*Math.PI);
+        ctx.fillStyle = "#b71c1c";
+        ctx.shadowColor = "#ff9800";
+        ctx.shadowBlur = 18;
+        ctx.fill();
+        ctx.restore();
+
+        // Jugador (muñeco simple)
+        ctx.save();
+        ctx.translate(player.x*cellSize+cellSize/2, player.y*cellSize+cellSize/2);
+        ctx.beginPath();
+        ctx.arc(0, 0, cellSize/2.5, 0, 2*Math.PI);
+        ctx.fillStyle = "#2196f3";
+        ctx.shadowColor = "#fff8";
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        // Ojo
+        ctx.beginPath();
+        ctx.arc(cellSize/8, -cellSize/8, cellSize/10, 0, 2*Math.PI);
+        ctx.fillStyle = "#fff";
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cellSize/8, -cellSize/8, cellSize/20, 0, 2*Math.PI);
+        ctx.fillStyle = "#222";
+        ctx.fill();
+        ctx.restore();
+    }
+
+    drawMaze();
+
+    // Movimiento del jugador y comprobación de lava
+    document.addEventListener('keydown', e => {
+        if (winMsg.style.display !== "none") return;
+        let dx = 0, dy = 0;
+        if (e.key === "ArrowLeft") dx = -1;
+        if (e.key === "ArrowRight") dx = 1;
+        if (e.key === "ArrowUp") dy = -1;
+        if (e.key === "ArrowDown") dy = 1;
+        const nx = player.x + dx, ny = player.y + dy;
+        if (maze[ny] && maze[ny][nx] === 0) {
+            player.x = nx;
+            player.y = ny;
+            drawMaze();
+            // ¿Llegó a la salida?
+            if (player.x === cols-2 && player.y === rows-2) {
+                winMsg.innerHTML = "¡Has escapado del volcán!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
+                winMsg.style.display = "block";
+            }
+            // ¿Toca lava?
+            if (
+                eruptionStart !== null &&
+                lavaTime[player.y][player.x] !== -1 &&
+                lavaStep >= lavaTime[player.y][player.x]
+            ) {
+                winMsg.innerHTML = "¡La lava te alcanzó!<br><button class='back-btn' onclick='location.reload()'>Intentar de nuevo</button>";
+                winMsg.style.display = "block";
+            }
+        }
+    });
+
+    // Inicia la erupción tras 2 segundos
+    setTimeout(() => {
+        eruptionStart = Date.now();
+        advanceLava();
+    }, 2000);
+
+    // Función para avanzar la lava poco a poco
+    function advanceLava() {
+        if (winMsg.style.display !== "none") return;
+        lavaStep++;
+        drawMaze();
+        // ¿El jugador está en la lava?
+        if (
+            lavaTime[player.y][player.x] !== -1 &&
+            lavaStep >= lavaTime[player.y][player.x]
+        ) {
+            winMsg.innerHTML = "¡La lava te alcanzó!<br><button class='back-btn' onclick='location.reload()'>Intentar de nuevo</button>";
+            winMsg.style.display = "block";
+            return;
+        }
+        // La lava avanza cada 120ms * 100 = 12,000ms (100 veces más despacio)
+        setTimeout(advanceLava, 12000);
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnlyFun - Portal de Juegos Divertidos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <h1>OnlyFun</h1>
+            <p class="subtitle">Diviértete con nuestros juegos favoritos. ¡Sin premios, solo diversión!</p>
+        </header>
+        
+        <ul class="tabs">
+            <li class="tab-link active" data-tab="retro-content">
+                <i class="fas fa-ghost category-icon"></i> Retro
+            </li>
+            <li class="tab-link" data-tab="cards-content">
+                <i class="fas fa-clone category-icon"></i> Cartas
+            </li>
+            <li class="tab-link" data-tab="luck-content">
+                <i class="fas fa-dice category-icon"></i> Azar
+            </li>
+        </ul>
+        
+        <div class="tab-content active" id="retro-content">
+            <div class="games-grid">
+                <!-- Juegos Retro -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Space Invaders</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El clásico arcade de 1978. Defiende la Tierra de una invasión alienígena. ¡Destruye todas las naves para ganar!</p>
+                        <a href="space_invaders.html" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1538481199705-c710c4e965fc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Pac-Man</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">Come todos los puntos y esquiva a los fantasmas en el laberinto clásico.</p>
+                        <a href="pacman.html" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Laberinto Volcán</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">¡Escapa del laberinto antes de que la lava te alcance! Usa las flechas para moverte y encuentra la salida.</p>
+                        <a href="laberinto_volcan.html" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+                
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Tetris</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El clásico juego de encajar piezas. ¡Haz líneas y consigue la mejor puntuación!</p>
+                        <a href="tetris.html" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="cards-content" style="display:none;">
+            <div class="games-grid">
+                <!-- Juegos de Cartas -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1519864600265-abb23847ef2c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">Solitario</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">El clásico juego de cartas para un solo jugador. Ordena todas las cartas por palo y color.</p>
+                        <a href="solitario.html" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="luck-content" style="display:none;">
+            <div class="games-grid">
+                <!-- Juegos de Azar -->
+                <div class="game-card">
+                    <div class="game-image" style="background-image: url('https://images.unsplash.com/photo-1464983953574-0892a716854b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80');">
+                        <div class="game-overlay">
+                            <h3 class="game-title">La Ruleta</h3>
+                        </div>
+                    </div>
+                    <div class="game-content">
+                        <p class="game-description">¡Pon a prueba tu suerte y haz girar la ruleta!</p>
+                        <a href="Ruleta2_final.html" class="play-btn">Jugar Ahora</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 OnlyFun - Portal de juegos divertidos. Todos los derechos reservados.</p>
+            <p>Diseñado con <i class="fas fa-heart" style="color: #ff6b6b;"></i> para amantes de los juegos</p>
+        </footer>
+    </div>
+    
+    <div class="game-container">
+        <canvas id="roulette-canvas" width="900" height="500" style="background:#222; border-radius:20px; box-shadow:0 0 20px #000;"></canvas>
+    </div>
+    <script>
+        const canvas = document.getElementById('roulette-canvas');
+        const ctx = canvas.getContext('2d');
+        // Dibuja un tablero de prueba
+        ctx.fillStyle = "#0f766e";
+        ctx.fillRect(50, 50, 800, 400);
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 40px sans-serif";
+        ctx.fillText("Aquí va el tablero de la ruleta", 180, 300);
+    </script>
+    <script>
+        // Cambia entre pestañas mostrando solo la activa
+        document.querySelectorAll('.tab-link').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                button.classList.add('active');
+                const tabId = button.getAttribute('data-tab');
+                document.getElementById(tabId).classList.add('active');
+                // Oculta los otros contenidos
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    if (content.id !== tabId) content.style.display = "none";
+                    else content.style.display = "";
+                });
+            });
+        });
+        // Mostrar solo la pestaña activa al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                if (!content.classList.contains('active')) content.style.display = "none";
+            });
+        });
+        
+        // Efecto hover en las tarjetas
+        const gameCards = document.querySelectorAll('.game-card');
+        gameCards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-10px)';
+                card.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.4)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+            });
+        });
+    </script>
+</body>
+</html>

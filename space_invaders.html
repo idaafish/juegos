@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Invaders - OnlyFun</title>
+    <link rel="stylesheet" href="estilos.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 900px;
+            margin: 40px auto 0 auto;
+            padding: 30px 20px 20px 20px;
+            background: rgba(30,30,60,0.95);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff6b6b, #ffa502);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            text-align: center;
+            color: #a9a9d3;
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 25px;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #ff6b6b, #ffa502);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .back-btn:hover {
+            background: linear-gradient(135deg, #ff5252, #ff8c00);
+        }
+        #gameCanvas {
+            display: block;
+            margin: 0 auto 20px auto;
+            background: #181830;
+            border: 3px solid #ff6b6b;
+            border-radius: 12px;
+            box-shadow: 0 0 24px #000a;
+        }
+        .score {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #ffa502;
+        }
+        .lives {
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #b0b0ff;
+        }
+        .game-over {
+            text-align: center;
+            font-size: 2rem;
+            color: #ff6b6b;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
+        <h1>Space Invaders</h1>
+        <div class="subtitle">¡Destruye a todos los alienígenas y salva la Tierra!</div>
+        <div class="score" id="score">Puntuación: 0</div>
+        <div class="lives" id="lives">Vidas: ❤️❤️❤️</div>
+        <canvas id="gameCanvas" width="600" height="480"></canvas>
+        <div class="game-over" id="gameOver" style="display:none;">¡Juego Terminado!<br><button class="back-btn" onclick="location.reload()">Jugar de nuevo</button></div>
+    </div>
+    <script>
+        // --- Variables del juego ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const gameOverDisplay = document.getElementById('gameOver');
+
+        // Jugador
+        const player = {
+            x: canvas.width / 2 - 25,
+            y: canvas.height - 40,
+            w: 50,
+            h: 18,
+            color: "#ffa502",
+            speed: 6,
+            dx: 0
+        };
+
+        // Disparos
+        let bullets = [];
+
+        // Enemigos
+        const rows = 4, cols = 10;
+        const alienW = 36, alienH = 24, alienGap = 18;
+        let aliens = [];
+        let alienDir = 1;
+        let alienSpeed = 1.2;
+        let alienStepDown = 18;
+        let alienMoveCounter = 0;
+
+        // Disparos enemigos
+        let alienBullets = [];
+
+        // Estado
+        let score = 0;
+        let gameOver = false;
+        let lives = 3;
+
+        // --- Inicializar aliens ---
+        function createAliens() {
+            aliens = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    aliens.push({
+                        x: 60 + c * (alienW + alienGap),
+                        y: 40 + r * (alienH + alienGap),
+                        w: alienW,
+                        h: alienH,
+                        alive: true,
+                        color: r % 2 === 0 ? "#ff6b6b" : "#b0b0ff"
+                    });
+                }
+            }
+        }
+
+        createAliens();
+
+        // --- Controles ---
+        document.addEventListener('keydown', e => {
+            if (gameOver) return;
+            if (e.key === "ArrowLeft") player.dx = -player.speed;
+            if (e.key === "ArrowRight") player.dx = player.speed;
+            if (e.key === " " || e.key === "ArrowUp") shoot();
+        });
+        document.addEventListener('keyup', e => {
+            if (e.key === "ArrowLeft" || e.key === "ArrowRight") player.dx = 0;
+        });
+
+        // --- Disparo del jugador ---
+        function shoot() {
+            if (bullets.length < 2) { // Máximo 2 disparos en pantalla
+                bullets.push({
+                    x: player.x + player.w / 2 - 3,
+                    y: player.y - 10,
+                    w: 6,
+                    h: 16,
+                    color: "#fff",
+                    speed: 8
+                });
+            }
+        }
+
+        // --- Disparo de los aliens ---
+        function alienShoot() {
+            const shooters = aliens.filter(a => a.alive);
+            if (shooters.length === 0) return;
+            const shooter = shooters[Math.floor(Math.random() * shooters.length)];
+            alienBullets.push({
+                x: shooter.x + shooter.w / 2 - 2,
+                y: shooter.y + shooter.h,
+                w: 4,
+                h: 14,
+                color: "#ff6b6b",
+                speed: 5
+            });
+        }
+
+        // --- Actualización del juego ---
+        function update() {
+            if (gameOver) return;
+
+            // Mover jugador
+            player.x += player.dx;
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+
+            // Mover balas del jugador
+            bullets.forEach(b => b.y -= b.speed);
+            bullets = bullets.filter(b => b.y + b.h > 0);
+
+            // Mover balas de aliens
+            alienBullets.forEach(b => b.y += b.speed);
+            alienBullets = alienBullets.filter(b => b.y < canvas.height);
+
+            // Mover aliens
+            alienMoveCounter++;
+            if (alienMoveCounter > 18) {
+                let hitEdge = false;
+                aliens.forEach(a => {
+                    if (!a.alive) return;
+                    a.x += alienDir * alienSpeed;
+                    if (a.x < 10 || a.x + a.w > canvas.width - 10) hitEdge = true;
+                });
+                if (hitEdge) {
+                    alienDir *= -1;
+                    aliens.forEach(a => a.y += alienStepDown);
+                }
+                alienMoveCounter = 0;
+            }
+
+            // Colisiones: balas jugador vs aliens
+            bullets.forEach(b => {
+                aliens.forEach(a => {
+                    if (a.alive && b.x < a.x + a.w && b.x + b.w > a.x && b.y < a.y + a.h && b.y + b.h > a.y) {
+                        a.alive = false;
+                        b.y = -100; // Elimina bala
+                        score += 10;
+                    }
+                });
+            });
+
+            // Colisiones: balas alien vs jugador
+            alienBullets.forEach(b => {
+                if (b.x < player.x + player.w && b.x + b.w > player.x && b.y < player.y + player.h && b.y + b.h > player.y) {
+                    loseLife();
+                    b.y = canvas.height + 100; // Elimina bala
+                }
+            });
+
+            // Colisiones: aliens vs jugador
+            aliens.forEach(a => {
+                if (a.alive && a.y + a.h > player.y && a.x < player.x + player.w && a.x + a.w > player.x) {
+                    loseLife();
+                }
+            });
+
+            // Si todos los aliens mueren, ganas
+            if (aliens.every(a => !a.alive)) {
+                score += 100;
+                createAliens();
+                alienSpeed += 0.5;
+            }
+
+            // Disparo aleatorio de aliens
+            if (Math.random() < 0.025) alienShoot();
+
+            scoreDisplay.textContent = "Puntuación: " + score;
+            livesDisplay.innerHTML = "Vidas: " + "❤️".repeat(lives);
+        }
+
+        // --- Dibujo ---
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Jugador (nave)
+            drawPlayerShip(player.x, player.y, player.w, player.h);
+
+            // Balas jugador
+            bullets.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+            });
+
+            // Aliens (naves)
+            aliens.forEach(a => {
+                if (!a.alive) return;
+                drawAlienShip(a.x, a.y, a.w, a.h, a.color);
+            });
+
+            // Balas aliens
+            alienBullets.forEach(b => {
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x, b.y, b.w, b.h);
+            });
+        }
+
+        // --- Dibuja nave del jugador ---
+        function drawPlayerShip(x, y, w, h) {
+            ctx.save();
+            ctx.translate(x + w / 2, y + h / 2);
+            ctx.scale(w / 50, h / 18);
+            ctx.beginPath();
+            ctx.moveTo(0, 9); // base
+            ctx.lineTo(-20, 9);
+            ctx.lineTo(-20, 2);
+            ctx.lineTo(-10, -9);
+            ctx.lineTo(0, -5);
+            ctx.lineTo(10, -9);
+            ctx.lineTo(20, 2);
+            ctx.lineTo(20, 9);
+            ctx.closePath();
+            ctx.fillStyle = "#ffa502";
+            ctx.shadowColor = "#fff8";
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // --- Dibuja nave alienígena ---
+        function drawAlienShip(x, y, w, h, color) {
+            ctx.save();
+            ctx.translate(x + w / 2, y + h / 2);
+            ctx.scale(w / 36, h / 24);
+            ctx.beginPath();
+            ctx.moveTo(-14, 8);
+            ctx.quadraticCurveTo(0, -12, 14, 8);
+            ctx.lineTo(10, 12);
+            ctx.lineTo(-10, 12);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.shadowColor = "#fff4";
+            ctx.shadowBlur = 4;
+            ctx.fill();
+
+            // Ventana
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = "#fff";
+            ctx.globalAlpha = 0.7;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            // Patas
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(-10, 12); ctx.lineTo(-12, 16);
+            ctx.moveTo(10, 12); ctx.lineTo(12, 16);
+            ctx.moveTo(-5, 12); ctx.lineTo(-5, 16);
+            ctx.moveTo(5, 12); ctx.lineTo(5, 16);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // --- Pierdes una vida ---
+        function loseLife() {
+            lives--;
+            if (lives <= 0) {
+                endGame();
+            } else {
+                // Resetea posición del jugador y balas enemigas
+                player.x = canvas.width / 2 - player.w / 2;
+                alienBullets = [];
+            }
+        }
+
+        // --- Fin del juego ---
+        function endGame() {
+            gameOver = true;
+            livesDisplay.innerHTML = "Vidas: " + "❤️".repeat(0);
+            gameOverDisplay.style.display = "block";
+        }
+
+        // --- Bucle principal ---
+        function loop() {
+            update();
+            draw();
+            if (!gameOver) requestAnimationFrame(loop);
+        }
+
+        loop();
+    </script>
+</body>
+</html>
