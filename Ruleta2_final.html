@@ -6,8 +6,6 @@
     <title>Ruleta Europea Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="estilos.css">
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <style>
         :root {
             --primary: #0f766e;
@@ -264,12 +262,12 @@
             position: absolute;
             pointer-events: none;
             font-size: 14px;
-            width: 34px;
-            height: 34px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.7);
+            width: 30px;
+            height: 30px;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
             text-shadow: 0 0 3px black;
-            border: 4px solid #fff;
-            background: radial-gradient(circle at 60% 40%, #fff8, #eee 60%, #bbb 100%);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            transition: all 0.2s ease;
             z-index: 10;
         }
         
@@ -459,53 +457,6 @@
             overflow: hidden;
             z-index: 5;
         }
-
-        /* Estilos específicos para la ruleta */
-        .ruleta-container {
-            max-width: 600px;
-            margin: 40px auto;
-            background: rgba(30,30,60,0.95);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-            padding: 30px;
-        }
-        .ruleta-wheel {
-            width: 320px;
-            height: 320px;
-            margin: 0 auto 30px;
-            border-radius: 50%;
-            border: 8px solid #ff6b6b;
-            background: radial-gradient(circle, #fff 60%, #ff6b6b 100%);
-            position: relative;
-            box-shadow: 0 0 30px #ff6b6b55;
-        }
-
-        .chip-btn {
-            width: 54px;
-            height: 54px;
-            border-radius: 50%;
-            border: 3px solid #fff;
-            font-weight: bold;
-            cursor: pointer;
-            margin: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-            background: radial-gradient(circle at 60% 40%, #fff8, #eee 60%, #bbb 100%);
-            position: relative;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .chip-btn.selected-chip {
-            border: 3px solid #ffd700;
-            box-shadow: 0 0 16px 4px #ffd70088;
-            transform: scale(1.12);
-        }
-        .chip-btn:hover {
-            transform: scale(1.08);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-        }
     </style>
 </head>
 <body>
@@ -515,7 +466,8 @@
 
         <div class="roulette-area">
             <div id="canvasContainer" class="relative">
-                <canvas id="rouletteCanvas" width="900" height="750"></canvas>
+                <canvas id="rouletteCanvas" width="800" height="600"></canvas>
+                <div id="wheel" class="wheel"></div>
             </div>
 
             <div class="controls-and-info">
@@ -541,34 +493,35 @@
                 <div class="betting-controls">
                     <h3>Controles de Apuesta</h3>
                     <div class="chip-selection mb-6 flex justify-center flex-wrap">
-<button data-value="0.2" class="chip-btn tooltip">
-    <span class="tooltiptext">Ficha de 0,20&nbsp;€</span>
-    0,20
+<button data-value="0.2" class="tooltip">
+    <span class="tooltiptext">Ficha de 0.20 créditos</span>
+    0.20
 </button>
-<button data-value="0.5" class="chip-btn tooltip">
-    <span class="tooltiptext">Ficha de 0,50&nbsp;€</span>
-    0,50
+<button data-value="0.5" class="tooltip">
+    <span class="tooltiptext">Ficha de 0.50 créditos</span>
+    0.50
 </button>
-<button data-value="1" class="chip-btn tooltip">
-    <span class="tooltiptext">Ficha de 1&nbsp;€</span>
-    1
-</button>
-<button data-value="5" class="chip-btn tooltip">
-    <span class="tooltiptext">Ficha de 5&nbsp;€</span>
-    5
-</button>
-<button data-value="10" class="chip-btn tooltip">
-    <span class="tooltiptext">Ficha de 10&nbsp;€</span>
-    10
-</button>
-<button data-value="25" class="chip-btn tooltip">
-    <span class="tooltiptext">Ficha de 25&nbsp;€</span>
-    25
-</button>
-<button data-value="100" class="chip-btn tooltip">
-    <span class="tooltiptext">Ficha de 100&nbsp;€</span>
-    100
-</button>
+
+                        <button data-value="1" class="tooltip">
+                            <span class="tooltiptext">Ficha de 1 crédito</span>
+                            1
+                        </button>
+                        <button data-value="5" class="tooltip">
+                            <span class="tooltiptext">Ficha de 5 créditos</span>
+                            5
+                        </button>
+                        <button data-value="10" class="tooltip">
+                            <span class="tooltiptext">Ficha de 10 créditos</span>
+                            10
+                        </button>
+                        <button data-value="25" class="tooltip">
+                            <span class="tooltiptext">Ficha de 25 créditos</span>
+                            25
+                        </button>
+                        <button data-value="100" class="tooltip">
+                            <span class="tooltiptext">Ficha de 100 créditos</span>
+                            100
+                        </button>
                     </div>
                     
                     <div class="mb-4">
@@ -617,6 +570,7 @@
         const canvas = document.getElementById('rouletteCanvas');
         const ctx = canvas.getContext('2d');
         const canvasContainer = document.getElementById('canvasContainer');
+        const wheelElement = document.getElementById('wheel');
 
         // Configuración del juego
         let balance = 1000;
@@ -628,14 +582,6 @@
         let history = [];
         let selectedNumbers = [];
         let isSpinning = false;
-
-        let spinning = false;
-        let spinAngle = 0;
-        let spinVelocity = 0;
-        let ballAngle = 0;
-        let ballVelocity = 0;
-        let winningNumber = 0;
-        let animationFrameId = null;
 
         const balanceDisplay = document.getElementById('balance');
         const totalBetDisplay = document.getElementById('totalBet');
@@ -672,15 +618,15 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
 
         function initializeBettingAreas() {
             bettingAreas = [];
-            // Número 0 perfectamente alineado a la izquierda del tablero
+            // Número 0
             bettingAreas.push({ 
-                id: 'num_0', type: 'straight', numbers: [0], payout: 35, 
-                x: TABLE_X_OFFSET, // alineado con el tablero
-                y: TABLE_Y_OFFSET, // empieza justo donde empieza el 3
-                w: CELL_WIDTH,
-                h: CELL_HEIGHT * 3, // ocupa exactamente 3 filas: 3,2,1
-                isZero: true 
-            });
+    id: 'num_0', type: 'straight', numbers: [0], payout: 35, 
+    x: TABLE_X_OFFSET, // A la izquierda del tablero
+    y: TABLE_Y_OFFSET, // Empieza donde empieza la fila superior
+    w: CELL_WIDTH, 
+    h: CELL_HEIGHT * 3, // Ocupa las 3 filas
+    isZero: true 
+});
 
             // Números 1-36 (Plenos)
             for (let row = 0; row < NUM_ROWS; row++) {
@@ -847,20 +793,7 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
 
         function drawRouletteTable() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Dibuja la rueda arriba
-            drawRouletteWheel(ctx, canvas.width / 2, 100, 90, spinning ? null : winningNumber);
-            if (spinning) {
-                drawBall(ctx, canvas.width / 2, 100, 90, ballAngle);
-            } else if (winningNumber !== null) {
-                // Bola parada en el número ganador
-                const numPockets = ROULETTE_NUMBERS.length;
-                const anglePerPocket = (2 * Math.PI) / numPockets;
-                const idx = ROULETTE_NUMBERS.indexOf(winningNumber);
-                const angle = (2 * Math.PI) - (idx * anglePerPocket) + Math.PI / numPockets + anglePerPocket * 0.4;
-                drawBall(ctx, canvas.width / 2, 100, 90, angle);
-            }
-
+            
             // Fondo de lujo para la mesa
             const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
             gradient.addColorStop(0, '#0c4a6e');
@@ -921,149 +854,83 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
             });
             
             drawChips();
+            drawWheel();
         }
         
-        function drawRouletteWheel(ctx, centerX, centerY, radius, highlightNumber = null) {
-            const numPockets = ROULETTE_NUMBERS.length;
-            const anglePerPocket = (2 * Math.PI) / numPockets;
-
-            // Fondo de la rueda
-            ctx.save();
-            ctx.translate(centerX, centerY);
-
-            // Sombra
-            ctx.beginPath();
-            ctx.arc(0, 0, radius + 10, 0, 2 * Math.PI);
-            ctx.fillStyle = "#0006";
-            ctx.fill();
-
-            // Rueda
+        function drawWheel() {
+            // Crear la rueda en el elemento separado
+            wheelElement.innerHTML = '';
+            const wheelRadius = 80;
+            const numPockets = 37;
+            const anglePerPocket = (Math.PI * 2) / numPockets;
+            
             for (let i = 0; i < numPockets; i++) {
-                const startAngle = i * anglePerPocket + spinAngle;
-                const endAngle = startAngle + anglePerPocket;
+                const pocket = document.createElement('div');
+                pocket.className = 'wheel-pocket';
+                pocket.style.position = 'absolute';
+                pocket.style.width = '0';
+                pocket.style.height = '0';
+                pocket.style.borderLeft = `${wheelRadius}px solid transparent`;
+                pocket.style.borderRight = `${wheelRadius}px solid transparent`;
+                pocket.style.borderBottom = `${wheelRadius * 1.8}px solid`;
+                pocket.style.transformOrigin = '50% 100%';
+                pocket.style.transform = `rotate(${i * anglePerPocket}rad)`;
+                
                 const number = ROULETTE_NUMBERS[i];
                 const color = NUMBER_COLORS[number];
-
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.arc(0, 0, radius, startAngle, endAngle, false);
-                ctx.closePath();
-                ctx.fillStyle = color === "red" ? "#b91c1c" : color === "black" ? "#222" : "#10b981";
-                ctx.fill();
-
-                // Resalta el número ganador
-                if (highlightNumber !== null && number === highlightNumber) {
-                    ctx.save();
-                    ctx.globalAlpha = 0.35;
-                    ctx.beginPath();
-                    ctx.moveTo(0, 0);
-                    ctx.arc(0, 0, radius, startAngle, endAngle, false);
-                    ctx.closePath();
-                    ctx.fillStyle = "#ffd700";
-                    ctx.fill();
-                    ctx.restore();
-                }
-
-                // Números
-                ctx.save();
-                ctx.rotate(startAngle + anglePerPocket / 2);
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.font = "bold 16px 'Playfair Display', serif";
-                ctx.fillStyle = "#fff";
-                ctx.shadowColor = "#000";
-                ctx.shadowBlur = 2;
-                ctx.translate(0, -radius + 28);
-                ctx.rotate(- (startAngle + anglePerPocket / 2));
-                ctx.fillText(number, 0, 0);
-                ctx.restore();
+                pocket.style.borderBottomColor = color === 'red' ? '#b91c1c' : 
+                                              (color === 'black' ? '#1e293b' : '#065f46');
+                
+                const numberEl = document.createElement('div');
+                numberEl.className = 'wheel-number';
+                numberEl.textContent = number;
+                numberEl.style.position = 'absolute';
+                numberEl.style.top = '50%';
+                numberEl.style.left = '50%';
+                numberEl.style.transform = 'translate(-50%, -150%) rotate(90deg)';
+                numberEl.style.color = 'white';
+                numberEl.style.fontWeight = 'bold';
+                numberEl.style.fontSize = '12px';
+                
+                pocket.appendChild(numberEl);
+                wheelElement.appendChild(pocket);
             }
-
+            
             // Centro de la rueda
-            ctx.beginPath();
-            ctx.arc(0, 0, 38, 0, 2 * Math.PI);
-            ctx.fillStyle = "#d97706";
-            ctx.strokeStyle = "#ffd700";
-            ctx.lineWidth = 4;
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.restore();
+            const center = document.createElement('div');
+            center.className = 'wheel-center';
+            center.style.position = 'absolute';
+            center.style.top = '50%';
+            center.style.left = '50%';
+            center.style.transform = 'translate(-50%, -50%)';
+            center.style.width = '30px';
+            center.style.height = '30px';
+            center.style.backgroundColor = '#d97706';
+            center.style.borderRadius = '50%';
+            center.style.border = '2px solid gold';
+            wheelElement.appendChild(center);
+            
+            // Bola (solo para decoración estática)
+            const ball = document.createElement('div');
+            ball.className = 'wheel-ball';
+            ball.style.position = 'absolute';
+            ball.style.top = '20%';
+            ball.style.left = '50%';
+            ball.style.transform = 'translate(-50%, -50%)';
+            ball.style.width = '12px';
+            ball.style.height = '12px';
+            ball.style.backgroundColor = 'white';
+            ball.style.borderRadius = '50%';
+            ball.style.zIndex = '10';
+            wheelElement.appendChild(ball);
         }
-
-        function drawBall(ctx, centerX, centerY, radius, angle) {
-            // Bola blanca
-            const ballRadius = 12;
-            const ballX = centerX + (radius - 22) * Math.cos(angle);
-            const ballY = centerY + (radius - 22) * Math.sin(angle);
-
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(ballX, ballY, ballRadius, 0, 2 * Math.PI);
-            ctx.fillStyle = "#fff";
-            ctx.shadowColor = "#aaa";
-            ctx.shadowBlur = 8;
-            ctx.fill();
-            ctx.restore();
-        }
-
-        function animateSpin(targetNumber) {
-            spinning = true;
-            spinVelocity = 0.35 + Math.random() * 0.15; // velocidad inicial
-            ballVelocity = -0.55 - Math.random() * 0.15; // bola va en sentido contrario
-            let duration = 3200 + Math.random() * 600;
-            let start = null;
-
-            // Calcula el ángulo objetivo para el número ganador
-            const numPockets = ROULETTE_NUMBERS.length;
-            const anglePerPocket = (2 * Math.PI) / numPockets;
-            const targetIndex = ROULETTE_NUMBERS.indexOf(targetNumber);
-            const targetAngle = (2 * Math.PI) - (targetIndex * anglePerPocket) + Math.PI / numPockets;
-
-            function animate(ts) {
-                if (!start) start = ts;
-                const elapsed = ts - start;
-
-                // Desaceleración
-                if (elapsed < duration) {
-                    spinAngle += spinVelocity;
-                    spinVelocity *= 0.985;
-                    ballAngle += ballVelocity;
-                    ballVelocity *= 0.985;
-                } else {
-                    // Fijar la rueda y la bola en el número ganador
-                    spinAngle = targetAngle;
-                    ballAngle = targetAngle + anglePerPocket * 0.4;
-                    spinning = false;
-                }
-
-                // Dibuja la rueda y la bola
-                ctx.clearRect(0, 0, canvas.width, 200);
-                drawRouletteWheel(ctx, canvas.width / 2, 100, 90);
-                drawBall(ctx, canvas.width / 2, 100, 90, ballAngle);
-
-                if (spinning) {
-                    animationFrameId = requestAnimationFrame(animate);
-                } else {
-                    // Dibuja la rueda resaltando el número ganador
-                    ctx.clearRect(0, 0, canvas.width, 200);
-                    drawRouletteWheel(ctx, canvas.width / 2, 100, 90, targetNumber);
-                    drawBall(ctx, canvas.width / 2, 100, 90, ballAngle);
-                    // Llama a processSpinResult después de la animación
-                    setTimeout(() => processSpinResult(targetNumber), 800);
-                }
-            }
-            animationFrameId = requestAnimationFrame(animate);
-        }
-
+        
         function getChipColor(value) {
             if (value >= 100) return 'linear-gradient(135deg, #d97706, #f59e0b)';
             if (value >= 25) return 'linear-gradient(135deg, #059669, #10b981)';
             if (value >= 10) return 'linear-gradient(135deg, #2563eb, #3b82f6)';
             if (value >= 5) return 'linear-gradient(135deg, #dc2626, #ef4444)';
-            if (value >= 1) return 'linear-gradient(135deg, #4b5563, #6b7280)';
-            if (value >= 0.5) return 'linear-gradient(135deg, #fbbf24, #fde68a)';
-            return 'linear-gradient(135deg, #f59e42, #fef08a)';
+            return 'linear-gradient(135deg, #4b5563, #6b7280)';
         }
 
         function drawChips() {
@@ -1071,30 +938,33 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
             existingChips.forEach(chip => chip.remove());
 
             Object.values(bets).forEach(bet => {
-                if (bet.chips && bet.chips.length > 0) {
-                    bet.chips.forEach(chipObj => {
-                        const chipEl = document.createElement('div');
-                        chipEl.classList.add('chip-on-canvas');
-                        chipEl.style.width = `${CELL_WIDTH * 0.7}px`;
-                        chipEl.style.height = `${CELL_WIDTH * 0.7}px`;
-                        chipEl.style.background = getChipColor(chipObj.value);
-                        chipEl.textContent = chipObj.value >= 1 ? chipObj.value : chipObj.value.toFixed(2);
-                        chipEl.style.fontSize = `${CELL_WIDTH * 0.25}px`;
-                        chipEl.style.boxShadow = '0 3px 8px rgba(0,0,0,0.6)';
-                        chipEl.style.border = '3px solid #fff';
-                        chipEl.style.left = `${chipObj.chipCoords.x - (CELL_WIDTH * 0.7 / 2)}px`;
-                        chipEl.style.top = `${chipObj.chipCoords.y - (CELL_WIDTH * 0.7 / 2)}px`;
-                        chipEl.style.display = 'flex';
-                        chipEl.style.alignItems = 'center';
-                        chipEl.style.justifyContent = 'center';
-                        chipEl.style.borderRadius = '50%';
-                        chipEl.style.position = 'absolute';
-                        chipEl.style.pointerEvents = 'none';
-                        chipEl.style.zIndex = 10;
-                        chipEl.style.textShadow = '0 0 4px #000, 0 0 2px #fff';
-                        canvasContainer.appendChild(chipEl);
-                    });
+                const chipEl = document.createElement('div');
+                chipEl.classList.add('chip-on-canvas');
+                chipEl.style.width = `${CELL_WIDTH * 0.7}px`;
+                chipEl.style.height = `${CELL_WIDTH * 0.7}px`;
+                chipEl.style.background = getChipColor(bet.amount);
+                chipEl.textContent = bet.amount.toFixed(2);
+                chipEl.style.fontSize = `${CELL_WIDTH * 0.25}px`;
+                chipEl.style.boxShadow = '0 3px 6px rgba(0, 0, 0, 0.3)';
+                chipEl.style.border = '2px solid rgba(255, 255, 255, 0.7)';
+                
+                // Calcular posición centrada para apuestas múltiples
+                let chipX, chipY;
+                if (bet.type === 'corner') {
+                    chipX = bet.chipCoords.x;
+                    chipY = bet.chipCoords.y;
+                } else if (bet.type === 'street' || bet.type === 'split') {
+                    chipX = bet.chipCoords.x;
+                    chipY = bet.chipCoords.y;
+                } else {
+                    chipX = bet.chipCoords.x;
+                    chipY = bet.chipCoords.y;
                 }
+
+                chipEl.style.left = `${chipX - (CELL_WIDTH * 0.7 / 2)}px`;
+                chipEl.style.top = `${chipY - (CELL_WIDTH * 0.7 / 2)}px`;
+                
+                canvasContainer.appendChild(chipEl);
             });
         }
 
@@ -1169,30 +1039,16 @@ const rebetSpinButton = document.getElementById('rebetSpinButton');
             });
         }
 
-        function restoreChipCoordsFromAreas() {
-    Object.keys(bets).forEach(betId => {
-        const area = bettingAreas.find(a => a.id === betId);
-        if (area) {
-            bets[betId].chipCoords = {
-                x: area.x + area.w / 2,
-                y: area.y + area.h / 2
-            };
-        }
-    });
-}
-
-        const allowedChips = [0.2, 0.5, 1, 5, 10, 25, 100];
-chipButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        const val = parseFloat(button.dataset.value);
-        if (!allowedChips.includes(val)) return;
-        currentChipValue = val;
-        chipButtons.forEach(btn => btn.classList.remove('selected-chip'));
-        button.classList.add('selected-chip');
-        messageArea.textContent = `Ficha seleccionada: ${currentChipValue} €`;
-        selectedBetType = null;
-    });
-});
+        // Selección de fichas
+        chipButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                currentChipValue = parseFloat(button.dataset.value);
+                chipButtons.forEach(btn => btn.classList.remove('selected-chip'));
+                button.classList.add('selected-chip');
+                messageArea.textContent = `Ficha seleccionada: ${currentChipValue} créditos. Haz clic en el tablero para apostar.`;
+                selectedBetType = null; // Resetear tipo de apuesta
+            });
+        });
         
         // Selección de tipo de apuesta entre números
         splitBetButton.addEventListener('click', () => {
@@ -1253,16 +1109,7 @@ chipButtons.forEach(button => {
                 if (balance >= currentChipValue) {
                     const betId = clickedArea.id;
                     if (bets[betId]) {
-                        // Permite varias fichas en la misma área (suma)
                         bets[betId].amount += currentChipValue;
-                        bets[betId].chips = bets[betId].chips || [];
-                        bets[betId].chips.push({
-                            value: currentChipValue,
-                            chipCoords: {
-                                x: clickedArea.x + clickedArea.w / 2 + (Math.random()-0.5)*8,
-                                y: clickedArea.y + clickedArea.h / 2 + (Math.random()-0.5)*8
-                            }
-                        });
                     } else {
                         bets[betId] = {
                             amount: currentChipValue,
@@ -1272,14 +1119,7 @@ chipButtons.forEach(button => {
                             chipCoords: {
                                 x: clickedArea.x + clickedArea.w / 2,
                                 y: clickedArea.y + clickedArea.h / 2
-                            },
-                            chips: [{
-                                value: currentChipValue,
-                                chipCoords: {
-                                    x: clickedArea.x + clickedArea.w / 2,
-                                    y: clickedArea.y + clickedArea.h / 2
-                                }
-                            }]
+                            }
                         };
                     }
                     balance -= currentChipValue;
@@ -1306,89 +1146,97 @@ chipButtons.forEach(button => {
             }
         });
 
-        // Botón Girar
-        spinButton.addEventListener('click', () => {
-            if (isSpinning) return;
-            if (Object.keys(bets).length === 0) {
-                messageArea.textContent = 'Por favor, haz al menos una apuesta antes de girar.';
-                return;
-            }
-            isSpinning = true;
-            messageArea.textContent = 'Girando...';
+        // --- Función reutilizable para iniciar el giro ---
+    function startSpin() {
+        if (isSpinning) return;
+        if (Object.keys(bets).length === 0) {
+            messageArea.textContent = 'Por favor, haz al menos una apuesta antes de girar.';
+            return;
+        }
+        isSpinning = true;
+        messageArea.textContent = 'Girando...';
+        winningNumber = Math.floor(Math.random() * 37);
+        animateSpin(winningNumber);
+    }
 
-            // Elige el número ganador
-            winningNumber = Math.floor(Math.random() * 37);
-            animateSpin(winningNumber);
-        });
+    // --- Botón Girar ---
+    spinButton.addEventListener('click', startSpin);
 
-        // Botón Borrar
-        clearBetsButton.addEventListener('click', () => {
-            // Devolver las apuestas al saldo
-            Object.values(bets).forEach(bet => {
-                balance += bet.amount;
-            });
-            bets = {};
-            updateDisplay();
-            messageArea.textContent = 'Apuestas eliminadas.';
-        });
+    // --- Botón Reapostar ---
+    rebetButton.addEventListener('click', () => {
+        if (Object.keys(lastBets).length === 0) {
+            messageArea.textContent = 'No hay apuestas anteriores para repetir.';
+            return;
+        }
+        const total = Object.values(lastBets).reduce((sum, bet) => sum + bet.amount, 0);
+        if (total > balance) {
+            messageArea.textContent = 'Saldo insuficiente para repetir las apuestas.';
+            return;
+        }
+        bets = JSON.parse(JSON.stringify(lastBets));
+        balance -= total;
+        updateDisplay();
+        messageArea.textContent = 'Apuestas repetidas.';
+    });
 
-        // Botón Reapostar
-        rebetButton.addEventListener('click', () => {
-            if (Object.keys(lastBets).length === 0) {
-                messageArea.textContent = 'No hay apuestas anteriores para repetir.';
-                return;
+    // --- Botón Reapostar y Girar ---
+    rebetSpinButton.addEventListener('click', () => {
+        if (Object.keys(lastBets).length === 0) {
+            messageArea.textContent = 'No hay apuestas anteriores para repetir.';
+            return;
+        }
+        const total = Object.values(lastBets).reduce((sum, bet) => sum + bet.amount, 0);
+        if (total > balance) {
+            messageArea.textContent = 'Saldo insuficiente para repetir las apuestas.';
+            return;
+        }
+        bets = JSON.parse(JSON.stringify(lastBets));
+        balance -= total;
+        updateDisplay();
+        messageArea.textContent = 'Apuestas repetidas.';
+        startSpin();
+    });
+
+    // --- Animación de la ruleta y la bola ---
+    function animateSpin(targetNumber) {
+        spinVelocity = 0.35 + Math.random() * 0.15;
+        ballVelocity = -0.55 - Math.random() * 0.15;
+        let duration = 3200 + Math.random() * 600;
+        let start = null;
+
+        const numPockets = ROULETTE_NUMBERS.length;
+        const anglePerPocket = (2 * Math.PI) / numPockets;
+        const targetIndex = ROULETTE_NUMBERS.indexOf(targetNumber);
+        const targetAngle = (2 * Math.PI) - (targetIndex * anglePerPocket) + Math.PI / numPockets;
+
+        function animate(ts) {
+            if (!start) start = ts;
+            const elapsed = ts - start;
+
+            if (elapsed < duration) {
+                spinAngle += spinVelocity;
+                spinVelocity *= 0.985;
+                ballAngle += ballVelocity;
+                ballVelocity *= 0.985;
+            } else {
+                spinAngle = targetAngle;
+                ballAngle = targetAngle + anglePerPocket * 0.4;
+                isSpinning = false;
             }
-            
-            // Calcular el total de las apuestas anteriores
-            const total = Object.values(lastBets).reduce((sum, bet) => sum + bet.amount, 0);
-            if (total > balance) {
-                messageArea.textContent = 'Saldo insuficiente para repetir las apuestas.';
-                return;
+
+            ctx.clearRect(0, 0, canvas.width, 200);
+            drawRouletteWheel(ctx, canvas.width / 2, 120, 110, null, ballAngle);
+
+            if (isSpinning) {
+                animationFrameId = requestAnimationFrame(animate);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, 200);
+                drawRouletteWheel(ctx, canvas.width / 2, 120, 110, targetNumber, ballAngle);
+                setTimeout(() => processSpinResult(targetNumber), 800);
             }
-            
-            // Colocar las mismas apuestas
-            bets = JSON.parse(JSON.stringify(lastBets));
-            restoreChipCoordsFromAreas();
-            balance -= total;
-            updateDisplay();
-            messageArea.textContent = 'Apuestas repetidas.';
-        });
-		
-		 // Botón Reapostar y girar
-        rebetSpinButton.addEventListener('click', () => {
-            if (Object.keys(lastBets).length === 0) {
-                messageArea.textContent = 'No hay apuestas anteriores para repetir.';
-                return;
-            }
-            
-            // Calcular el total de las apuestas anteriores
-            const total = Object.values(lastBets).reduce((sum, bet) => sum + bet.amount, 0);
-            if (total > balance) {
-                messageArea.textContent = 'Saldo insuficiente para repetir las apuestas.';
-                return;
-            }
-            
-            // Colocar las mismas apuestas
-            bets = JSON.parse(JSON.stringify(lastBets));
-            restoreChipCoordsFromAreas();
-            balance -= total;
-            updateDisplay();
-            messageArea.textContent = 'Apuestas repetidas.';
-			
-			if (isSpinning) return;
-            
-            if (Object.keys(bets).length === 0) {
-                messageArea.textContent = 'Por favor, haz al menos una apuesta antes de girar.';
-                return;
-            }
-            
-            isSpinning = true;
-            messageArea.textContent = 'Girando...';
-            
-            // Elige el número ganador
-            winningNumber = Math.floor(Math.random() * 37);
-            animateSpin(winningNumber);
-        });
+        }
+        animationFrameId = requestAnimationFrame(animate);
+    }
 
         function processSpinResult(winningNumber) {
             const winningColor = NUMBER_COLORS[winningNumber];
@@ -1433,20 +1281,173 @@ chipButtons.forEach(button => {
             lastBets = JSON.parse(JSON.stringify(bets));
             bets = {};
             updateDisplay();
-            isSpinning = false;
-            spinning = false;
         }
 
         function updateHistoryDisplay() {
             historyContainer.innerHTML = '';
             history.forEach(number => {
-                const numDiv = document.createElement('div');
-                numDiv.className = 'history-item';
-                numDiv.textContent = number;
-                numDiv.style.backgroundColor = NUMBER_COLORS[number];
-                historyContainer.appendChild(numDiv);
+                const color = NUMBER_COLORS[number];
+                const historyItem = document.createElement('div');
+                historyItem.className = `history-item ${color === 'red' ? 'bg-red-600' : color === 'black' ? 'bg-black' : 'bg-green-600'}`;
+                historyItem.textContent = number;
+                historyContainer.appendChild(historyItem);
             });
         }
+
+        // Inicializar juego
+        initializeBettingAreas();
+        updateDisplay();
+        messageArea.textContent = 'Bienvenido a la Ruleta Premium. Selecciona una ficha y haz tu apuesta.';
+
+        // Animación inicial de fichas
+        setTimeout(() => {
+            const chips = document.querySelectorAll('.chip-selection button');
+            chips.forEach((chip, index) => {
+                setTimeout(() => {
+                    chip.classList.add('animate-bounce');
+                    setTimeout(() => chip.classList.remove('animate-bounce'), 1000);
+                }, index * 300);
+            });
+        }, 1000);
+
+let spinAngle = 0;
+let spinVelocity = 0;
+let ballAngle = 0;
+let ballVelocity = 0;
+let animationFrameId = null;
+let winningNumber = null;
+
+// Dibuja la ruleta de madera y la bola
+function drawRouletteWheel(ctx, centerX, centerY, radius, highlightNumber = null, ballAngle = null) {
+    const numPockets = ROULETTE_NUMBERS.length;
+    const anglePerPocket = (2 * Math.PI) / numPockets;
+
+    // Fondo de madera
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius + 30, 0, 2 * Math.PI);
+    ctx.fillStyle = "#a0522d";
+    ctx.shadowColor = "#442a1b";
+    ctx.shadowBlur = 30;
+    ctx.fill();
+
+    // Rueda
+    for (let i = 0; i < numPockets; i++) {
+        const startAngle = i * anglePerPocket + spinAngle;
+        const endAngle = startAngle + anglePerPocket;
+        const number = ROULETTE_NUMBERS[i];
+        const color = NUMBER_COLORS[number];
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, startAngle, endAngle, false);
+        ctx.closePath();
+        ctx.fillStyle = color === "red" ? "#b91c1c" : color === "black" ? "#222" : "#10B981";
+        ctx.fill();
+
+        // Resalta el número ganador
+        if (highlightNumber !== null && number === highlightNumber) {
+            ctx.save();
+            ctx.globalAlpha = 0.35;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, radius, startAngle, endAngle, false);
+            ctx.closePath();
+            ctx.fillStyle = "#ffd700";
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Números
+        ctx.save();
+        ctx.rotate(startAngle + anglePerPocket / 2);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold 22px 'Playfair Display', serif";
+        ctx.fillStyle = "#fff";
+        ctx.shadowColor = "#000";
+        ctx.shadowBlur = 2;
+        ctx.translate(0, -radius + 28);
+        ctx.rotate(- (startAngle + anglePerPocket / 2));
+        ctx.fillText(number, 0, 0);
+        ctx.restore();
+    }
+
+    // Centro de la rueda
+    ctx.beginPath();
+    ctx.arc(0, 0, 38, 0, 2 * Math.PI);
+    ctx.fillStyle = "#d97706";
+    ctx.strokeStyle = "#ffd700";
+    ctx.lineWidth = 4;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Bola
+    if (ballAngle !== null) {
+        const ballRadius = 14;
+        const ballX = centerX + (radius - 22) * Math.cos(ballAngle);
+        const ballY = centerY + (radius - 22) * Math.sin(ballAngle);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(ballX, ballY, ballRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = "#fff";
+        ctx.shadowColor = "#aaa";
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+// Nueva función para animar el giro de la ruleta
+function animateSpin(targetNumber) {
+    spinVelocity = 0.35 + Math.random() * 0.15;
+    ballVelocity = -0.55 - Math.random() * 0.15;
+    let duration = 3200 + Math.random() * 600;
+    let start = null;
+
+    // Calcula el ángulo objetivo para el número ganador
+    const numPockets = ROULETTE_NUMBERS.length;
+    const anglePerPocket = (2 * Math.PI) / numPockets;
+    const targetIndex = ROULETTE_NUMBERS.indexOf(targetNumber);
+    const targetAngle = (2 * Math.PI) - (targetIndex * anglePerPocket) + Math.PI / numPockets;
+
+    function animate(ts) {
+        if (!start) start = ts;
+        const elapsed = ts - start;
+
+        // Desaceleración
+        if (elapsed < duration) {
+            spinAngle += spinVelocity;
+            spinVelocity *= 0.985;
+            ballAngle += ballVelocity;
+            ballVelocity *= 0.985;
+        } else {
+            // Fijar la rueda y la bola en el número ganador
+            spinAngle = targetAngle;
+            ballAngle = targetAngle + anglePerPocket * 0.4;
+            isSpinning = false;
+        }
+
+        // Dibuja la rueda y la bola
+        ctx.clearRect(0, 0, canvas.width, 200);
+        drawRouletteWheel(ctx, canvas.width / 2, 120, 110, null, ballAngle);
+
+        if (isSpinning) {
+            animationFrameId = requestAnimationFrame(animate);
+        } else {
+            // Dibuja la rueda resaltando el número ganador
+            ctx.clearRect(0, 0, canvas.width, 200);
+            drawRouletteWheel(ctx, canvas.width / 2, 120, 110, targetNumber, ballAngle);
+            // Llama a processSpinResult después de la animación
+            setTimeout(() => processSpinResult(targetNumber), 800);
+        }
+    }
+    animationFrameId = requestAnimationFrame(animate);
+}
     </script>
 </body>
 </html>
