@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌸 Sudoku Kawaii 🌸</title>
+    <style>
+        /* --- Importación de Fuente Kawaii --- */
+        @import url('https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&display=swap');
+
+        /* --- Estilos Generales del Cuerpo --- */
+        body {
+            font-family: 'Mochiy Pop One', sans-serif;
+            background: linear-gradient(135deg, #ffdde1, #ee9ca7);
+            color: #5b3a42;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            user-select: none;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* --- Contenedor Principal --- */
+        #game-container {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 25px;
+            border-radius: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: #ff69b4; /* Rosa intenso */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            margin-top: 0;
+        }
+
+        /* --- Pantalla de Selección de Dificultad --- */
+        #difficulty-selection button {
+            font-family: 'Mochiy Pop One', sans-serif;
+            font-size: 1.2rem;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 50px;
+            margin: 10px;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        #difficulty-selection button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        #btn-easy { background-color: #84fab0; } /* Verde menta */
+        #btn-medium { background-color: #fbc2eb; } /* Rosa pastel */
+        #btn-hard { background-color: #a6c1ee; } /* Azul cielo */
+
+        /* --- Pantalla del Juego --- */
+        #game-board {
+            display: none; /* Oculto al principio */
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        /* --- Cuadrícula del Sudoku --- */
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            grid-template-rows: repeat(9, 1fr);
+            width: 100%;
+            max-width: 450px;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            border: 3px solid #ff69b4;
+            border-radius: 15px;
+            overflow: hidden;
+            background-color: #fff0f5; /* Rosa muy claro */
+        }
+
+        .cell-container {
+            border: 1px solid #fbc2eb;
+            box-sizing: border-box;
+        }
+
+        .cell-container:nth-child(3n) { border-right: 3px solid #ff69b4; }
+        .cell-container:nth-child(9n) { border-right: none; }
+        .cell-container:nth-child(n+19):nth-child(-n+27),
+        .cell-container:nth-child(n+46):nth-child(-n+54) { border-bottom: 3px solid #ff69b4; }
+        
+        /* ESTILO PARA LOS INPUTS DENTRO DE LAS CELDAS */
+        .cell {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: transparent;
+            text-align: center;
+            font-family: 'Mochiy Pop One', sans-serif;
+            font-size: clamp(1rem, 4vw, 1.8rem);
+            color: #5b3a42;
+            padding: 0;
+        }
+
+        .cell:focus {
+            outline: none;
+            background-color: #a6c1ee;
+            color: white;
+        }
+        
+        .cell.given {
+            background-color: #fff9c4; /* Amarillo pastel */
+            color: #5b3a42;
+            font-weight: bold;
+        }
+        
+        .cell.error {
+            background-color: #ff8a80; /* Rojo claro */
+            color: white;
+            animation: shake 0.5s;
+        }
+        
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-5px); }
+          75% { transform: translateX(5px); }
+        }
+
+        /* --- Paleta de Números y Botones de Acción --- */
+        #controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        #digits {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .digit {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .digit:hover {
+            background-color: #ffc107; /* Amarillo */
+            transform: scale(1.1);
+        }
+
+        #action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            font-family: 'Mochiy Pop One', sans-serif;
+            font-size: 1rem;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        #check-btn { background-color: #ab47bc; } /* Morado */
+        #erase-btn { background-color: #ff7043; } /* Naranja */
+
+        /* --- Mensaje de Victoria --- */
+        #win-message {
+            display: none;
+            font-size: 2rem;
+            color: #4caf50;
+            animation: pop-in 0.5s ease-out;
+        }
+
+        @keyframes pop-in {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>🌸 Sudoku Kawaii 🌸</h1>
+        
+        <div id="difficulty-selection">
+            <h2>Elige un nivel ✨</h2>
+            <button id="btn-easy">Fácil 🍓</button>
+            <button id="btn-medium">Medio ⭐</button>
+            <button id="btn-hard">Difícil 💖</button>
+        </div>
+
+        <div id="game-board">
+            <div id="grid"></div>
+            <div id="controls">
+                <div id="digits"></div>
+                 <div id="action-buttons">
+                    <button id="check-btn" class="action-btn">Corregir 🧐</button>
+                    <button id="erase-btn" class="action-btn">Borrar ❌</button>
+                </div>
+            </div>
+            <p id="win-message">¡Felicidades, lo lograste! 🎉</p>
+        </div>
+    </div>
+
+    <script>
+        // --- Constantes y Variables del Juego ---
+        const GRID_SIZE = 9, BOX_SIZE = 3, EMPTY_CELL = 0;
+        const DIFFICULTY = { EASY: 45, MEDIUM: 55, HARD: 60 };
+        
+        let board = [], solution = [], selectedCell = null;
+
+        // --- Elementos del DOM ---
+        const gridElement = document.getElementById('grid');
+        const digitsElement = document.getElementById('digits');
+        const difficultySelection = document.getElementById('difficulty-selection');
+        const gameBoardElement = document.getElementById('game-board');
+        const winMessage = document.getElementById('win-message');
+
+        // --- Manejadores de Eventos ---
+        document.getElementById('btn-easy').addEventListener('click', () => startGame(DIFFICULTY.EASY));
+        document.getElementById('btn-medium').addEventListener('click', () => startGame(DIFFICULTY.MEDIUM));
+        document.getElementById('btn-hard').addEventListener('click', () => startGame(DIFFICULTY.HARD));
+        document.getElementById('check-btn').addEventListener('click', checkUserInputs);
+        document.getElementById('erase-btn').addEventListener('click', () => placeNumber(EMPTY_CELL));
+
+
+        // --- Lógica del Juego ---
+        
+        /**
+         * Inicia el juego con la dificultad seleccionada
+         */
+        function startGame(difficulty) {
+            difficultySelection.style.display = 'none';
+            gameBoardElement.style.display = 'flex';
+            winMessage.style.display = 'none';
+
+            board = generateEmptyGrid();
+            solution = generateEmptyGrid();
+            
+            generateSolution(board);
+            // Copiar la solución completa antes de crear el puzle
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    solution[r][c] = board[r][c];
+                }
+            }
+            
+            generatePuzzle(board, difficulty);
+
+            renderBoard();
+            renderDigits();
+        }
+
+        /**
+         * Renderiza la cuadrícula del Sudoku en el HTML usando inputs
+         */
+        function renderBoard() {
+            gridElement.innerHTML = '';
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cellContainer = document.createElement('div');
+                    cellContainer.classList.add('cell-container');
+
+                    const cell = document.createElement('input');
+                    cell.type = 'text';
+                    cell.maxLength = 1;
+                    cell.classList.add('cell');
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    
+                    if (board[r][c] !== EMPTY_CELL) {
+                        cell.value = board[r][c];
+                        cell.classList.add('given');
+                        cell.disabled = true; // Los números dados no se pueden cambiar
+                    } else {
+                        // Event listener para entrada manual
+                        cell.addEventListener('input', handleInput);
+                        cell.addEventListener('focus', () => selectedCell = cell);
+                    }
+                    cellContainer.appendChild(cell);
+                    gridElement.appendChild(cellContainer);
+                }
+            }
+        }
+        
+        /**
+         * Maneja la entrada de datos del usuario en una celda
+         */
+        function handleInput(e) {
+            const cell = e.target;
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            let value = cell.value;
+
+            // Limpiar cualquier estilo de error al escribir
+            cell.classList.remove('error');
+
+            // Validar que solo sea un número del 1 al 9
+            if (!/^[1-9]$/.test(value)) {
+                cell.value = '';
+                value = EMPTY_CELL;
+            }
+
+            board[row][col] = value === EMPTY_CELL ? EMPTY_CELL : parseInt(value);
+            
+            if (isBoardFull()) {
+                checkWin();
+            }
+        }
+
+        /**
+         * Renderiza la paleta de números
+         */
+        function renderDigits() {
+            digitsElement.innerHTML = '';
+            for (let i = 1; i <= GRID_SIZE; i++) {
+                const digit = document.createElement('div');
+                digit.textContent = i;
+                digit.classList.add('digit');
+                digit.addEventListener('click', () => placeNumber(i));
+                digitsElement.appendChild(digit);
+            }
+        }
+
+        /**
+         * Coloca un número desde la paleta o borra la celda seleccionada
+         */
+        function placeNumber(num) {
+            if (!selectedCell || selectedCell.classList.contains('given')) {
+                return;
+            }
+            
+            const row = parseInt(selectedCell.dataset.row);
+            const col = parseInt(selectedCell.dataset.col);
+
+            if (num === EMPTY_CELL) {
+                selectedCell.value = '';
+                board[row][col] = EMPTY_CELL;
+            } else {
+                selectedCell.value = num;
+                board[row][col] = num;
+            }
+            selectedCell.classList.remove('error');
+
+            if (isBoardFull()) {
+                checkWin();
+            }
+        }
+        
+        /**
+         * Comprueba las entradas del usuario y marca los errores
+         */
+        function checkUserInputs() {
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cellElement = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+                    
+                    // Solo comprobar celdas rellenadas por el usuario
+                    if (!cellElement.classList.contains('given') && board[r][c] !== EMPTY_CELL) {
+                        if (board[r][c] !== solution[r][c]) {
+                            cellElement.classList.add('error');
+                        } else {
+                            cellElement.classList.remove('error'); // Quitar error si está corregido
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * Comprueba si el tablero está completo y es correcto para ganar
+         */
+        function checkWin() {
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (board[r][c] !== solution[r][c]) {
+                        return; // Si algo no coincide, no ha ganado
+                    }
+                }
+            }
+            winMessage.style.display = 'block';
+        }
+        
+        function isBoardFull() {
+             for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (board[r][c] === EMPTY_CELL) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // --- Algoritmos de Generación de Sudoku (Sin cambios) ---
+
+        function generateEmptyGrid() {
+            return new Array(GRID_SIZE).fill(0).map(() => new Array(GRID_SIZE).fill(EMPTY_CELL));
+        }
+
+        function generateSolution(grid) {
+            const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+            shuffle(numbers);
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    if (grid[r][c] === EMPTY_CELL) {
+                        for (let num of numbers) {
+                            if (isValid(grid, r, c, num)) {
+                                grid[r][c] = num;
+                                if (generateSolution(grid)) {
+                                    return true;
+                                }
+                                grid[r][c] = EMPTY_CELL; // Backtrack
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function generatePuzzle(grid, holes) {
+            let removed = 0;
+            while (removed < holes) {
+                const row = Math.floor(Math.random() * GRID_SIZE);
+                const col = Math.floor(Math.random() * GRID_SIZE);
+                if (grid[row][col] !== EMPTY_CELL) {
+                    grid[row][col] = EMPTY_CELL;
+                    removed++;
+                }
+            }
+        }
+
+        function isValid(grid, row, col, num) {
+            for (let i = 0; i < GRID_SIZE; i++) {
+                if (grid[row][i] === num || grid[i][col] === num) {
+                    return false;
+                }
+            }
+            const startRow = Math.floor(row / BOX_SIZE) * BOX_SIZE;
+            const startCol = Math.floor(col / BOX_SIZE) * BOX_SIZE;
+            for (let r = 0; r < BOX_SIZE; r++) {
+                for (let c = 0; c < BOX_SIZE; c++) {
+                    if (grid[startRow + r][startCol + c] === num) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+    </script>
+</body>
+</html>

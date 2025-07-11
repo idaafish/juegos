@@ -1,0 +1,500 @@
+El problema de que la página "no se abre" o se queda congelada se debe a que todo el trabajo pesado (la generación de un laberinto muy grande y el cálculo de la expansión de la lava) se ejecuta de forma síncrona en cuanto la página empieza a cargar. Esto puede bloquear el navegador durante varios segundos, dando la impresión de que no funciona.
+
+La solución es aplazar estos cálculos para que se ejecuten únicamente después de que hagas clic en el botón "Empezar a jugar".
+
+He corregido el código para solucionar esto y otros pequeños errores que encontré:
+
+1.  **Carga Inmediata ✨:** Toda la lógica de creación del laberinto se ha movido a una nueva función `initializeGame()`. Esta función solo se llama cuando presionas el botón de inicio, por lo que la página cargará al instante sin congelarse.
+2.  **Código del Avión Restaurado ✈️:** Restauré el código que dibuja el avión estrellado, que se había omitido accidentalmente en la versión anterior.
+3.  **Corrección de Errores Menores 🐛:** Arreglé un pequeño error que podía causar que el barco pirata se posicionara incorrectamente en los bordes inferior y derecho del mapa. También mejoré la lógica del redimensionamiento de la ventana para que no interfiera con el estado del juego.
+
+-----
+
+### Código Corregido y Optimizado
+
+Copia y pega este código completo. Ahora la página debería cargar instantáneamente y el juego comenzará de forma fluida cuando estés listo.
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Laberinto Volcán</title>
+    <style>
+        body {
+            background: #2d1a0b;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            margin-top: 30px;
+            background: #3e2723;
+            border-radius: 18px;
+            padding: 24px 32px 32px 32px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #ff9800;
+        }
+        .subtitle {
+            text-align: center;
+            color: #ffcc80;
+            margin-bottom: 20px;
+        }
+        #mazeCanvas {
+            display: block;
+            margin: 0 auto 20px auto;
+            background: #1b0c02;
+            border: 3px solid #ff9800;
+            border-radius: 10px;
+            box-shadow: 0 0 24px #000a;
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 18px;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #ff9800, #ff5722);
+            color: #222;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .back-btn:hover {
+            background: linear-gradient(135deg, #ffd54f, #ff7043);
+            color: #000;
+        }
+        .win-msg {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #ffeb3b;
+            margin-top: 18px;
+        }
+        .star {
+            color: #ffeb3b;
+            cursor: pointer;
+            transition: transform 0.15s;
+            filter: drop-shadow(0 0 4px #ff9800);
+        }
+        .star.inactive {
+            color: #bdbdbd;
+            filter: none;
+        }
+        .star:hover,
+        .star.selected {
+            transform: scale(1.18);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
+        <h1>Laberinto Volcán</h1>
+        <div class="subtitle">¡Encuentra el barco pirata y escapa de la isla!</div>
+        <canvas id="mazeCanvas" width="1" height="1"></canvas>
+        <div class="win-msg" id="winMsg" style="display:none;">¡Has escapado del volcán!<br><button class="back-btn" onclick="location.reload()">Jugar de nuevo</button></div>
+    </div>
+    <div id="difficultyModal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10;background:rgba(30,20,10,0.92);display:flex;align-items:center;justify-content:center;">
+      <div style="background:#3e2723;padding:32px 36px 28px 36px;border-radius:18px;box-shadow:0 8px 32px #000a;text-align:center;min-width:320px;">
+        <h2 style="color:#ff9800;margin-bottom:18px;">Elige la dificultad</h2>
+        <div style="color:#ffe0b2;font-size:1.08rem;margin-bottom:18px;line-height:1.5;">
+          Tu avión se ha estrellado en una isla volcánica.<br>
+          Debes escapar del laberinto antes de que la lava te alcance.<br>
+          ¡Elige la dificultad y corre por tu vida!
+        </div>
+        <div id="starContainer" style="font-size:2.2rem;margin-bottom:18px;"></div>
+        <button id="startGameBtn" class="back-btn" style="margin-top:10px;">Empezar a jugar</button>
+      </div>
+    </div>
+    <script>
+    // Variables globales de estado y configuración
+    let selectedDifficulty = 3;
+    let config;
+    let maze, player, exitPos, crashedPlane, volcano, lavaTime;
+    let eruptionStart = null, lavaStep = 0, lastLavaUpdateTime = 0;
+    let playerMarker = { active: false, life: 0 };
+    let animationFrameId, gameStartTime = null, gameHasStarted = false;
+
+    const canvas = document.getElementById('mazeCanvas');
+    const ctx = canvas.getContext('2d');
+    const winMsg = document.getElementById('winMsg');
+    const starContainer = document.getElementById('starContainer');
+    const startGameBtn = document.getElementById('startGameBtn');
+    const difficultyModal = document.getElementById('difficultyModal');
+
+    const lavaSpeeds = [
+        Math.round(2400 * 0.85), // 1 estrella
+        Math.round(2160 * 0.85), // 2 estrellas
+        Math.round(1944 * 0.85), // 3 estrellas
+        Math.round(1749 * 0.85), // 4 estrellas
+        Math.round(1575 * 0.85)  // 5 estrellas
+    ];
+
+    function resizeMazeConfig() {
+        const rows = 63;
+        const cols = 78;
+        const maxWidth = Math.floor(window.innerWidth * 0.8);
+        const maxHeight = Math.floor(window.innerHeight * 0.8);
+        const cellSize = Math.floor(Math.min(maxWidth / cols, maxHeight / rows));
+        return {
+            rows, cols, cellSize,
+            mazeRandomness: 0.85,
+            extraPathsRatio: 8,
+            eruptionDelay: 2000
+        };
+    }
+
+    // --- LÓGICA DE GENERACIÓN DEL JUEGO (AHORA EN UNA FUNCIÓN) ---
+    function initializeGame() {
+        config = resizeMazeConfig();
+        canvas.width = config.cols * config.cellSize;
+        canvas.height = config.rows * config.cellSize;
+
+        function generateMaze(rows, cols) {
+            const maze = Array.from({length: rows}, () => Array(cols).fill(1));
+            const stack = [];
+            let cx = 1, cy = 1;
+            maze[cy][cx] = 0;
+            stack.push([cx, cy]);
+            const dirs = [[0, -2], [2, 0], [0, 2], [-2, 0]];
+            while (stack.length) {
+                const [x, y] = stack[stack.length-1];
+                let neighbors = [];
+                for (const [dx, dy] of dirs) {
+                    const nx = x + dx, ny = y + dy;
+                    if (nx > 0 && nx < cols-1 && ny > 0 && ny < rows-1 && maze[ny][nx] === 1) {
+                        neighbors.push([nx, ny, dx, dy]);
+                    }
+                }
+                if (neighbors.length) {
+                    let chosen = neighbors[Math.floor(Math.random()*neighbors.length)];
+                    const [nx, ny, dx, dy] = chosen;
+                    maze[ny][nx] = 0;
+                    maze[y+dy/2][x+dx/2] = 0;
+                    stack.push([nx, ny]);
+                } else {
+                    stack.pop();
+                }
+            }
+            for (let i = 0; i < (rows * cols) / config.extraPathsRatio; i++) {
+                maze[Math.floor(Math.random()*(rows-2))+1][Math.floor(Math.random()*(cols-2))+1] = 0;
+            }
+            return maze;
+        }
+
+        function isInsideIsland(x, y) {
+            const cx = x - config.cols / 2;
+            const cy = y - config.rows / 2;
+            const oval = (cx * cx) / Math.pow(config.cols * 0.40, 2) + (cy * cy) / Math.pow(config.rows * 0.46, 2);
+            return oval <= 0.96;
+        }
+
+        function findRandomEmptyCell(maze, cols, rows) {
+            let x, y, attempts = 0;
+            do {
+                x = Math.floor(Math.random() * (cols - 2)) + 1;
+                y = Math.floor(Math.random() * (rows - 2)) + 1;
+                if (attempts++ > 2000) break;
+            } while (maze[y][x] !== 0 || !isInsideIsland(x, y));
+            return { x, y };
+        }
+
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+        }
+
+        function isAreaClear(maze, x, y, size) {
+            if (x < 1 || y < 1 || x + size > config.cols - 1 || y + size > config.rows - 1) return false;
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (maze[y + j][x + i] !== 0) return false;
+                }
+            }
+            return true;
+        }
+
+        function findRandomEmptyEdgeCell(maze, cols, rows) {
+            const potentialPositions = [];
+            const portalSize = 4;
+            // Top, Bottom, Left, Right with CORRECTED coordinates
+            for (let x = 1; x <= cols - 1 - portalSize; x++) if (isAreaClear(maze, x, 1, portalSize)) potentialPositions.push({ x, y: 1 });
+            for (let x = 1; x <= cols - 1 - portalSize; x++) if (isAreaClear(maze, x, rows - 1 - portalSize, portalSize)) potentialPositions.push({ x, y: rows - 1 - portalSize });
+            for (let y = 1; y <= rows - 1 - portalSize; y++) if (isAreaClear(maze, 1, y, portalSize)) potentialPositions.push({ x: 1, y });
+            for (let y = 1; y <= rows - 1 - portalSize; y++) if (isAreaClear(maze, cols - 1 - portalSize, y, portalSize)) potentialPositions.push({ x: cols - 1 - portalSize, y });
+
+            if (potentialPositions.length > 0) return potentialPositions[Math.floor(Math.random() * potentialPositions.length)];
+            
+            let fallbackPos; // Fallback
+            do { fallbackPos = findRandomEmptyCell(maze, cols, rows); } while (!isAreaClear(maze, fallbackPos.x, fallbackPos.y, portalSize));
+            return fallbackPos;
+        }
+
+        maze = generateMaze(config.rows, config.cols);
+        const minDistance = Math.min(config.rows, config.cols) * 0.7;
+        exitPos = findRandomEmptyEdgeCell(maze, config.cols, config.rows);
+        let startPos;
+        do { startPos = findRandomEmptyCell(maze, config.cols, config.rows); } while (getDistance(startPos, exitPos) < minDistance);
+
+        const exitAreaSize = 4;
+        for (let i = 0; i < exitAreaSize; i++) {
+            for (let j = 0; j < exitAreaSize; j++) {
+                if (exitPos.y + j < config.rows && exitPos.x + i < config.cols) {
+                    maze[exitPos.y + j][exitPos.x + i] = 0;
+                }
+            }
+        }
+
+        player = {x: startPos.x, y: startPos.y};
+        crashedPlane = { x: player.x * config.cellSize - config.cellSize * 1.1, y: player.y * config.cellSize + config.cellSize * 0.2 };
+        volcano = { x: Math.floor(config.cols / 2), y: Math.floor(config.rows / 2) };
+        lavaTime = Array.from({length: config.rows}, () => Array(config.cols).fill(-1));
+        
+        let lavaFront = [];
+        let foundCenter = false;
+        if(maze[volcano.y][volcano.x] === 0) {
+            lavaFront.push({x: volcano.x, y: volcano.y});
+            lavaTime[volcano.y][volcano.x] = 0;
+            foundCenter = true;
+        } else {
+             for (let r = 1; r < Math.max(config.rows, config.cols) && !foundCenter; r++) {
+                for (let dx = -r; dx <= r && !foundCenter; dx++) {
+                    for (let dy = -r; dy <= r && !foundCenter; dy++) {
+                        let nx = volcano.x + dx, ny = volcano.y + dy;
+                        if (nx > 0 && nx < config.cols-1 && ny > 0 && ny < config.rows-1 && maze[ny][nx] === 0) {
+                           lavaFront.push({x: nx, y: ny});
+                           lavaTime[ny][nx] = 0;
+                           foundCenter = true;
+                        }
+                    }
+                }
+            }
+        }
+        
+        let t = 1;
+        while (lavaFront.length) {
+            let nextFront = [];
+            for (const {x, y} of lavaFront) {
+                for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                    let nx = x + dx, ny = y + dy;
+                    if (nx > 0 && nx < config.cols-1 && ny > 0 && ny < config.rows-1 && maze[ny][nx] === 0 && lavaTime[ny][nx] === -1) {
+                        lavaTime[ny][nx] = t;
+                        nextFront.push({x: nx, y: ny});
+                    }
+                }
+            }
+            lavaFront = nextFront;
+            t++;
+        }
+    }
+
+
+    // --- LÓGICA DE DIBUJO Y BUCLE DEL JUEGO ---
+    function draw(timestamp) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < config.rows; y++) {
+            for (let x = 0; x < config.cols; x++) {
+                const cx = x - config.cols / 2, cy = y - config.rows / 2;
+                const oval = (cx * cx) / Math.pow(config.cols * 0.40, 2) + (cy * cy) / Math.pow(config.rows * 0.46, 2);
+
+                if (oval > 1.08) { // MAR
+                    const t = performance.now() / 900;
+                    const wave = 0.5 + 0.5 * Math.sin(t + x * 0.25 + y * 0.18) + 0.3 * Math.sin(t * 1.7 + x * 0.13 - y * 0.22);
+                    ctx.fillStyle = `rgb(${33 + wave * 30},${150 + wave * 40},${243 + wave * 20})`;
+                } else if (oval > 0.96) { // PLAYA
+                    const t = performance.now() / 900;
+                    if (oval > 1.01 && Math.sin(t + x * 0.22 + y * 0.19) > 0.7) ctx.fillStyle = "#fffde7"; else ctx.fillStyle = "#ffe082";
+                } else { // ISLA
+                    if (lavaTime[y][x] !== -1 && eruptionStart !== null && lavaStep >= lavaTime[y][x]) ctx.fillStyle = "#ff3c00";
+                    else if (maze[y][x] === 1) ctx.fillStyle = Math.random() < 0.18 ? "#4e342e" : "#184d27";
+                    else ctx.fillStyle = "#b9f6ca";
+                }
+                ctx.fillRect(x * config.cellSize, y * config.cellSize, config.cellSize, config.cellSize);
+            }
+        }
+        
+        drawPirateShip(timestamp);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(volcano.x*config.cellSize+config.cellSize/2, volcano.y*config.cellSize+config.cellSize/2, config.cellSize/2.2, 0, 2*Math.PI);
+        ctx.fillStyle = "#b71c1c"; ctx.shadowColor = "#ff9800"; ctx.shadowBlur = 18; ctx.fill();
+        ctx.restore();
+
+        let highlight = gameStartTime && performance.now() - gameStartTime < 2000;
+        ctx.save();
+        ctx.translate(player.x * config.cellSize + config.cellSize / 2, player.y * config.cellSize + config.cellSize / 2);
+
+        if (highlight) {
+            ctx.save();
+            ctx.beginPath(); ctx.arc(0, 0, config.cellSize * 0.9, 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(255,255,0,0.35)"; ctx.shadowColor = "#fff"; ctx.shadowBlur = 18; ctx.fill();
+            ctx.restore();
+        }
+
+        ctx.beginPath(); ctx.arc(0, 0, config.cellSize / 2.5, 0, 2 * Math.PI); ctx.fillStyle = "#c2a370"; ctx.shadowColor = "#fff8"; ctx.shadowBlur = 8; ctx.fill();
+        ctx.beginPath(); ctx.arc(0, -config.cellSize / 4, config.cellSize / 4, 0, 2 * Math.PI); ctx.fillStyle = "#f5d7b7"; ctx.fill();
+        ctx.save(); ctx.beginPath(); ctx.ellipse(0, -config.cellSize / 4 - config.cellSize / 12, config.cellSize / 4, config.cellSize / 10, 0, 0, 2 * Math.PI); ctx.fillStyle = "#5b3a1e"; ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, -config.cellSize / 4 - config.cellSize / 7, config.cellSize / 8, config.cellSize / 12, 0, 0, 2 * Math.PI); ctx.fillStyle = "#3e2723"; ctx.fill(); ctx.restore();
+        ctx.beginPath(); ctx.moveTo(-config.cellSize / 8, 0); ctx.lineTo(0, config.cellSize / 8); ctx.lineTo(config.cellSize / 8, 0); ctx.closePath(); ctx.fillStyle = "#d32f2f"; ctx.fill();
+        ctx.restore();
+
+        // --- CÓDIGO DEL AVIÓN RESTAURADO ---
+        {
+            const crashX = crashedPlane.x, crashY = crashedPlane.y, scale = 3;
+            ctx.save();
+            ctx.translate(crashX + config.cellSize * scale / 2, crashY + config.cellSize * scale / 2);
+            ctx.rotate(-Math.PI / 6);
+            ctx.fillStyle = "#f5f5f5"; ctx.fillRect(-config.cellSize * 0.6 * scale, -config.cellSize * 0.18 * scale, config.cellSize * 1.2 * scale, config.cellSize * 0.36 * scale);
+            ctx.beginPath(); ctx.arc(config.cellSize * 0.6 * scale, 0, config.cellSize * 0.18 * scale, 0, 2 * Math.PI); ctx.fillStyle = "#90caf9"; ctx.fill();
+            ctx.save(); ctx.fillStyle = "#f5f5f5"; ctx.strokeStyle = "#1976d2"; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.rect(-config.cellSize * 0.15 * scale, -config.cellSize * 0.5 * scale, config.cellSize * 0.7 * scale, config.cellSize * 1.0 * scale);
+            ctx.fill(); ctx.stroke(); ctx.restore();
+            ctx.save(); ctx.rotate(-Math.PI / 8); ctx.fillStyle = "#f5f5f5"; ctx.strokeStyle = "#1976d2"; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.rect(-config.cellSize * 0.6 * scale, -config.cellSize * 0.12 * scale, config.cellSize * 0.25 * scale, config.cellSize * 0.24 * scale);
+            ctx.fill(); ctx.stroke(); ctx.restore();
+            ctx.fillStyle = "#90caf9"; ctx.fillRect(config.cellSize * 0.1 * scale, -config.cellSize * 0.12 * scale, config.cellSize * 0.35 * scale, config.cellSize * 0.24 * scale);
+            ctx.restore();
+            for (let i = 0; i < 22; i++) {
+                const t = performance.now() / 700 + i;
+                const hx = crashX + config.cellSize * scale / 2 + Math.sin(t + i) * config.cellSize * 0.18 * scale;
+                const hy = crashY + config.cellSize * scale / 2 - config.cellSize * 0.2 * scale - i * config.cellSize * 0.28 * scale - Math.abs(Math.sin(t + i)) * config.cellSize * 0.12 * scale;
+                ctx.save(); ctx.globalAlpha = 0.32 + 0.18 * Math.abs(Math.sin(t + i));
+                ctx.beginPath(); ctx.arc(hx, hy, config.cellSize * (0.28 + 0.13 * Math.abs(Math.sin(t + i))) * scale, 0, 2 * Math.PI);
+                ctx.fillStyle = "#bbb"; ctx.shadowColor = "#444"; ctx.shadowBlur = 18; ctx.fill(); ctx.restore();
+            }
+        }
+    }
+
+    function drawPirateShip(timestamp) {
+        const exitAreaSize = 4;
+        const shipCenterX = (exitPos.x + exitAreaSize / 2) * config.cellSize;
+        const shipCenterY = (exitPos.y + exitAreaSize / 2) * config.cellSize;
+        const wave = Math.sin(timestamp / 500) * config.cellSize * 0.1;
+
+        ctx.save();
+        ctx.translate(shipCenterX, shipCenterY + wave);
+        ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 15; ctx.shadowOffsetY = 10;
+        
+        ctx.fillStyle = '#5d4037'; ctx.beginPath();
+        ctx.moveTo(-config.cellSize * 1.8, config.cellSize * 0.5);
+        ctx.quadraticCurveTo(0, config.cellSize * 1.2, config.cellSize * 1.8, config.cellSize * 0.5);
+        ctx.lineTo(config.cellSize * 1.5, -config.cellSize * 0.2);
+        ctx.lineTo(-config.cellSize * 1.5, -config.cellSize * 0.2);
+        ctx.closePath(); ctx.fill();
+        
+        ctx.fillStyle = '#3e2723'; ctx.fillRect(-config.cellSize * 1.5, -config.cellSize * 0.4, config.cellSize * 3, config.cellSize * 0.2);
+        ctx.fillStyle = '#4e342e'; ctx.fillRect(-config.cellSize * 0.1, -config.cellSize * 2.5, config.cellSize * 0.2, config.cellSize * 2.5);
+        
+        ctx.save(); ctx.beginPath();
+        const sailWave = Math.sin(timestamp / 300) * config.cellSize * 0.2;
+        ctx.moveTo(config.cellSize * 0.1, -config.cellSize * 2.2);
+        ctx.quadraticCurveTo(config.cellSize * 0.8 + sailWave, -config.cellSize * 1.2, config.cellSize * 0.1, -config.cellSize * 0.3);
+        ctx.closePath(); ctx.fillStyle = '#f5f5f5'; ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 2; ctx.fill(); ctx.stroke();
+        ctx.restore();
+        
+        ctx.restore();
+    }
+    
+    function update(timestamp) {
+        if (winMsg.style.display !== "none") return;
+        if (eruptionStart === null) eruptionStart = timestamp;
+        if (timestamp - lastLavaUpdateTime > lavaSpeeds[selectedDifficulty - 1]) {
+            lavaStep++;
+            lastLavaUpdateTime = timestamp;
+        }
+
+        if (lavaTime[player.y][player.x] !== -1 && lavaStep >= lavaTime[player.y][player.x]) {
+            winMsg.innerHTML = "¡La lava te alcanzó!<br><button class='back-btn' onclick='location.reload()'>Intentar de nuevo</button>";
+            winMsg.style.display = "block";
+        }
+        
+        const exitAreaSize = 4;
+        if (player.x >= exitPos.x && player.x < exitPos.x + exitAreaSize && player.y >= exitPos.y && player.y < exitPos.y + exitAreaSize) {
+            winMsg.innerHTML = "¡Has escapado en el barco pirata!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
+            winMsg.style.display = "block";
+        }
+    }
+
+    function gameLoop(timestamp) {
+        if (gameStartTime === null) gameStartTime = timestamp;
+        update(timestamp);
+        draw(timestamp);
+        if (winMsg.style.display === "none") {
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+    }
+
+    // --- MANEJO DE EVENTOS ---
+    document.addEventListener('keydown', e => {
+        if (!gameHasStarted || winMsg.style.display !== "none") return;
+        let dx = 0, dy = 0;
+        const key = e.key.toLowerCase();
+        if (["a", "arrowleft"].includes(key)) dx = -1;
+        if (["d", "arrowright"].includes(key)) dx = 1;
+        if (["w", "arrowup"].includes(key)) dy = -1;
+        if (["s", "arrowdown"].includes(key)) dy = 1;
+
+        if (dx === 0 && dy === 0) return;
+        const nx = player.x + dx, ny = player.y + dy;
+        if (maze[ny] && maze[ny][nx] === 0) {
+            player.x = nx; player.y = ny;
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (!gameHasStarted) return; // No hacer nada si el juego no ha comenzado
+        cancelAnimationFrame(animationFrameId);
+        config = resizeMazeConfig();
+        canvas.width = config.cols * config.cellSize;
+        canvas.height = config.rows * config.cellSize;
+        draw(performance.now()); // Redibujar
+        if (winMsg.style.display === "none") {
+            animationFrameId = requestAnimationFrame(gameLoop); // Reanudar
+        }
+    });
+    
+    function updateStars() {
+        starContainer.querySelectorAll('.star').forEach((star, idx) => {
+            star.classList.toggle('inactive', idx >= selectedDifficulty);
+        });
+    }
+
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.innerHTML = '★';
+        star.className = 'star';
+        star.dataset.value = i;
+        star.onclick = () => { selectedDifficulty = i; updateStars(); };
+        starContainer.appendChild(star);
+    }
+    updateStars();
+
+    startGameBtn.onclick = function() {
+        this.textContent = "Cargando...";
+        this.disabled = true;
+        
+        setTimeout(() => {
+            initializeGame(); // La magia ocurre aquí
+            difficultyModal.style.display = 'none';
+            gameHasStarted = true;
+            requestAnimationFrame(gameLoop);
+        }, 50); // Pequeño delay para que el navegador actualice el texto del botón
+    };
+
+    </script>
+</body>
+</html>
+```
