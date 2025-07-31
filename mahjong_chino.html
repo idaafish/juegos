@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahjong Chino Tradicional - OnlyFun</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2d5a27, #0f3460);
+            color: white;
+            min-height: 100vh;
+            overflow-x: auto;
+        }
+
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .player-info {
+            text-align: center;
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .player-info.current {
+            background: rgba(255,215,0,0.2);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .mahjong-table {
+            position: relative;
+            width: 1000px;
+            height: 750px;
+            margin: 0 auto;
+            background: #0a5d3c;
+            border: 8px solid #8B4513;
+            border-radius: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .player-area {
+            position: absolute;
+        }
+
+        .player-area.player {
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .player-area.bot1 {
+            position: absolute;
+            right: 0px;
+            top: 50%;
+            width: 60px;
+            transform: translateY(-50%);
+        }
+
+        .player-area.bot1 .hand {
+            transform: rotate(90deg);
+            transform-origin: center center;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+        }
+
+        .player-area.bot2 {
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%) rotate(180deg);
+        }
+
+        .player-area.bot3 {
+            position: absolute;
+            left: 0px;
+            top: 50%;
+            width: 60px;
+            transform: translateY(-50%);
+        }
+
+        .player-area.bot3 .hand {
+            transform: rotate(-90deg);
+            transform-origin: center center;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+        }
+
+        .hand {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+        }
+
+        .tile {
+            width: 45px;
+            height: 60px;
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            border: 2px solid #333;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            color: #333;
+        }
+
+        .tile .number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 3px;
+            line-height: 1;
+        }
+
+        .tile .suit-symbol {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .tile.bamboo { 
+            background: linear-gradient(145deg, #e8f5e8, #d4f0d4);
+        }
+        .tile.bamboo .suit-symbol { 
+            color: #2d5a27;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .tile.character { 
+            background: linear-gradient(145deg, #ffeaea, #ffd4d4);
+        }
+        .tile.character .suit-symbol { 
+            color: #8B0000;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .tile.dot { 
+            background: linear-gradient(145deg, #e6f3ff, #cce7ff);
+        }
+        .tile.dot .suit-symbol { 
+            color: #003d7a;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .tile.honor { 
+            background: linear-gradient(145deg, #fff8dc, #ffeaa7);
+            border: 2px solid #d4a574;
+        }
+        .tile.honor .number {
+            font-size: 22px;
+            color: #8B0000;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .tile.selected {
+            transform: translateY(-10px);
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+
+        .tile.back {
+            background: linear-gradient(45deg, #8B0000, #CD853F);
+            color: white;
+        }
+
+        .discard-pile {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px;
+            height: 200px;
+            border: 2px dashed rgba(255,255,255,0.3);
+            border-radius: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .discard-pile .tile {
+            width: 30px;
+            height: 40px;
+        }
+        
+        .discard-pile .tile .number {
+            font-size: 12px;
+        }
+        
+        .discard-pile .tile .suit-symbol {
+            font-size: 14px;
+        }
+
+        .game-controls {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn.chow { background: linear-gradient(45deg, #10ac84, #00cec9); }
+        .btn.pung { background: linear-gradient(45deg, #ff9ff3, #f368e0); }
+        .btn.kong { background: linear-gradient(45deg, #feca57, #ff9ff3); }
+
+        .message-area {
+            background: rgba(0,0,0,0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wind-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .melds {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .meld {
+            display: flex;
+            gap: 2px;
+            background: rgba(0,0,0,0.3);
+            padding: 5px;
+            border-radius: 5px;
+        }
+
+        .meld .tile {
+            width: 35px;
+            height: 45px;
+        }
+        
+        .meld .tile .number {
+            font-size: 12px;
+        }
+        
+        .meld .tile .suit-symbol {
+            font-size: 14px;
+        }
+
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: white;
+            color: #333;
+        }
+
+        @media (max-width: 1000px) {
+            .mahjong-table {
+                width: 95vw;
+                height: 70vh;
+            }
+            
+            .tile {
+                width: 35px;
+                height: 50px;
+            }
+            
+            .tile .number {
+                font-size: 18px;
+            }
+            
+            .tile .suit-symbol {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <a href="inicio.html" class="back-button">← Volver</a>
+        
+        <div class="header">
+            <h1>麻將 Mahjong Chino Tradicional</h1>
+            <p>Juega contra 3 IA con reglas tradicionales chinas</p>
+        </div>
+
+        <div class="wind-indicator">
+            <div>Viento de la Mesa: <span id="table-wind">Este</span></div>
+            <div>Turno: <span id="current-turn">Jugador</span></div>
+        </div>
+
+        <div class="game-info">
+            <div class="player-info current" id="player-info">
+                <h3>Jugador (Este)</h3>
+                <div>Puntos: <span id="player-score">0</span></div>
+                <div>Fichas: <span id="player-tiles">13</span></div>
+                <div class="melds" id="player-melds"></div>
+            </div>
+            <div class="player-info" id="bot1-info">
+                <h3>IA 1 (Sur)</h3>
+                <div>Puntos: <span id="bot1-score">0</span></div>
+                <div>Fichas: <span id="bot1-tiles">13</span></div>
+                <div class="melds" id="bot1-melds"></div>
+            </div>
+            <div class="player-info" id="bot2-info">
+                <h3>IA 2 (Oeste)</h3>
+                <div>Puntos: <span id="bot2-score">0</span></div>
+                <div>Fichas: <span id="bot2-tiles">13</span></div>
+                <div class="melds" id="bot2-melds"></div>
+            </div>
+            <div class="player-info" id="bot3-info">
+                <h3>IA 3 (Norte)</h3>
+                <div>Puntos: <span id="bot3-score">0</span></div>
+                <div>Fichas: <span id="bot3-tiles">13</span></div>
+                <div class="melds" id="bot3-melds"></div>
+            </div>
+        </div>
+
+        <div class="mahjong-table">
+            <!-- Área del jugador (abajo) -->
+            <div class="player-area player">
+                <div class="hand" id="player-hand"></div>
+            </div>
+
+            <!-- IA 1 (derecha) -->
+            <div class="player-area bot1">
+                <div class="hand" id="bot1-hand"></div>
+            </div>
+
+            <!-- IA 2 (arriba) -->
+            <div class="player-area bot2">
+                <div class="hand" id="bot2-hand"></div>
+            </div>
+
+            <!-- IA 3 (izquierda) -->
+            <div class="player-area bot3">
+                <div class="hand" id="bot3-hand"></div>
+            </div>
+
+            <!-- Área de descarte central -->
+            <div class="discard-pile" id="discard-pile"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn chow" id="chow-btn" disabled>Chow</button>
+            <button class="btn pung" id="pung-btn" disabled>Pung</button>
+            <button class="btn kong" id="kong-btn" disabled>Kong</button>
+            <button class="btn" id="pass-btn" disabled>Pass</button>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn" onclick="newGame()">Nueva Partida</button>
+            <button class="btn" onclick="showRules()">Reglas</button>
+        </div>
+
+        <div class="message-area" id="message-area">
+            ¡Bienvenido al Mahjong Chino! Haz clic en "Nueva Partida" para comenzar.
+        </div>
+    </div>
+
+    <script>
+        // Clases y constantes del juego
+        const SUITS = {
+            BAMBOO: 'bamboo',
+            CHARACTER: 'character', 
+            DOT: 'dot',
+            HONOR: 'honor'
+        };
+
+        const HONOR_TILES = {
+            EAST: '東', SOUTH: '南', WEST: '西', NORTH: '北',
+            RED: '中', GREEN: '發', WHITE: '白'
+        };
+
+        const WIND_ORDER = ['東', '南', '西', '北'];
+
+        class MahjongGame {
+            constructor() {
+                this.deck = [];
+                this.players = {
+                    player: { hand: [], melds: [], wind: '東', score: 0 },
+                    bot1: { hand: [], melds: [], wind: '南', score: 0 },
+                    bot2: { hand: [], melds: [], wind: '西', score: 0 },
+                    bot3: { hand: [], melds: [], wind: '北', score: 0 }
+                };
+                this.discardPile = [];
+                this.currentPlayer = 'player';
+                this.tableWind = '東';
+                this.selectedTile = null;
+                this.lastDiscarded = null;
+                this.gameStarted = false;
+                
+                this.initializeEventListeners();
+            }
+
+            createDeck() {
+                const deck = [];
+                
+                // Fichas numeradas (1-9) para cada palo, 4 copias cada una
+                const suits = [
+                    { name: 'bamboo', symbol: '�', class: 'bamboo' },
+                    { name: 'character', symbol: '漢', class: 'character' },
+                    { name: 'dot', symbol: '⚫', class: 'dot' }
+                ];
+                
+                for (let suit of suits) {
+                    for (let num = 1; num <= 9; num++) {
+                        for (let copy = 0; copy < 4; copy++) {
+                            deck.push({
+                                suit: suit.name,
+                                number: num,
+                                symbol: this.getSuitSymbol(suit.name, num),
+                                cssClass: suit.class,
+                                display: num.toString(),
+                                id: `${suit.name}${num}_${copy}`
+                            });
+                        }
+                    }
+                }
+                
+                // Fichas de honor - vientos y dragones, 4 copias cada una
+                const honors = [
+                    { honor: '東', display: '東' },
+                    { honor: '南', display: '南' },
+                    { honor: '西', display: '西' },
+                    { honor: '北', display: '北' },
+                    { honor: '中', display: '中' },
+                    { honor: '發', display: '發' },
+                    { honor: '白', display: '白' }
+                ];
+                
+                for (let honor of honors) {
+                    for (let copy = 0; copy < 4; copy++) {
+                        deck.push({
+                            suit: 'honor',
+                            honor: honor.honor,
+                            display: honor.display,
+                            cssClass: 'honor',
+                            id: `${honor.honor}_${copy}`
+                        });
+                    }
+                }
+                
+                return this.shuffleDeck(deck);
+            }
+
+            getSuitSymbol(suit, number) {
+                const symbols = {
+                    bamboo: ['🎋', '🎍', '🌿', '🎋', '🌱', '🎍', '🌿', '🎋', '🎍'],
+                    character: ['一', '二', '三', '四', '五', '六', '七', '八', '九'],
+                    dot: ['●', '◉', '⚫', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣']
+                };
+                return symbols[suit][number - 1] || '●';
+            }
+
+            shuffleDeck(deck) {
+                for (let i = deck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [deck[i], deck[j]] = [deck[j], deck[i]];
+                }
+                return deck;
+            }
+
+            dealInitialHands() {
+                // Cada jugador recibe 13 fichas
+                for (let player in this.players) {
+                    this.players[player].hand = [];
+                    for (let i = 0; i < 13; i++) {
+                        if (this.deck.length > 0) {
+                            this.players[player].hand.push(this.deck.pop());
+                        }
+                    }
+                    this.sortHand(player);
+                }
+            }
+
+            sortHand(player) {
+                this.players[player].hand.sort((a, b) => {
+                    if (a.suit !== b.suit) {
+                        const suitOrder = { 'bamboo': 1, 'character': 2, 'dot': 3, 'honor': 4 };
+                        return suitOrder[a.suit] - suitOrder[b.suit];
+                    }
+                    if (a.number && b.number) {
+                        return a.number - b.number;
+                    }
+                    if (a.honor && b.honor) {
+                        const honorOrder = ['東', '南', '西', '北', '中', '發', '白'];
+                        return honorOrder.indexOf(a.honor) - honorOrder.indexOf(b.honor);
+                    }
+                    return 0;
+                });
+            }
+
+            startGame() {
+                this.deck = this.createDeck();
+                this.dealInitialHands();
+                this.discardPile = [];
+                this.currentPlayer = 'player';
+                this.gameStarted = true;
+                this.selectedTile = null;
+                this.lastDiscarded = null;
+                
+                this.updateDisplay();
+                this.updateMessage("¡Juego iniciado! Es tu turno. Selecciona una ficha para descartar.");
+            }
+
+            drawTile(player) {
+                if (this.deck.length > 0) {
+                    const tile = this.deck.pop();
+                    this.players[player].hand.push(tile);
+                    this.sortHand(player);
+                    return tile;
+                }
+                return null;
+            }
+
+            discardTile(player, tileIndex) {
+                if (this.players[player].hand.length > tileIndex) {
+                    const discarded = this.players[player].hand.splice(tileIndex, 1)[0];
+                    this.discardPile.push(discarded);
+                    this.lastDiscarded = discarded;
+                    return discarded;
+                }
+                return null;
+            }
+
+            canChow(player, discardedTile) {
+                if (!discardedTile.number) return false;
+                
+                const hand = this.players[player].hand;
+                const suit = discardedTile.suit;
+                const num = discardedTile.number;
+                
+                // Verificar secuencias posibles
+                const sequences = [
+                    [num - 2, num - 1], // n-2, n-1, n
+                    [num - 1, num + 1], // n-1, n, n+1  
+                    [num + 1, num + 2]  // n, n+1, n+2
+                ];
+                
+                for (let seq of sequences) {
+                    if (seq[0] >= 1 && seq[1] <= 9) {
+                        const hasFirst = hand.some(tile => tile.suit === suit && tile.number === seq[0]);
+                        const hasSecond = hand.some(tile => tile.suit === suit && tile.number === seq[1]);
+                        if (hasFirst && hasSecond) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            canPung(player, discardedTile) {
+                const hand = this.players[player].hand;
+                let count = 0;
+                
+                for (let tile of hand) {
+                    if (this.tilesMatch(tile, discardedTile)) {
+                        count++;
+                        if (count >= 2) return true;
+                    }
+                }
+                return false;
+            }
+
+            canKong(player, discardedTile) {
+                const hand = this.players[player].hand;
+                let count = 0;
+                
+                for (let tile of hand) {
+                    if (this.tilesMatch(tile, discardedTile)) {
+                        count++;
+                        if (count >= 3) return true;
+                    }
+                }
+                return false;
+            }
+
+            tilesMatch(tile1, tile2) {
+                if (tile1.suit === 'honor' && tile2.suit === 'honor') {
+                    return tile1.honor === tile2.honor;
+                }
+                return tile1.suit === tile2.suit && tile1.number === tile2.number;
+            }
+
+            makeChow(player, discardedTile) {
+                const hand = this.players[player].hand;
+                const suit = discardedTile.suit;
+                const num = discardedTile.number;
+                
+                const sequences = [
+                    [num - 2, num - 1], 
+                    [num - 1, num + 1], 
+                    [num + 1, num + 2]
+                ];
+                
+                for (let seq of sequences) {
+                    if (seq[0] >= 1 && seq[1] <= 9) {
+                        const tile1Index = hand.findIndex(tile => tile.suit === suit && tile.number === seq[0]);
+                        const tile2Index = hand.findIndex(tile => tile.suit === suit && tile.number === seq[1]);
+                        
+                        if (tile1Index >= 0 && tile2Index >= 0) {
+                            const tile1 = hand.splice(tile1Index, 1)[0];
+                            const tile2Index2 = hand.findIndex(tile => tile.suit === suit && tile.number === seq[1]);
+                            const tile2 = hand.splice(tile2Index2, 1)[0];
+                            
+                            const meld = [tile1, discardedTile, tile2].sort((a, b) => a.number - b.number);
+                            this.players[player].melds.push({ type: 'chow', tiles: meld });
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            makePung(player, discardedTile) {
+                const hand = this.players[player].hand;
+                const matchingTiles = [];
+                
+                for (let i = hand.length - 1; i >= 0; i--) {
+                    if (this.tilesMatch(hand[i], discardedTile)) {
+                        matchingTiles.push(hand.splice(i, 1)[0]);
+                        if (matchingTiles.length === 2) break;
+                    }
+                }
+                
+                if (matchingTiles.length === 2) {
+                    const meld = [discardedTile, ...matchingTiles];
+                    this.players[player].melds.push({ type: 'pung', tiles: meld });
+                    return true;
+                }
+                return false;
+            }
+
+            makeKong(player, discardedTile) {
+                const hand = this.players[player].hand;
+                const matchingTiles = [];
+                
+                for (let i = hand.length - 1; i >= 0; i--) {
+                    if (this.tilesMatch(hand[i], discardedTile)) {
+                        matchingTiles.push(hand.splice(i, 1)[0]);
+                        if (matchingTiles.length === 3) break;
+                    }
+                }
+                
+                if (matchingTiles.length === 3) {
+                    const meld = [discardedTile, ...matchingTiles];
+                    this.players[player].melds.push({ type: 'kong', tiles: meld });
+                    return true;
+                }
+                return false;
+            }
+
+            nextPlayer() {
+                const playerOrder = ['player', 'bot1', 'bot2', 'bot3'];
+                const currentIndex = playerOrder.indexOf(this.currentPlayer);
+                this.currentPlayer = playerOrder[(currentIndex + 1) % 4];
+            }
+
+            checkWin(player) {
+                const hand = this.players[player].hand;
+                const melds = this.players[player].melds;
+                
+                // Necesita 4 melds + 1 par para ganar
+                if (melds.length === 4 && hand.length === 2) {
+                    // Verificar que las 2 fichas restantes forman un par
+                    if (this.tilesMatch(hand[0], hand[1])) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            botTurn(botName) {
+                setTimeout(() => {
+                    // IA simple: robar una ficha y descartar una aleatoria
+                    const drawnTile = this.drawTile(botName);
+                    
+                    if (drawnTile) {
+                        // Verificar si puede ganar
+                        if (this.checkWin(botName)) {
+                            this.endGame(botName);
+                            return;
+                        }
+                        
+                        // Descartar una ficha aleatoria
+                        const hand = this.players[botName].hand;
+                        const randomIndex = Math.floor(Math.random() * hand.length);
+                        this.discardTile(botName, randomIndex);
+                        
+                        this.checkForActions();
+                        this.updateDisplay();
+                        
+                        if (this.gameStarted) {
+                            this.nextPlayer();
+                            this.updateMessage(`${botName.toUpperCase()} ha jugado. Turno del siguiente jugador.`);
+                            this.continueGame();
+                        }
+                    }
+                }, 1000);
+            }
+
+            checkForActions() {
+                if (!this.lastDiscarded || this.currentPlayer === 'player') return;
+                
+                // Verificar si el jugador puede hacer chow, pung o kong
+                const canChow = this.canChow('player', this.lastDiscarded);
+                const canPung = this.canPung('player', this.lastDiscarded);
+                const canKong = this.canKong('player', this.lastDiscarded);
+                
+                document.getElementById('chow-btn').disabled = !canChow;
+                document.getElementById('pung-btn').disabled = !canPung;
+                document.getElementById('kong-btn').disabled = !canKong;
+                document.getElementById('pass-btn').disabled = false;
+                
+                if (canChow || canPung || canKong) {
+                    this.updateMessage("¡Puedes hacer una jugada especial! Elige Chow, Pung, Kong o Pass.");
+                    return true;
+                }
+                return false;
+            }
+
+            continueGame() {
+                if (this.currentPlayer !== 'player') {
+                    this.botTurn(this.currentPlayer);
+                } else {
+                    // Turno del jugador - robar ficha automáticamente
+                    const drawnTile = this.drawTile('player');
+                    if (drawnTile) {
+                        this.updateDisplay();
+                        this.updateMessage("Tu turno. Selecciona una ficha para descartar.");
+                        
+                        if (this.checkWin('player')) {
+                            this.endGame('player');
+                        }
+                    }
+                }
+            }
+
+            endGame(winner) {
+                this.gameStarted = false;
+                let message = "";
+                
+                if (winner === 'player') {
+                    message = "¡Felicidades! ¡Has ganado! 🎉";
+                    this.players.player.score += 100;
+                } else {
+                    message = `La ${winner.toUpperCase()} ha ganado esta ronda. ¡Inténtalo de nuevo!`;
+                    this.players[winner].score += 100;
+                }
+                
+                this.updateMessage(message);
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                this.updatePlayerHand();
+                this.updateBotHands();
+                this.updateDiscardPile();
+                this.updatePlayerInfo();
+                this.updateCurrentTurn();
+            }
+
+            updatePlayerHand() {
+                const handElement = document.getElementById('player-hand');
+                handElement.innerHTML = '';
+                
+                this.players.player.hand.forEach((tile, index) => {
+                    const tileElement = document.createElement('div');
+                    tileElement.className = `tile ${tile.cssClass || ''}`;
+                    
+                    if (tile.suit === 'honor') {
+                        tileElement.innerHTML = `<div class="number">${tile.display}</div>`;
+                    } else {
+                        tileElement.innerHTML = `
+                            <div class="number">${tile.display}</div>
+                            <div class="suit-symbol">${tile.symbol}</div>
+                        `;
+                    }
+                    
+                    tileElement.onclick = () => this.selectTile(index);
+                    
+                    if (this.selectedTile === index) {
+                        tileElement.classList.add('selected');
+                    }
+                    
+                    handElement.appendChild(tileElement);
+                });
+            }
+
+            updateBotHands() {
+                ['bot1', 'bot2', 'bot3'].forEach(botName => {
+                    const handElement = document.getElementById(`${botName}-hand`);
+                    handElement.innerHTML = '';
+                    
+                    this.players[botName].hand.forEach(() => {
+                        const tileElement = document.createElement('div');
+                        tileElement.className = 'tile back';
+                        tileElement.textContent = '🀫';
+                        handElement.appendChild(tileElement);
+                    });
+                });
+            }
+
+            updateDiscardPile() {
+                const discardElement = document.getElementById('discard-pile');
+                discardElement.innerHTML = '';
+                
+                this.discardPile.forEach(tile => {
+                    const tileElement = document.createElement('div');
+                    tileElement.className = `tile ${tile.cssClass || ''}`;
+                    
+                    if (tile.suit === 'honor') {
+                        tileElement.innerHTML = `<div class="number">${tile.display}</div>`;
+                    } else {
+                        tileElement.innerHTML = `
+                            <div class="number">${tile.display}</div>
+                            <div class="suit-symbol">${tile.symbol}</div>
+                        `;
+                    }
+                    
+                    discardElement.appendChild(tileElement);
+                });
+            }
+
+            updatePlayerInfo() {
+                // Actualizar información de jugadores
+                Object.keys(this.players).forEach(playerName => {
+                    const player = this.players[playerName];
+                    const scoreElement = document.getElementById(`${playerName}-score`);
+                    const tilesElement = document.getElementById(`${playerName}-tiles`);
+                    const meldsElement = document.getElementById(`${playerName}-melds`);
+                    
+                    if (scoreElement) scoreElement.textContent = player.score;
+                    if (tilesElement) tilesElement.textContent = player.hand.length;
+                    
+                    if (meldsElement) {
+                        meldsElement.innerHTML = '';
+                        player.melds.forEach(meld => {
+                            const meldDiv = document.createElement('div');
+                            meldDiv.className = 'meld';
+                            meld.tiles.forEach(tile => {
+                                const tileDiv = document.createElement('div');
+                                tileDiv.className = `tile ${tile.cssClass || ''}`;
+                                
+                                if (tile.suit === 'honor') {
+                                    tileDiv.innerHTML = `<div class="number">${tile.display}</div>`;
+                                } else {
+                                    tileDiv.innerHTML = `
+                                        <div class="number">${tile.display}</div>
+                                        <div class="suit-symbol">${tile.symbol}</div>
+                                    `;
+                                }
+                                
+                                meldDiv.appendChild(tileDiv);
+                            });
+                            meldsElement.appendChild(meldDiv);
+                        });
+                    }
+                });
+            }
+
+            updateCurrentTurn() {
+                // Actualizar indicador de turno
+                document.getElementById('current-turn').textContent = 
+                    this.currentPlayer === 'player' ? 'Jugador' : this.currentPlayer.toUpperCase();
+                
+                // Resaltar jugador actual
+                document.querySelectorAll('.player-info').forEach(info => {
+                    info.classList.remove('current');
+                });
+                document.getElementById(`${this.currentPlayer}-info`).classList.add('current');
+            }
+
+            selectTile(index) {
+                if (this.currentPlayer !== 'player' || !this.gameStarted) return;
+                
+                if (this.selectedTile === index) {
+                    // Descartar ficha seleccionada
+                    this.discardTile('player', index);
+                    this.selectedTile = null;
+                    
+                    this.checkForActions();
+                    this.updateDisplay();
+                    
+                    if (this.gameStarted) {
+                        this.nextPlayer();
+                        this.continueGame();
+                    }
+                } else {
+                    // Seleccionar ficha
+                    this.selectedTile = index;
+                    this.updatePlayerHand();
+                }
+            }
+
+            updateMessage(message) {
+                document.getElementById('message-area').textContent = message;
+            }
+
+            initializeEventListeners() {
+                // Botones de acción
+                document.getElementById('chow-btn').onclick = () => {
+                    if (this.makeChow('player', this.lastDiscarded)) {
+                        this.discardPile.pop(); // Remover la ficha reclamada
+                        this.currentPlayer = 'player';
+                        this.disableActionButtons();
+                        this.updateDisplay();
+                        this.updateMessage("¡Chow realizado! Selecciona una ficha para descartar.");
+                    }
+                };
+
+                document.getElementById('pung-btn').onclick = () => {
+                    if (this.makePung('player', this.lastDiscarded)) {
+                        this.discardPile.pop();
+                        this.currentPlayer = 'player';
+                        this.disableActionButtons();
+                        this.updateDisplay();
+                        this.updateMessage("¡Pung realizado! Selecciona una ficha para descartar.");
+                    }
+                };
+
+                document.getElementById('kong-btn').onclick = () => {
+                    if (this.makeKong('player', this.lastDiscarded)) {
+                        this.discardPile.pop();
+                        this.currentPlayer = 'player';
+                        this.disableActionButtons();
+                        this.updateDisplay();
+                        this.updateMessage("¡Kong realizado! Selecciona una ficha para descartar.");
+                    }
+                };
+
+                document.getElementById('pass-btn').onclick = () => {
+                    this.disableActionButtons();
+                    this.continueGame();
+                };
+            }
+
+            disableActionButtons() {
+                document.getElementById('chow-btn').disabled = true;
+                document.getElementById('pung-btn').disabled = true;
+                document.getElementById('kong-btn').disabled = true;
+                document.getElementById('pass-btn').disabled = true;
+            }
+        }
+
+        // Instancia global del juego
+        let game = new MahjongGame();
+
+        function newGame() {
+            game = new MahjongGame();
+            game.startGame();
+        }
+
+        function showRules() {
+            const rules = `
+🀄 REGLAS DEL MAHJONG CHINO TRADICIONAL 🀄
+
+OBJETIVO:
+Ser el primero en formar 4 melds (grupos) + 1 par con tus fichas.
+
+TIPOS DE MELDS:
+• CHOW: Secuencia de 3 fichas consecutivas del mismo palo
+• PUNG: 3 fichas idénticas  
+• KONG: 4 fichas idénticas
+
+FICHAS:
+• 3 palos numerados (1-9): 
+  - Bambú ��🎋 (verde) - símbolos naturales
+  - Caracteres 一二三 (rojo) - números chinos
+  - Círculos ●◉⚫ (azul) - círculos coloridos
+• Fichas de honor: Vientos (東南西北) y Dragones (中發白)
+
+TURNO:
+1. Robar una ficha del mazo
+2. Descartar una ficha al centro
+3. Los demás pueden reclamar la ficha descartada para hacer melds
+
+ACCIONES ESPECIALES:
+• CHOW: Solo del jugador anterior, secuencia
+• PUNG: De cualquier jugador, 3 iguales
+• KONG: De cualquier jugador, 4 iguales
+• PASS: Rechazar la oportunidad
+
+¡El primer jugador en completar su mano gana la ronda!
+            `;
+            alert(rules);
+        }
+
+        // Inicializar el juego cuando se carga la página
+        window.onload = function() {
+            game.updateMessage("¡Bienvenido al Mahjong Chino! Haz clic en 'Nueva Partida' para comenzar.");
+        };
+    </script>
+</body>
+</html>
