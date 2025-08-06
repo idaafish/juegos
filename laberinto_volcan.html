@@ -190,10 +190,7 @@
 
     // --- Funciones auxiliares para posiciones aleatorias ---
     function isInsideIsland(x, y) {
-        const cx = x - config.cols / 2;
-        const cy = y - config.rows / 2;
-        const oval = (cx * cx) / Math.pow(config.cols * 0.40, 2) + (cy * cy) / Math.pow(config.rows * 0.46, 2);
-        return oval <= 0.96;
+        return getZoneType(x, y) === 'isla';
     }
 
     function findRandomEmptyCell(maze, cols, rows) {
@@ -229,28 +226,26 @@
         const potentialPositions = [];
         const portalSize = 3;
 
-        // Borde superior
-        for (let x = 1; x <= cols - 1 - portalSize; x++) {
-            if (isAreaClear(maze, x, 1, portalSize)) {
-                potentialPositions.push({ x: x, y: 1 });
-            }
-        }
-        // Borde inferior
-        for (let x = 1; x <= cols - 1 - portalSize; x++) {
-            if (isAreaClear(maze, x, rows - 1 - portalSize, portalSize)) {
-                potentialPositions.push({ x: x, y: rows - 1 - portalSize });
-            }
-        }
-        // Borde izquierdo
+        // Buscar específicamente en la zona de ORILLA
         for (let y = 1; y <= rows - 1 - portalSize; y++) {
-            if (isAreaClear(maze, 1, y, portalSize)) {
-                potentialPositions.push({ x: 1, y: y });
-            }
-        }
-        // Borde derecho
-        for (let y = 1; y <= rows - 1 - portalSize; y++) {
-            if (isAreaClear(maze, cols - 1 - portalSize, y, portalSize)) {
-                potentialPositions.push({ x: cols - 1 - portalSize, y: y });
+            for (let x = 1; x <= cols - 1 - portalSize; x++) {
+                // Verificar que el área 3x3 esté despejada en el laberinto
+                if (!isAreaClear(maze, x, y, portalSize)) continue;
+
+                // Verificar que toda el área 3x3 esté en la zona de orilla
+                let allInOrilla = true;
+                for (let py = y; py < y + portalSize && allInOrilla; py++) {
+                    for (let px = x; px < x + portalSize && allInOrilla; px++) {
+                        if (getZoneType(px, py) !== 'orilla') {
+                            allInOrilla = false;
+                        }
+                    }
+                }
+
+                // Si toda el área está en la orilla, es una posición válida
+                if (allInOrilla) {
+                    potentialPositions.push({ x: x, y: y });
+                }
             }
         }
 
@@ -258,7 +253,32 @@
             return potentialPositions[Math.floor(Math.random() * potentialPositions.length)];
         }
 
-        // Fallback si no se encuentra un área de 3x3 despejada en los bordes (muy improbable pero seguro)
+        // Fallback: buscar áreas que tengan al menos parte en la orilla
+        for (let y = 1; y <= rows - 1 - portalSize; y++) {
+            for (let x = 1; x <= cols - 1 - portalSize; x++) {
+                if (!isAreaClear(maze, x, y, portalSize)) continue;
+
+                // Verificar que al menos parte del área 3x3 esté en la orilla
+                let hasOrilla = false;
+                for (let py = y; py < y + portalSize && !hasOrilla; py++) {
+                    for (let px = x; px < x + portalSize && !hasOrilla; px++) {
+                        if (getZoneType(px, py) === 'orilla') {
+                            hasOrilla = true;
+                        }
+                    }
+                }
+
+                if (hasOrilla) {
+                    potentialPositions.push({ x: x, y: y });
+                }
+            }
+        }
+
+        if (potentialPositions.length > 0) {
+            return potentialPositions[Math.floor(Math.random() * potentialPositions.length)];
+        }
+
+        // Último fallback: cualquier posición despejada en la isla
         let fallbackPos;
         do {
             fallbackPos = findRandomEmptyCell(maze, cols, rows);
@@ -295,6 +315,27 @@
         x: player.x * config.cellSize - config.cellSize * 1.1,
         y: player.y * config.cellSize + config.cellSize * 0.2
     };
+
+    // Crear un claro alrededor del avión estrellado (eliminar paredes)
+    const crashCellX = Math.floor((crashedPlane.x + config.cellSize * 1.5) / config.cellSize);
+    const crashCellY = Math.floor((crashedPlane.y + config.cellSize * 1.5) / config.cellSize);
+    const clearingRadius = 4; // Radio del claro en celdas
+    
+    for (let y = crashCellY - clearingRadius; y <= crashCellY + clearingRadius; y++) {
+        for (let x = crashCellX - clearingRadius; x <= crashCellX + clearingRadius; x++) {
+            if (x > 0 && x < config.cols - 1 && y > 0 && y < config.rows - 1) {
+                // Crear un claro circular
+                const distance = Math.sqrt(Math.pow(x - crashCellX, 2) + Math.pow(y - crashCellY, 2));
+                if (distance <= clearingRadius) {
+                    maze[y][x] = 0; // Convertir en camino
+                }
+            }
+        }
+    }
+
+    // Reposicionar al jugador al lado del avión (no detrás)
+    player.x = crashCellX + 3; // 3 celdas a la derecha del centro del avión
+    player.y = crashCellY; // En la misma línea vertical que el avión
 
     // Centro del volcán
     const volcano = {
@@ -351,40 +392,76 @@
     // Nuevo: Estado para el marcador del jugador
     let playerMarker = { active: false, life: 0 };
 
+    // Función para determinar qué zona es cada píxel
+    function getZoneType(x, y) {
+        const cx = x - config.cols / 2;
+        const cy = y - config.rows / 2;
+        
+        // Isla más pequeña para tener más mar
+        const baseOval = (cx * cx) / Math.pow(config.cols * 0.32, 2) + (cy * cy) / Math.pow(config.rows * 0.38, 2);
+        
+        // Crear irregularidades usando múltiples ondas sinusoidales
+        const angle = Math.atan2(cy, cx);
+        const distance = Math.sqrt(cx * cx + cy * cy);
+        
+        // Varias ondas de diferentes frecuencias para crear bordes irregulares
+        const irregularity1 = Math.sin(angle * 7 + x * 0.1) * 0.08;
+        const irregularity2 = Math.sin(angle * 5 + y * 0.12) * 0.06;
+        const irregularity3 = Math.cos(angle * 11 + (x + y) * 0.08) * 0.04;
+        const irregularity4 = Math.sin(angle * 3 + distance * 0.15) * 0.1;
+        
+        // Combinamos todas las irregularidades
+        const totalIrregularity = irregularity1 + irregularity2 + irregularity3 + irregularity4;
+        
+        // Aplicamos las irregularidades al óvalo base
+        const irregularOval = baseOval + totalIrregularity;
+        
+        // Añadimos pequeñas bahías y penínsulas
+        const bays = Math.sin(angle * 13 + x * 0.2) * Math.sin(angle * 17 + y * 0.15) * 0.12;
+        const finalOval = irregularOval + bays;
+
+        // Más mar (límites más estrechos)
+        if (finalOval > 1.25) {
+            return 'mar';
+        } else if (finalOval > 0.88) {
+            return 'orilla'; // Zona de arena más estrecha pero más irregular
+        } else {
+            return 'isla';
+        }
+    }
+
     // Modifica drawMaze para dibujar la lava
     function draw(timestamp) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // --- Dibuja mar, arena y la isla ovalada ---
+        // --- Dibuja mar, orilla y la isla ovalada ---
         for (let y = 0; y < config.rows; y++) {
             for (let x = 0; x < config.cols; x++) {
-                // Coordenadas normalizadas al centro
-                const cx = x - config.cols / 2;
-                const cy = y - config.rows / 2;
-                // Ecuación de óvalo (más ancho que alto)
-                const oval = (cx * cx) / Math.pow(config.cols * 0.40, 2) + (cy * cy) / Math.pow(config.rows * 0.46, 2);
-
-                // --- MAR ---
-                if (oval > 1.08) {
+                const zoneType = getZoneType(x, y);
+                
+                if (zoneType === 'mar') {
+                    // --- MAR ---
                     // Animación de olas en el mar
                     const t = performance.now() / 900;
                     const wave =
                         0.5 + 0.5 * Math.sin(t + x * 0.25 + y * 0.18) +
                         0.3 * Math.sin(t * 1.7 + x * 0.13 - y * 0.22);
                     ctx.fillStyle = `rgb(${33 + wave * 30},${150 + wave * 40},${243 + wave * 20})`;
-                }
-                // --- PLAYA ---
-                else if (oval > 0.96) {
-                    // Animación de olas en la playa (arena más ancha y olas blancas)
+                } else if (zoneType === 'orilla') {
+                    // --- ORILLA (ARENA) ---
+                    // Coordenadas normalizadas para determinar si hay espuma
+                    const cx = x - config.cols / 2;
+                    const cy = y - config.rows / 2;
+                    const oval = (cx * cx) / Math.pow(config.cols * 0.40, 2) + (cy * cy) / Math.pow(config.rows * 0.46, 2);
                     const t = performance.now() / 900;
                     const wave = Math.sin(t + x * 0.22 + y * 0.19);
+                    
                     if (oval > 1.01 && wave > 0.7) {
                         ctx.fillStyle = "#fffde7"; // espuma blanca
                     } else {
                         ctx.fillStyle = "#ffe082"; // arena
                     }
-                }
-                // --- ISLA INTERIOR ---
-                else {
+                } else {
+                    // --- ISLA INTERIOR ---
                     if (lavaTime[y][x] !== -1 && eruptionStart !== null && lavaStep >= lavaTime[y][x]) {
                         ctx.fillStyle = "#ff3c00";
                     } else if (maze[y][x] === 1) {
@@ -401,8 +478,8 @@
             }
         }
 
-        // Nuevo: Dibujar el portal animado
-        drawPortal(timestamp);
+        // Nuevo: Dibujar el barco pirata abandonado
+        drawPirateShip(timestamp);
 
         // Volcán (centro)
         ctx.save();
@@ -414,64 +491,7 @@
         ctx.fill();
         ctx.restore();
 
-        // Antes de ctx.save() para el aventurero:
-        let highlight = false;
-        if (gameStartTime && performance.now() - gameStartTime < 2000) {
-            highlight = true;
-        }
 
-        // Aventurero estilo Indiana Jones
-        ctx.save();
-        ctx.translate(player.x * config.cellSize + config.cellSize / 2, player.y * config.cellSize + config.cellSize / 2);
-
-        // Resplandor inicial
-        if (highlight) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(0, 0, config.cellSize * 0.9, 0, 2 * Math.PI);
-            ctx.fillStyle = "rgba(255,255,0,0.35)";
-            ctx.shadowColor = "#fff";
-            ctx.shadowBlur = 18;
-            ctx.fill();
-            ctx.restore();
-        }
-
-        // Cuerpo (marrón claro)
-        ctx.beginPath();
-        ctx.arc(0, 0, config.cellSize / 2.5, 0, 2 * Math.PI);
-        ctx.fillStyle = "#c2a370";
-        ctx.shadowColor = "#fff8";
-        ctx.shadowBlur = 8;
-        ctx.fill();
-
-        // Cabeza (piel clara)
-        ctx.beginPath();
-        ctx.arc(0, -config.cellSize / 4, config.cellSize / 4, 0, 2 * Math.PI);
-        ctx.fillStyle = "#f5d7b7";
-        ctx.fill();
-
-        // Sombrero marrón
-        ctx.save();
-        ctx.beginPath();
-        ctx.ellipse(0, -config.cellSize / 4 - config.cellSize / 12, config.cellSize / 4, config.cellSize / 10, 0, 0, 2 * Math.PI);
-        ctx.fillStyle = "#5b3a1e";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(0, -config.cellSize / 4 - config.cellSize / 7, config.cellSize / 8, config.cellSize / 12, 0, 0, 2 * Math.PI);
-        ctx.fillStyle = "#3e2723";
-        ctx.fill();
-        ctx.restore();
-
-        // Pañuelo rojo
-        ctx.beginPath();
-        ctx.moveTo(-config.cellSize / 8, 0);
-        ctx.lineTo(0, config.cellSize / 8);
-        ctx.lineTo(config.cellSize / 8, 0);
-        ctx.closePath();
-        ctx.fillStyle = "#d32f2f";
-        ctx.fill();
-
-        ctx.restore();
 
         // Dibuja el avión estrellado y la columna de humo en posición fija (no se mueven con el jugador)
         {
@@ -522,39 +542,39 @@
 
             ctx.restore();
 
-            // Columna de humo animada, más alta y espesa
+            // Columna de humo animada, más alta y espesa (más translúcida)
             for (let i = 0; i < 22; i++) {
                 const t = performance.now() / 700 + i;
                 const hx = crashX + config.cellSize * scale / 2 + Math.sin(t + i) * config.cellSize * 0.18 * scale;
                 const hy = crashY + config.cellSize * scale / 2 - config.cellSize * 0.2 * scale - i * config.cellSize * 0.28 * scale - Math.abs(Math.sin(t + i)) * config.cellSize * 0.12 * scale;
                 ctx.save();
-                ctx.globalAlpha = 0.32 + 0.18 * Math.abs(Math.sin(t + i));
+                ctx.globalAlpha = 0.18 + 0.12 * Math.abs(Math.sin(t + i)); // Mucho más translúcido
                 ctx.beginPath();
                 ctx.arc(hx, hy, config.cellSize * (0.28 + 0.13 * Math.abs(Math.sin(t + i))) * scale, 0, 2 * Math.PI);
                 ctx.fillStyle = "#bbb";
                 ctx.shadowColor = "#444";
-                ctx.shadowBlur = 18;
+                ctx.shadowBlur = 12;
                 ctx.fill();
                 ctx.restore();
             }
         }
 
-        // Nuevo: Marcador del jugador al pulsar espacio
+        // Nuevo: Marcador del jugador al pulsar espacio (más amplio)
         if (playerMarker.active && playerMarker.life > 0) {
             ctx.save();
             const alpha = playerMarker.life / 5; // Se desvanece en 5 ticks
             ctx.globalAlpha = alpha;
             ctx.beginPath();
-            const markerRadius = config.cellSize * 1.5 * (1.5 - alpha); // Pulsa hacia afuera
+            const markerRadius = config.cellSize * 2.8 * (2.0 - alpha); // Mucho más amplio
             ctx.arc(
                 player.x * config.cellSize + config.cellSize / 2,
                 player.y * config.cellSize + config.cellSize / 2,
                 markerRadius, 0, 2 * Math.PI
             );
             ctx.strokeStyle = "#2196f3";
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 6;
             ctx.shadowColor = "#fff";
-            ctx.shadowBlur = 20;
+            ctx.shadowBlur = 30;
             ctx.stroke();
             ctx.restore();
             playerMarker.life--;
@@ -563,43 +583,300 @@
         }
     }
 
-    function drawPortal(timestamp) {
-        const portalCenterX = (exitPos.x + 1.5) * config.cellSize;
-        const portalCenterY = (exitPos.y + 1.5) * config.cellSize;
-        const portalRadius = config.cellSize * 2.2;
+    function drawPirateShip(timestamp) {
+        const shipCenterX = (exitPos.x + 1.5) * config.cellSize;
+        const shipCenterY = (exitPos.y + 1.5) * config.cellSize;
+        const shipWidth = config.cellSize * 2.8;
+        const shipHeight = config.cellSize * 1.4;
 
         ctx.save();
-        ctx.translate(portalCenterX, portalCenterY);
+        ctx.translate(shipCenterX, shipCenterY);
 
-        // Resplandor extra los primeros 2 segundos
+        // Resplandor dorado los primeros 2 segundos para indicar la salida
         if (gameStartTime && performance.now() - gameStartTime < 2000) {
             ctx.save();
             ctx.beginPath();
-            ctx.arc(0, 0, portalRadius * 1.15, 0, 2 * Math.PI);
-            ctx.fillStyle = "rgba(255,255,0,0.25)";
-            ctx.shadowColor = "#fff";
-            ctx.shadowBlur = 40;
+            ctx.ellipse(0, 0, shipWidth * 0.8, shipHeight * 0.8, 0, 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(255,215,0,0.3)";
+            ctx.shadowColor = "#ffd700";
+            ctx.shadowBlur = 20;
             ctx.fill();
             ctx.restore();
         }
 
-        // Anillos animados
-        for (let i = 0; i < 4; i++) {
+        // Ligero balanceo del barco
+        const sway = Math.sin(timestamp / 1500) * 0.02;
+        ctx.rotate(sway);
+
+        // Casco del barco (marrón oscuro envejecido)
+        ctx.fillStyle = "#3e2723";
+        ctx.strokeStyle = "#2e1a16";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, shipHeight * 0.2, shipWidth * 0.5, shipHeight * 0.4, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        // Tablones del casco (detalles de madera)
+        ctx.strokeStyle = "#5d4037";
+        ctx.lineWidth = 2;
+        for (let i = -2; i <= 2; i++) {
             ctx.beginPath();
-            const r = portalRadius * (0.7 + i * 0.18 + Math.sin(timestamp / 400 + i) * 0.07);
-            ctx.arc(0, 0, r, 0, 2 * Math.PI);
-            ctx.strokeStyle = ["#00fff7", "#fff600", "#ff00c8", "#fff"][i % 4];
-            ctx.lineWidth = 4 + 2 * Math.sin(timestamp / 300 + i);
-            ctx.globalAlpha = 0.7;
+            ctx.moveTo(-shipWidth * 0.4, shipHeight * 0.2 + i * shipHeight * 0.1);
+            ctx.lineTo(shipWidth * 0.4, shipHeight * 0.2 + i * shipHeight * 0.1);
             ctx.stroke();
         }
 
-        // Centro blanco
+        // Mástil principal (marrón claro)
+        ctx.fillStyle = "#8d6e63";
+        ctx.fillRect(-config.cellSize * 0.08, -shipHeight * 0.8, config.cellSize * 0.16, shipHeight * 1.2);
+
+        // Vela rasgada (blanca sucia con agujeros)
+        ctx.save();
+        ctx.fillStyle = "#f5f5dc";
+        ctx.strokeStyle = "#d7ccc8";
+        ctx.lineWidth = 2;
+        
+        // Vela principal con ondulación por el viento
+        const sailSway = Math.sin(timestamp / 800) * 0.1;
         ctx.beginPath();
-        ctx.arc(0, 0, portalRadius * 0.45, 0, 2 * Math.PI);
-        ctx.fillStyle = "#fff";
-        ctx.globalAlpha = 0.9;
+        ctx.moveTo(-shipWidth * 0.35, -shipHeight * 0.6);
+        ctx.quadraticCurveTo(-shipWidth * 0.2 + sailSway * 20, -shipHeight * 0.4, -shipWidth * 0.35, -shipHeight * 0.1);
+        ctx.lineTo(shipWidth * 0.2, -shipHeight * 0.1);
+        ctx.quadraticCurveTo(shipWidth * 0.35 + sailSway * 15, -shipHeight * 0.4, shipWidth * 0.2, -shipHeight * 0.6);
+        ctx.closePath();
         ctx.fill();
+        ctx.stroke();
+
+        // Agujeros en la vela (simulando desgaste)
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.beginPath();
+        ctx.ellipse(-shipWidth * 0.15, -shipHeight * 0.45, 8, 6, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(shipWidth * 0.1, -shipHeight * 0.25, 6, 4, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Calavera pirata en la vela (pequeña)
+        ctx.fillStyle = "#424242";
+        ctx.font = `${config.cellSize * 0.4}px serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("☠", 0, -shipHeight * 0.35);
+        
+        ctx.restore();
+
+        // Bandera pirata en la punta del mástil
+        const flagSway = Math.sin(timestamp / 600) * 0.15;
+        ctx.save();
+        ctx.translate(0, -shipHeight * 0.8);
+        ctx.rotate(flagSway);
+        
+        // Asta de la bandera
+        ctx.fillStyle = "#5d4037";
+        ctx.fillRect(0, 0, 2, shipHeight * 0.25);
+        
+        // Bandera negra
+        ctx.fillStyle = "#212121";
+        ctx.fillRect(2, 0, shipWidth * 0.2, shipHeight * 0.15);
+        
+        // Calavera en la bandera
+        ctx.fillStyle = "#fff";
+        ctx.font = `${config.cellSize * 0.15}px serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("☠", shipWidth * 0.1 + 2, shipHeight * 0.1);
+        
+        ctx.restore();
+
+        // Cuerdas y aparejos (detalles)
+        ctx.strokeStyle = "#795548";
+        ctx.lineWidth = 1;
+        // Cuerdas desde el mástil
+        ctx.beginPath();
+        ctx.moveTo(0, -shipHeight * 0.6);
+        ctx.lineTo(-shipWidth * 0.3, -shipHeight * 0.1);
+        ctx.moveTo(0, -shipHeight * 0.6);
+        ctx.lineTo(shipWidth * 0.3, -shipHeight * 0.1);
+        ctx.stroke();
+
+        // Ancla en el costado (oxidada)
+        ctx.save();
+        ctx.translate(-shipWidth * 0.45, shipHeight * 0.1);
+        ctx.scale(0.6, 0.6);
+        ctx.fillStyle = "#8d6e63";
+        ctx.font = `${config.cellSize * 0.3}px serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("⚓", 0, 0);
+        ctx.restore();
+
+        // Restos de naufragio en el agua (tablones flotando)
+        if (Math.sin(timestamp / 2000) > 0.5) {
+            ctx.save();
+            ctx.translate(-shipWidth * 0.7, shipHeight * 0.6);
+            ctx.rotate(Math.sin(timestamp / 1000) * 0.2);
+            ctx.fillStyle = "#6d4c41";
+            ctx.fillRect(-config.cellSize * 0.2, -config.cellSize * 0.05, config.cellSize * 0.4, config.cellSize * 0.1);
+            ctx.restore();
+        }
+
+        ctx.restore();
+
+        // Aventurero estilo Indiana Jones (dibujado al final para estar por encima de todo)
+        let highlight = false;
+        if (gameStartTime && performance.now() - gameStartTime < 2000) {
+            highlight = true;
+        }
+
+        ctx.save();
+        ctx.translate(player.x * config.cellSize + config.cellSize / 2, player.y * config.cellSize + config.cellSize / 2);
+
+        // Resplandor inicial
+        if (highlight) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(0, 0, config.cellSize * 0.9, 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(255,255,0,0.35)";
+            ctx.shadowColor = "#fff";
+            ctx.shadowBlur = 18;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        const scale = config.cellSize / 24; // Escala relativa al tamaño de celda
+        
+        // --- CUERPO PRINCIPAL ---
+        // Torso (camisa beige)
+        ctx.fillStyle = "#d4b895";
+        ctx.fillRect(-6 * scale, -2 * scale, 12 * scale, 16 * scale);
+        
+        // Chaleco marrón encima
+        ctx.fillStyle = "#8b4513";
+        ctx.fillRect(-5 * scale, -1 * scale, 10 * scale, 12 * scale);
+        
+        // Cinturón
+        ctx.fillStyle = "#654321";
+        ctx.fillRect(-6 * scale, 8 * scale, 12 * scale, 3 * scale);
+        
+        // Hebilla del cinturón
+        ctx.fillStyle = "#c0c0c0";
+        ctx.fillRect(-1.5 * scale, 8.5 * scale, 3 * scale, 2 * scale);
+        
+        // --- PIERNAS ---
+        // Pantalones (caqui)
+        ctx.fillStyle = "#a0956b";
+        ctx.fillRect(-6 * scale, 11 * scale, 5 * scale, 10 * scale); // Pierna izquierda
+        ctx.fillRect(1 * scale, 11 * scale, 5 * scale, 10 * scale);  // Pierna derecha
+        
+        // --- BRAZOS ---
+        // Brazo izquierdo
+        ctx.fillStyle = "#d4b895";
+        ctx.fillRect(-9 * scale, 1 * scale, 4 * scale, 12 * scale);
+        
+        // Brazo derecho
+        ctx.fillRect(5 * scale, 1 * scale, 4 * scale, 12 * scale);
+        
+        // --- CABEZA ---
+        ctx.save();
+        ctx.translate(0, -8 * scale);
+        
+        // Cuello
+        ctx.fillStyle = "#f5d7b7";
+        ctx.fillRect(-2 * scale, 6 * scale, 4 * scale, 4 * scale);
+        
+        // Cara (óvalo más realista)
+        ctx.fillStyle = "#f5d7b7";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 6 * scale, 7 * scale, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Ojos
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(-2 * scale, -1 * scale, 0.8 * scale, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(2 * scale, -1 * scale, 0.8 * scale, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Nariz
+        ctx.fillStyle = "#e6c2a6";
+        ctx.beginPath();
+        ctx.arc(0, 1 * scale, 1 * scale, 0, Math.PI);
+        ctx.fill();
+        
+        // Boca
+        ctx.strokeStyle = "#8b4513";
+        ctx.lineWidth = 1 * scale;
+        ctx.beginPath();
+        ctx.arc(0, 3 * scale, 2 * scale, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+        
+        // --- SOMBRERO ICÓNICO ---
+        // Copa del sombrero (marrón oscuro)
+        ctx.fillStyle = "#3e2723";
+        ctx.beginPath();
+        ctx.ellipse(0, -4 * scale, 5 * scale, 6 * scale, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Ala del sombrero
+        ctx.fillStyle = "#5d4037";
+        ctx.beginPath();
+        ctx.ellipse(0, -2 * scale, 9 * scale, 3 * scale, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Banda del sombrero
+        ctx.fillStyle = "#654321";
+        ctx.fillRect(-5 * scale, -3 * scale, 10 * scale, 2 * scale);
+        
+        ctx.restore(); // Restaurar transformación de la cabeza
+        
+        // --- ACCESORIOS ---
+        // Látigo en el cinturón (lado derecho)
+        ctx.strokeStyle = "#8b4513";
+        ctx.lineWidth = 1.5 * scale;
+        ctx.beginPath();
+        ctx.moveTo(5 * scale, 10 * scale);
+        ctx.quadraticCurveTo(8 * scale, 12 * scale, 6 * scale, 15 * scale);
+        ctx.stroke();
+        
+        // Mochila pequeña (lado izquierdo)
+        ctx.fillStyle = "#654321";
+        ctx.fillRect(-8 * scale, 3 * scale, 3 * scale, 4 * scale);
+        
+        // Correas de la mochila
+        ctx.strokeStyle = "#8b4513";
+        ctx.lineWidth = 1 * scale;
+        ctx.beginPath();
+        ctx.moveTo(-6 * scale, 2 * scale);
+        ctx.lineTo(-6 * scale, 8 * scale);
+        ctx.stroke();
+        
+        // --- BOTAS ---
+        ctx.fillStyle = "#654321";
+        // Bota izquierda
+        ctx.fillRect(-6 * scale, 19 * scale, 6 * scale, 4 * scale);
+        // Bota derecha
+        ctx.fillRect(0 * scale, 19 * scale, 6 * scale, 4 * scale);
+        
+        // Suela de las botas
+        ctx.fillStyle = "#2e1a16";
+        ctx.fillRect(-7 * scale, 22 * scale, 7 * scale, 2 * scale);
+        ctx.fillRect(-1 * scale, 22 * scale, 7 * scale, 2 * scale);
+        
+        // --- DETALLES FINALES ---
+        // Botones del chaleco
+        ctx.fillStyle = "#2e1a16";
+        for(let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.arc(0, 2 * scale + i * 3 * scale, 0.5 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        // Sombra ligera para profundidad
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = "#000";
+        ctx.fillRect(-8 * scale, 22 * scale, 16 * scale, 3 * scale);
+        ctx.restore();
 
         ctx.restore();
     }
