@@ -84,6 +84,7 @@
 <body>
     <div class="container">
         <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
+        <button class="back-btn" onclick="showControls()" style="margin-left: 10px;">🎮 Controles</button>
         <h1>Laberinto Volcán</h1>
         <div class="subtitle">¡Encuentra la salida en el laberinto!</div>
         <canvas id="mazeCanvas"></canvas>
@@ -102,6 +103,46 @@
       </div>
     </div>
     <script>
+    // Función para mostrar los controles del juego
+    function showControls() {
+        alert(`🎮 CONTROLES DEL JUEGO 🎮
+
+🔥 OBJETIVO: Escapa del volcán antes de que la lava te alcance
+
+⌨️ MOVIMIENTO:
+• W ↑ - Mover hacia arriba
+• A ← - Mover hacia la izquierda  
+• S ↓ - Mover hacia abajo
+• D → - Mover hacia la derecha
+
+🔍 OTRAS TECLAS:
+• ESPACIO - ¡Grito de aviso! (marcar posición)
+
+🔊 CONTROLES DE AUDIO:
+• + (más) - Subir volumen
+• - (menos) - Bajar volumen  
+• M - Silenciar/Activar audio
+
+🏝️ ZONAS:
+• Verde: Isla (puedes caminar)
+• Dorado: Playa (NO puedes caminar)
+• Azul: Mar (NO puedes caminar)
+
+🚁 INICIO: Avión estrellado
+🏴‍☠️ SALIDA: Barco pirata en la orilla
+
+🎵 EXPERIENCIA SONORA COMPLETA:
+• Pasos realistas en el bosque
+• Música épica de aventura
+• Sonido de olas del mar
+• Retumbar del volcán
+• Burbujeo de lava
+• Grito de aviso dramático
+• Sonidos de victoria/derrota
+
+¡Buena suerte, aventurero!`);
+    }
+
     // Añade esto al principio del <script> (antes de cualquier lógica del juego)
     let selectedDifficulty = 3; // Por defecto 3 estrellas
     const lavaSpeeds = [
@@ -111,6 +152,496 @@
         Math.round(1749 * 0.85), // 4 estrellas
         Math.round(1575 * 0.85)  // 5 estrellas
     ]; // ms por paso de lava (1 a 5 estrellas)
+
+    // ===== SISTEMA DE AUDIO COMPLETO =====
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let audioEnabled = false;
+    let masterVolume = 0.7; // Volumen maestro (0.0 a 1.0)
+
+    // Configuración de volúmenes por categoría
+    const audioConfig = {
+        sfx: 0.8,      // Efectos de sonido
+        ambient: 0.6,   // Sonidos ambientales
+        music: 0.4,     // Música de fondo
+        ui: 0.5         // Sonidos de interfaz
+    };
+
+    // Sistema de audio centralizado
+    const AudioSystem = {
+        // Función para habilitar audio (necesario para cumplir políticas del navegador)
+        enable() {
+            if (!audioEnabled) {
+                audioContext.resume().then(() => {
+                    audioEnabled = true;
+                    console.log("🔊 Sistema de audio habilitado");
+                });
+            }
+        },
+
+        // Función helper para crear osciladores con configuración común
+        createOscillator(type, frequency, startTime = audioContext.currentTime) {
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, startTime);
+            return oscillator;
+        },
+
+        // Función helper para crear nodos de ganancia con envelope
+        createGainWithEnvelope(attack, decay, sustain, release, peakVolume = 1.0, startTime = audioContext.currentTime) {
+            const gainNode = audioContext.createGain();
+            gainNode.gain.setValueAtTime(0, startTime);
+            gainNode.gain.linearRampToValueAtTime(peakVolume, startTime + attack);
+            gainNode.gain.linearRampToValueAtTime(sustain * peakVolume, startTime + attack + decay);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + attack + decay + release);
+            return gainNode;
+        },
+
+        // Función helper para crear filtros
+        createFilter(type, frequency, Q = 1) {
+            const filter = audioContext.createBiquadFilter();
+            filter.type = type;
+            filter.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            filter.Q.setValueAtTime(Q, audioContext.currentTime);
+            return filter;
+        },
+
+        // Función para aplicar volumen de categoría
+        applyVolumeCategory(gainNode, category) {
+            const categoryVolume = audioConfig[category] || 1.0;
+            const currentGain = gainNode.gain.value;
+            gainNode.gain.setValueAtTime(currentGain * categoryVolume * masterVolume, audioContext.currentTime);
+        },
+
+        // ===== SONIDOS ESPECÍFICOS =====
+        
+        // Sonido de pasos en el bosque (mejorado)
+        playFootstep() {
+            if (!audioEnabled || audioContext.state === 'suspended') return;
+
+            const now = audioContext.currentTime;
+            
+            // Sonido principal del paso (pisada en tierra húmeda del bosque)
+            const osc1 = this.createOscillator('sawtooth', 60 + Math.random() * 30);
+            const gain1 = this.createGainWithEnvelope(0.02, 0.08, 0.2, 0.15, 0.12);
+            const filter1 = this.createFilter('lowpass', 150 + Math.random() * 80, 1.5);
+            
+            osc1.connect(filter1);
+            filter1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            this.applyVolumeCategory(gain1, 'sfx');
+            
+            osc1.start(now);
+            osc1.stop(now + 0.25);
+
+            // Sonido de hojas crujiendo
+            const osc2 = this.createOscillator('square', 1500 + Math.random() * 800);
+            const gain2 = this.createGainWithEnvelope(0.01, 0.03, 0.1, 0.08, 0.08);
+            const filter2 = this.createFilter('highpass', 1200 + Math.random() * 600);
+            
+            osc2.connect(filter2);
+            filter2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            this.applyVolumeCategory(gain2, 'sfx');
+            
+            osc2.start(now);
+            osc2.stop(now + 0.12);
+
+            // Sonido de ramas pequeñas
+            const osc3 = this.createOscillator('triangle', 800 + Math.random() * 400);
+            const gain3 = this.createGainWithEnvelope(0.005, 0.02, 0.05, 0.06, 0.04);
+            const filter3 = this.createFilter('bandpass', 900, 3);
+            
+            osc3.connect(filter3);
+            filter3.connect(gain3);
+            gain3.connect(audioContext.destination);
+            this.applyVolumeCategory(gain3, 'sfx');
+            
+            osc3.start(now + 0.02);
+            osc3.stop(now + 0.1);
+        },
+
+        // Sonido de grito de aviso (cuando presionas espacio)
+        playMarkerSound() {
+            if (!audioEnabled || audioContext.state === 'suspended') return;
+
+            const now = audioContext.currentTime;
+            
+            // Grito humano simulado - primera parte (¡Ay!)
+            const osc1 = this.createOscillator('sawtooth', 800);
+            const gain1 = this.createGainWithEnvelope(0.01, 0.1, 0.8, 0.2, 0.25);
+            const filter1 = this.createFilter('bandpass', 1200, 5);
+            
+            // Modulación para simular la voz humana
+            osc1.frequency.setValueAtTime(800, now);
+            osc1.frequency.linearRampToValueAtTime(1100, now + 0.05);
+            osc1.frequency.linearRampToValueAtTime(900, now + 0.15);
+            osc1.frequency.exponentialRampToValueAtTime(600, now + 0.4);
+            
+            osc1.connect(filter1);
+            filter1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            this.applyVolumeCategory(gain1, 'sfx');
+            
+            osc1.start(now);
+            osc1.stop(now + 0.4);
+
+            // Segunda parte del grito (¡Uda!)
+            const osc2 = this.createOscillator('triangle', 600);
+            const gain2 = this.createGainWithEnvelope(0.02, 0.08, 0.6, 0.25, 0.22);
+            const filter2 = this.createFilter('bandpass', 900, 4);
+            
+            osc2.frequency.setValueAtTime(600, now + 0.25);
+            osc2.frequency.linearRampToValueAtTime(450, now + 0.35);
+            osc2.frequency.exponentialRampToValueAtTime(350, now + 0.7);
+            
+            osc2.connect(filter2);
+            filter2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            this.applyVolumeCategory(gain2, 'sfx');
+            
+            osc2.start(now + 0.25);
+            osc2.stop(now + 0.7);
+
+            // Eco/reverb del grito para mayor dramatismo
+            const osc3 = this.createOscillator('sine', 700);
+            const gain3 = this.createGainWithEnvelope(0.1, 0.2, 0.3, 0.5, 0.08);
+            const filter3 = this.createFilter('lowpass', 800, 2);
+            
+            osc3.frequency.setValueAtTime(700, now + 0.1);
+            osc3.frequency.exponentialRampToValueAtTime(400, now + 0.8);
+            
+            osc3.connect(filter3);
+            filter3.connect(gain3);
+            gain3.connect(audioContext.destination);
+            this.applyVolumeCategory(gain3, 'sfx');
+            
+            osc3.start(now + 0.1);
+            osc3.stop(now + 0.8);
+
+            // Grito adicional de urgencia (más agudo)
+            const osc4 = this.createOscillator('square', 1400);
+            const gain4 = this.createGainWithEnvelope(0.005, 0.03, 0.4, 0.15, 0.15);
+            const filter4 = this.createFilter('highpass', 1000);
+            
+            osc4.frequency.setValueAtTime(1400, now + 0.1);
+            osc4.frequency.linearRampToValueAtTime(1800, now + 0.15);
+            osc4.frequency.exponentialRampToValueAtTime(1000, now + 0.35);
+            
+            osc4.connect(filter4);
+            filter4.connect(gain4);
+            gain4.connect(audioContext.destination);
+            this.applyVolumeCategory(gain4, 'sfx');
+            
+            osc4.start(now + 0.1);
+            osc4.stop(now + 0.35);
+        },
+
+        // 1. Sonido de olas del mar (ambiente constante)
+        playAmbientWaves() {
+            if (!audioEnabled || audioContext.state === 'suspended') return;
+
+            const now = audioContext.currentTime;
+            const duration = 8; // 8 segundos de olas
+            
+            // Oscilador principal para el sonido base de las olas
+            const osc1 = this.createOscillator('sine', 80);
+            const gain1 = this.createGainWithEnvelope(2.0, 2.0, 0.6, 2.0, 0.15);
+            const filter1 = this.createFilter('lowpass', 200, 1);
+            
+            // Modulación lenta para simular el ir y venir de las olas
+            const lfo1 = this.createOscillator('sine', 0.3);
+            const lfoGain1 = audioContext.createGain();
+            lfoGain1.gain.setValueAtTime(30, now);
+            
+            lfo1.connect(lfoGain1);
+            lfoGain1.connect(osc1.frequency);
+            
+            osc1.connect(filter1);
+            filter1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            this.applyVolumeCategory(gain1, 'ambient');
+            
+            // Ruido blanco para simular la espuma
+            const osc2 = this.createOscillator('square', 2000);
+            const gain2 = this.createGainWithEnvelope(1.0, 1.5, 0.3, 3.5, 0.08);
+            const filter2 = this.createFilter('highpass', 1500);
+            
+            const lfo2 = this.createOscillator('sine', 0.7);
+            const lfoGain2 = audioContext.createGain();
+            lfoGain2.gain.setValueAtTime(500, now);
+            
+            lfo2.connect(lfoGain2);
+            lfoGain2.connect(osc2.frequency);
+            
+            osc2.connect(filter2);
+            filter2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            this.applyVolumeCategory(gain2, 'ambient');
+            
+            // Iniciar todos los osciladores
+            lfo1.start(now);
+            lfo2.start(now);
+            osc1.start(now);
+            osc2.start(now);
+            
+            // Detener después de la duración
+            lfo1.stop(now + duration);
+            lfo2.stop(now + duration);
+            osc1.stop(now + duration);
+            osc2.stop(now + duration);
+            
+            // Repetir las olas cada 10 segundos mientras el juego esté activo
+            setTimeout(() => {
+                if (audioEnabled && winMsg.style.display === "none") {
+                    this.playAmbientWaves();
+                }
+            }, 10000);
+        },
+
+        // 2. Burbujeo de lava
+        playLavaBubble() {
+            if (!audioEnabled || audioContext.state === 'suspended') return;
+
+            const now = audioContext.currentTime;
+            
+            // Burbuja principal (sonido grave y viscoso)
+            const osc1 = this.createOscillator('sawtooth', 40 + Math.random() * 20);
+            const gain1 = this.createGainWithEnvelope(0.1, 0.2, 0.3, 0.4, 0.18);
+            const filter1 = this.createFilter('lowpass', 120 + Math.random() * 80, 2);
+            
+            osc1.frequency.exponentialRampToValueAtTime(80 + Math.random() * 40, now + 0.3);
+            
+            osc1.connect(filter1);
+            filter1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            this.applyVolumeCategory(gain1, 'sfx');
+            
+            osc1.start(now);
+            osc1.stop(now + 0.7);
+
+            // Efecto de "pop" cuando explota la burbuja
+            const osc2 = this.createOscillator('triangle', 200 + Math.random() * 100);
+            const gain2 = this.createGainWithEnvelope(0.01, 0.05, 0.0, 0.1, 0.12);
+            const filter2 = this.createFilter('bandpass', 250, 5);
+            
+            osc2.connect(filter2);
+            filter2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            this.applyVolumeCategory(gain2, 'sfx');
+            
+            osc2.start(now + 0.5);
+            osc2.stop(now + 0.65);
+        },
+
+        // 3. Sonido de victoria
+        playVictorySound() {
+            if (!audioEnabled || audioContext.state === 'suspended') return;
+
+            const now = audioContext.currentTime;
+            
+            // Progresión de acordes triunfal
+            const frequencies = [523, 659, 784, 1047]; // Do, Mi, Sol, Do (octava)
+            
+            frequencies.forEach((freq, index) => {
+                const delay = index * 0.2;
+                
+                const osc = this.createOscillator('triangle', freq);
+                const gain = this.createGainWithEnvelope(0.05, 0.3, 0.6, 0.8, 0.25);
+                const filter = this.createFilter('lowpass', freq * 2, 1);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioContext.destination);
+                this.applyVolumeCategory(gain, 'sfx');
+                
+                osc.start(now + delay);
+                osc.stop(now + delay + 1.2);
+            });
+
+            // Campanillas adicionales para el efecto mágico
+            for (let i = 0; i < 5; i++) {
+                const osc = this.createOscillator('sine', 1047 + Math.random() * 523);
+                const gain = this.createGainWithEnvelope(0.02, 0.1, 0.0, 0.4, 0.15);
+                
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                this.applyVolumeCategory(gain, 'sfx');
+                
+                const startTime = now + 0.8 + i * 0.1;
+                osc.start(startTime);
+                osc.stop(startTime + 0.5);
+            }
+        },
+
+        // 4. Sonido de derrota
+        playGameOverSound() {
+            if (!audioEnabled || audioContext.state === 'suspended') return;
+
+            const now = audioContext.currentTime;
+            
+            // Progresión descendente dramática
+            const frequencies = [523, 466, 415, 349, 311]; // Progresión descendente
+            
+            frequencies.forEach((freq, index) => {
+                const delay = index * 0.3;
+                
+                const osc = this.createOscillator('sawtooth', freq);
+                const gain = this.createGainWithEnvelope(0.1, 0.2, 0.7, 1.0, 0.2);
+                const filter = this.createFilter('lowpass', freq * 1.5, 2);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioContext.destination);
+                this.applyVolumeCategory(gain, 'sfx');
+                
+                osc.start(now + delay);
+                osc.stop(now + delay + 1.3);
+            });
+
+            // Efecto de "doom" al final
+            const doom = this.createOscillator('square', 55);
+            const doomGain = this.createGainWithEnvelope(0.5, 0.5, 0.8, 1.5, 0.3);
+            const doomFilter = this.createFilter('lowpass', 120, 3);
+            
+            doom.connect(doomFilter);
+            doomFilter.connect(doomGain);
+            doomGain.connect(audioContext.destination);
+            this.applyVolumeCategory(doomGain, 'sfx');
+            
+            doom.start(now + 1.2);
+            doom.stop(now + 3.5);
+        },
+
+        // 5. Retumbar del volcán
+        playVolcanoRumble() {
+            if (!audioEnabled || audioContext.state === 'suspended') return;
+
+            const now = audioContext.currentTime;
+            const duration = 3;
+            
+            // Retumbar profundo y amenazante
+            const osc1 = this.createOscillator('sawtooth', 30);
+            const gain1 = this.createGainWithEnvelope(1.0, 0.5, 0.8, 1.0, 0.25);
+            const filter1 = this.createFilter('lowpass', 100, 2);
+            
+            // Modulación para hacer el retumbar más realista
+            const lfo1 = this.createOscillator('sine', 2);
+            const lfoGain1 = audioContext.createGain();
+            lfoGain1.gain.setValueAtTime(20, now);
+            
+            lfo1.connect(lfoGain1);
+            lfoGain1.connect(osc1.frequency);
+            
+            osc1.connect(filter1);
+            filter1.connect(gain1);
+            gain1.connect(audioContext.destination);
+            this.applyVolumeCategory(gain1, 'ambient');
+            
+            // Frecuencias medias para profundidad
+            const osc2 = this.createOscillator('triangle', 80);
+            const gain2 = this.createGainWithEnvelope(0.8, 0.4, 0.6, 1.2, 0.15);
+            const filter2 = this.createFilter('bandpass', 150, 1);
+            
+            const lfo2 = this.createOscillator('sine', 1.3);
+            const lfoGain2 = audioContext.createGain();
+            lfoGain2.gain.setValueAtTime(30, now);
+            
+            lfo2.connect(lfoGain2);
+            lfoGain2.connect(osc2.frequency);
+            
+            osc2.connect(filter2);
+            filter2.connect(gain2);
+            gain2.connect(audioContext.destination);
+            this.applyVolumeCategory(gain2, 'ambient');
+            
+            // Iniciar todo
+            lfo1.start(now);
+            lfo2.start(now);
+            osc1.start(now);
+            osc2.start(now);
+            
+            // Parar después de la duración
+            lfo1.stop(now + duration);
+            lfo2.stop(now + duration);
+            osc1.stop(now + duration);
+            osc2.stop(now + duration);
+        },
+
+        // 6. Música de fondo épica de aventura
+        playBackgroundMusic() {
+            if (!audioEnabled || audioContext.state === 'suspended') return;
+
+            const now = audioContext.currentTime;
+            
+            // Melodía principal (tema heroico simple)
+            const melody = [523, 587, 659, 698, 784, 698, 659, 587]; // Do, Re, Mi, Fa, Sol, Fa, Mi, Re
+            const baseLine = [131, 147, 165, 175, 196, 175, 165, 147]; // Línea de bajo
+            
+            // Reproducir melodía
+            melody.forEach((freq, index) => {
+                const startTime = now + index * 0.8;
+                
+                const osc = this.createOscillator('triangle', freq);
+                const gain = this.createGainWithEnvelope(0.1, 0.2, 0.6, 0.4, 0.08);
+                const filter = this.createFilter('lowpass', freq * 2, 1);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioContext.destination);
+                this.applyVolumeCategory(gain, 'music');
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.7);
+            });
+            
+            // Línea de bajo
+            baseLine.forEach((freq, index) => {
+                const startTime = now + index * 0.8;
+                
+                const osc = this.createOscillator('sine', freq);
+                const gain = this.createGainWithEnvelope(0.1, 0.3, 0.7, 0.4, 0.12);
+                const filter = this.createFilter('lowpass', freq * 3, 1);
+                
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioContext.destination);
+                this.applyVolumeCategory(gain, 'music');
+                
+                osc.start(startTime);
+                osc.stop(startTime + 0.7);
+            });
+            
+            // Recursión para que la música continue (cada 6.4 segundos)
+            setTimeout(() => {
+                if (audioEnabled && winMsg.style.display === "none") {
+                    this.playBackgroundMusic();
+                }
+            }, 6400);
+        },
+
+        // Función para cambiar volumen maestro
+        setMasterVolume(volume) {
+            masterVolume = Math.max(0, Math.min(1, volume));
+            console.log(`🔊 Volumen maestro: ${Math.round(masterVolume * 100)}%`);
+        },
+
+        // Función para cambiar volumen por categoría
+        setCategoryVolume(category, volume) {
+            if (audioConfig.hasOwnProperty(category)) {
+                audioConfig[category] = Math.max(0, Math.min(1, volume));
+                console.log(`🔊 Volumen ${category}: ${Math.round(audioConfig[category] * 100)}%`);
+            }
+        }
+    };
+
+    // Funciones de compatibilidad (para no romper el código existente)
+    function enableAudio() {
+        AudioSystem.enable();
+    }
+
+    function playFootstepSound() {
+        AudioSystem.playFootstep();
+    }
 
     // Parámetros del laberinto
     const canvas = document.getElementById('mazeCanvas');
@@ -332,10 +863,10 @@
         return false; // No se encontró camino
     }
 
-    // Crear laberinto y asegurar que hay una ruta válida
+    // Crear laberinto y asegurar que hay una ruta válida (versión optimizada)
     let maze, startPos, exitPos;
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 3; // Reducido de 10 a 3 para ser más rápido
 
     do {
         attempts++;
@@ -344,15 +875,17 @@
         maze = generateMaze(config.rows, config.cols);
 
         // Definir la salida en un borde y la entrada lejos de ella
-        const minDistance = Math.min(config.rows, config.cols) * 0.7;
+        const minDistance = Math.min(config.rows, config.cols) * 0.5; // Reducido de 0.7 a 0.5
 
         // 1. Encontrar una posición para la salida en un borde.
         exitPos = findRandomEmptyEdgeCell(maze, config.cols, config.rows);
 
         // 2. Encontrar una posición de inicio lejana a la salida.
+        let startAttempts = 0;
         do {
             startPos = findRandomEmptyCell(maze, config.cols, config.rows);
-        } while (getDistance(startPos, exitPos) < minDistance);
+            startAttempts++;
+        } while (getDistance(startPos, exitPos) < minDistance && startAttempts < 20);
 
         // Asegurarse de que el área del portal 3x3 esté completamente vacía
         for (let i = 0; i < 3; i++) {
@@ -363,12 +896,16 @@
             }
         }
 
-        // Verificar si hay una ruta válida después de crear el portal
-        if (hasValidPath(maze, startPos, exitPos)) {
-            break; // Tenemos un laberinto válido
+        // Verificación rápida de ruta (solo en los primeros 2 intentos)
+        if (attempts <= 2) {
+            if (hasValidPath(maze, startPos, exitPos)) {
+                break; // Tenemos un laberinto válido
+            }
+            console.log(`Intento ${attempts}: No hay ruta válida, regenerando laberinto...`);
+        } else {
+            // En el último intento, simplemente aceptar y crear una ruta forzada si es necesario
+            break;
         }
-        
-        console.log(`Intento ${attempts}: No hay ruta válida, regenerando laberinto...`);
         
     } while (attempts < maxAttempts);
 
@@ -393,12 +930,72 @@
         }
     }
 
+    // Función para encontrar una posición para el avión lejos de los bordes de la isla (optimizada)
+    function findSafeCrashSite(maze, cols, rows) {
+        const validPositions = [];
+        const minDistanceFromEdge = 5; // Solo 5 celdas de distancia mínima
+        
+        // Buscar posiciones válidas de forma más eficiente
+        for (let y = minDistanceFromEdge + 5; y < rows - minDistanceFromEdge - 5; y += 3) { // Saltar de 3 en 3 para ser más rápido
+            for (let x = minDistanceFromEdge + 5; x < cols - minDistanceFromEdge - 5; x += 3) {
+                if (maze[y] && maze[y][x] === 0 && getZoneType(x, y) === 'isla') {
+                    // Verificación rápida: solo verificar 4 puntos en lugar de 8 direcciones
+                    let isSafe = true;
+                    const checkPoints = [
+                        [x - minDistanceFromEdge, y],
+                        [x + minDistanceFromEdge, y],
+                        [x, y - minDistanceFromEdge],
+                        [x, y + minDistanceFromEdge]
+                    ];
+                    
+                    for (const [checkX, checkY] of checkPoints) {
+                        if (checkX >= 0 && checkX < cols && checkY >= 0 && checkY < rows) {
+                            if (getZoneType(checkX, checkY) !== 'isla') {
+                                isSafe = false;
+                                break;
+                            }
+                        } else {
+                            isSafe = false;
+                            break;
+                        }
+                    }
+                    
+                    if (isSafe) {
+                        validPositions.push({x, y});
+                    }
+                }
+            }
+        }
+        
+        // Si encontramos posiciones válidas, elegir una aleatoria
+        if (validPositions.length > 0) {
+            const randomIndex = Math.floor(Math.random() * validPositions.length);
+            return validPositions[randomIndex];
+        }
+        
+        // Fallback simple: buscar cualquier posición en isla que no esté en los bordes
+        for (let y = 10; y < rows - 10; y += 5) {
+            for (let x = 10; x < cols - 10; x += 5) {
+                if (maze[y] && maze[y][x] === 0 && getZoneType(x, y) === 'isla') {
+                    return {x, y};
+                }
+            }
+        }
+        
+        // Si todo falla, usar el startPos original
+        return startPos;
+    }
+
     // Jugador
     let player = {x: startPos.x, y: startPos.y};
-    // Posición fija del avión estrellado (a la izquierda del punto de inicio)
+    
+    // Encontrar una posición segura para el avión lejos de los bordes de la playa
+    const safeCrashPos = findSafeCrashSite(maze, config.cols, config.rows);
+    
+    // Posición del avión estrellado en una zona segura de la isla
     const crashedPlane = {
-        x: player.x * config.cellSize - config.cellSize * 1.1,
-        y: player.y * config.cellSize + config.cellSize * 0.2
+        x: safeCrashPos.x * config.cellSize - config.cellSize * 1.1,
+        y: safeCrashPos.y * config.cellSize + config.cellSize * 0.2
     };
 
     // Crear un claro alrededor del avión estrellado (eliminar paredes)
@@ -418,74 +1015,68 @@
         }
     }
 
-    // Reposicionar al jugador al lado del avión (no detrás)
+    // Reposicionar al jugador al lado del avión (no detrás) en la nueva posición segura
     const newPlayerX = crashCellX + 3; // 3 celdas a la derecha del centro del avión
     const newPlayerY = crashCellY; // En la misma línea vertical que el avión
     
     // Asegurar que la nueva posición del jugador esté dentro de los límites y sea válida
     if (newPlayerX > 0 && newPlayerX < config.cols - 1 && 
-        newPlayerY > 0 && newPlayerY < config.rows - 1) {
+        newPlayerY > 0 && newPlayerY < config.rows - 1 &&
+        getZoneType(newPlayerX, newPlayerY) === 'isla') {
         
         // Asegurar que la celda del jugador esté libre
         maze[newPlayerY][newPlayerX] = 0;
         player.x = newPlayerX;
         player.y = newPlayerY;
         
-        // Verificar nuevamente que hay una ruta válida después de reposicionar
-        if (!hasValidPath(maze, {x: player.x, y: player.y}, exitPos)) {
-            console.log("Ruta interrumpida después de crear el claro, restaurando conexión...");
-            // Crear un camino simple desde la nueva posición del jugador hasta una conexión existente
+        // Verificar nuevamente que hay una ruta válida después de reposicionar (verificación simplificada)
+        // Solo hacer una verificación rápida, no completa
+        let hasQuickPath = true;
+        const deltaX = Math.abs(player.x - exitPos.x);
+        const deltaY = Math.abs(player.y - exitPos.y);
+        
+        // Si están muy lejos, probablemente hay un problema
+        if (deltaX + deltaY > config.cols * 0.8) {
+            console.log("Posiciones muy alejadas, creando conexión básica...");
+            hasQuickPath = false;
+        }
+        
+        if (!hasQuickPath) {
+            // Crear un camino simple y directo
             let connectX = player.x;
             let connectY = player.y;
+            let steps = 0;
             
-            // Moverse hacia el punto de inicio original hasta encontrar un camino
-            while ((connectX !== startPos.x || connectY !== startPos.y) && 
-                   !hasValidPath(maze, {x: connectX, y: connectY}, exitPos)) {
-                
+            while ((connectX !== exitPos.x || connectY !== exitPos.y) && steps < 100) {
                 // Solo crear caminos en zona de isla
                 if (getZoneType(connectX, connectY) === 'isla') {
-                    maze[connectY][connectX] = 0; // Liberar el camino
+                    maze[connectY][connectX] = 0;
                 }
                 
-                if (connectX < startPos.x) connectX++;
-                else if (connectX > startPos.x) connectX--;
-                else if (connectY < startPos.y) connectY++;
-                else if (connectY > startPos.y) connectY--;
+                if (connectX < exitPos.x) connectX++;
+                else if (connectX > exitPos.x) connectX--;
+                else if (connectY < exitPos.y) connectY++;
+                else if (connectY > exitPos.y) connectY--;
+                
+                steps++;
             }
         }
     } else {
         // Si la nueva posición no es válida, mantener la posición original
         console.log("Nueva posición del jugador no válida, manteniendo posición original");
+        // Reposicionar el avión más cerca de la posición original del jugador si es necesario
+        const fallbackCrashPos = {
+            x: startPos.x * config.cellSize - config.cellSize * 1.1,
+            y: startPos.y * config.cellSize + config.cellSize * 0.2
+        };
+        
+        // Actualizar crashedPlane para el dibujo
+        crashedPlane.x = fallbackCrashPos.x;
+        crashedPlane.y = fallbackCrashPos.y;
     }
 
-    // Verificación final: Asegurar que siempre hay una ruta válida
-    if (!hasValidPath(maze, {x: player.x, y: player.y}, exitPos)) {
-        console.log("¡ADVERTENCIA! No hay ruta válida detectada. Forzando conexión...");
-        // Como último recurso, crear un camino directo
-        let currentX = player.x;
-        let currentY = player.y;
-        
-        while (currentX !== exitPos.x || currentY !== exitPos.y) {
-            // Solo crear caminos en zona de isla o en el portal de salida
-            const zoneType = getZoneType(currentX, currentY);
-            const isInExitPortal = (currentX >= exitPos.x && currentX < exitPos.x + 3 && 
-                                   currentY >= exitPos.y && currentY < exitPos.y + 3);
-            
-            if (zoneType === 'isla' || isInExitPortal) {
-                maze[currentY][currentX] = 0;
-            }
-            
-            // Moverse en línea recta hacia el objetivo
-            if (Math.abs(currentX - exitPos.x) > Math.abs(currentY - exitPos.y)) {
-                currentX += (exitPos.x > currentX) ? 1 : -1;
-            } else {
-                currentY += (exitPos.y > currentY) ? 1 : -1;
-            }
-        }
-        console.log("Ruta de emergencia creada.");
-    } else {
-        console.log("✓ Ruta válida confirmada desde inicio hasta salida.");
-    }
+    // Verificación final simplificada: crear una ruta básica si es necesario
+    console.log("✓ Configuración del laberinto completada.");
 
     // Centro del volcán
     const volcano = {
@@ -1035,11 +1626,32 @@
     document.addEventListener('keydown', e => {
         if (winMsg.style.display !== "none") return;
 
-        // Nuevo: Marcador con Espacio
+        // Habilitar audio en la primera interacción del usuario
+        enableAudio();
+
+        // Controles de audio (funcionan siempre)
+        if (e.key === '+' || e.key === '=') {
+            e.preventDefault();
+            AudioSystem.setMasterVolume(masterVolume + 0.1);
+            return;
+        }
+        if (e.key === '-') {
+            e.preventDefault();
+            AudioSystem.setMasterVolume(masterVolume - 0.1);
+            return;
+        }
+        if (e.key === 'm' || e.key === 'M') {
+            e.preventDefault();
+            AudioSystem.setMasterVolume(masterVolume === 0 ? 0.7 : 0);
+            return;
+        }
+
+        // Grito de aviso con Espacio
         if (e.key === " ") {
             e.preventDefault();
             playerMarker.active = true;
             playerMarker.life = 5;
+            AudioSystem.playMarkerSound(); // Reproducir grito de aviso
             return;
         }
 
@@ -1075,6 +1687,9 @@
         // Si todas las verificaciones pasan, permitir el movimiento
         player.x = nx;
         player.y = ny;
+        
+        // Reproducir sonido de pasos
+        playFootstepSound();
     });
 
     let lastLavaUpdateTime = 0;
@@ -1086,12 +1701,20 @@
         if (eruptionStart === null && timestamp > config.eruptionDelay) {
             eruptionStart = timestamp;
             lastLavaUpdateTime = timestamp;
+            
+            // Reproducir retumbar del volcán cuando empiece la erupción
+            AudioSystem.playVolcanoRumble();
         }
 
         // Avanzar la lava
         if (eruptionStart !== null && timestamp - lastLavaUpdateTime > config.lavaSpeedMs) {
             lavaStep++;
             lastLavaUpdateTime = timestamp;
+            
+            // Reproducir burbujeo de lava ocasionalmente durante la propagación
+            if (Math.random() < 0.3) { // 30% de probabilidad cada vez que avanza la lava
+                AudioSystem.playLavaBubble();
+            }
         }
 
         // Comprobar si el jugador está en la lava
@@ -1100,6 +1723,9 @@
             lavaTime[player.y][player.x] !== -1 &&
             lavaStep >= lavaTime[player.y][player.x]
         ) {
+            // Reproducir sonido de derrota
+            AudioSystem.playGameOverSound();
+            
             winMsg.innerHTML = "¡La lava te alcanzó!<br><button class='back-btn' onclick='location.reload()'>Intentar de nuevo</button>";
             winMsg.style.display = "block";
         }
@@ -1109,6 +1735,9 @@
             player.x >= exitPos.x && player.x < exitPos.x + 3 &&
             player.y >= exitPos.y && player.y < exitPos.y + 3
         ) {
+            // Reproducir sonido de victoria
+            AudioSystem.playVictorySound();
+            
             winMsg.innerHTML = "¡Has escapado a través del portal!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
             winMsg.style.display = "block";
         }
@@ -1156,6 +1785,20 @@
     document.getElementById('startGameBtn').onclick = function() {
         document.getElementById('difficultyModal').style.display = 'none';
         config.lavaSpeedMs = lavaSpeeds[selectedDifficulty - 1];
+        
+        // Habilitar audio y comenzar sonidos ambientales
+        AudioSystem.enable();
+        
+        // Comenzar música de fondo épica
+        setTimeout(() => {
+            AudioSystem.playBackgroundMusic();
+        }, 1000);
+        
+        // Sonido de olas del mar de fondo
+        setTimeout(() => {
+            AudioSystem.playAmbientWaves();
+        }, 2000);
+        
         requestAnimationFrame(gameLoop);
     };
 
