@@ -1279,6 +1279,21 @@
         return false; // No se encontró camino
     }
 
+    // Declaración de imágenes
+    const barcoImg = new Image();
+    barcoImg.src = 'Images/barco.png';
+    let barcoImgLoaded = false;
+    barcoImg.onload = function() {
+        barcoImgLoaded = true;
+    };
+
+    const cesnaImg = new Image();
+    cesnaImg.src = 'Images/cesna.png';
+    let cesnaImgLoaded = false;
+    cesnaImg.onload = function() {
+        cesnaImgLoaded = true;
+    };
+
     // Crear laberinto y posicionar elementos de manera robusta
     let maze, startPos, exitPos, planePos;
     let attempts = 0;
@@ -1535,48 +1550,56 @@
         {
             const crashX = crashedPlane.x;
             const crashY = crashedPlane.y;
-            const scale = 3; // Tamaño 3 veces mayor
+            const scale = 1.5; // Tamaño reducido a la mitad (era 3, ahora 1.5)
 
             ctx.save();
             ctx.translate(crashX + config.cellSize * scale / 2, crashY + config.cellSize * scale / 2);
             ctx.rotate(-Math.PI / 6);
 
-            // Cuerpo (blanco)
-            ctx.fillStyle = "#f5f5f5";
-            ctx.fillRect(-config.cellSize * 0.6 * scale, -config.cellSize * 0.18 * scale, config.cellSize * 1.2 * scale, config.cellSize * 0.36 * scale);
+            // Usar imagen cesna.png si está cargada, sino usar gráficos vectoriales
+            if (cesnaImgLoaded) {
+                const imgWidth = 40 * scale; // Tamaño similar al vector original
+                const imgHeight = 30 * scale;
+                ctx.drawImage(cesnaImg, -imgWidth/2, -imgHeight/2, imgWidth, imgHeight);
+            } else {
+                // Gráficos vectoriales como fallback
+                // Cuerpo (blanco)
+                ctx.fillStyle = "#f5f5f5";
+                ctx.fillRect(-config.cellSize * 0.6 * scale, -config.cellSize * 0.18 * scale, config.cellSize * 1.2 * scale, config.cellSize * 0.36 * scale);
 
-            // Nariz azul claro
-            ctx.beginPath();
-            ctx.arc(config.cellSize * 0.6 * scale, 0, config.cellSize * 0.18 * scale, 0, 2 * Math.PI);
-            ctx.fillStyle = "#90caf9";
-            ctx.fill();
+                // Nariz azul claro
+                ctx.beginPath();
+                ctx.arc(config.cellSize * 0.6 * scale, 0, config.cellSize * 0.18 * scale, 0, 2 * Math.PI);
+                ctx.fillStyle = "#90caf9";
+                ctx.fill();
 
-            // Alas (blancas con borde azul)
-            ctx.save();
-            ctx.fillStyle = "#f5f5f5";
-            ctx.strokeStyle = "#1976d2";
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.rect(-config.cellSize * 0.15 * scale, -config.cellSize * 0.5 * scale, config.cellSize * 0.7 * scale, config.cellSize * 1.0 * scale);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
+                // Alas (blancas con borde azul)
+                ctx.save();
+                ctx.fillStyle = "#f5f5f5";
+                ctx.strokeStyle = "#1976d2";
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.rect(-config.cellSize * 0.15 * scale, -config.cellSize * 0.5 * scale, config.cellSize * 0.7 * scale, config.cellSize * 1.0 * scale);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
 
-            // Cola (blanca con borde azul)
-            ctx.save();
-            ctx.rotate(-Math.PI / 8);
-            ctx.fillStyle = "#f5f5f5";
-            ctx.strokeStyle = "#1976d2";
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.rect(-config.cellSize * 0.6 * scale, -config.cellSize * 0.12 * scale, config.cellSize * 0.25 * scale, config.cellSize * 0.24 * scale);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
+                // Cola (blanca con borde azul)
+                ctx.save();
+                ctx.rotate(-Math.PI / 8);
+                ctx.fillStyle = "#f5f5f5";
+                ctx.strokeStyle = "#1976d2";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.rect(-config.cellSize * 0.6 * scale, -config.cellSize * 0.12 * scale, config.cellSize * 0.25 * scale, config.cellSize * 0.24 * scale);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
 
-            // Ventanas (azul claro)
-            ctx.fillStyle = "#90caf9";
-            ctx.fillRect(config.cellSize * 0.1 * scale, -config.cellSize * 0.12 * scale, config.cellSize * 0.35 * scale, config.cellSize * 0.24 * scale);
+                // Ventanas (azul claro)
+                ctx.fillStyle = "#90caf9";
+                ctx.fillRect(config.cellSize * 0.1 * scale, -config.cellSize * 0.12 * scale, config.cellSize * 0.35 * scale, config.cellSize * 0.24 * scale);
+            }
 
             ctx.restore();
 
@@ -1951,8 +1974,8 @@
         // Mejor centrado: posicionar el barco más hacia el centro del área de 3x3
         const shipCenterX = (exitPos.x + 1.5) * config.cellSize;
         const shipCenterY = (exitPos.y + 1.2) * config.cellSize; // Ajuste vertical para mejor posición
-        const shipWidth = config.cellSize * 3.2;
-        const shipHeight = config.cellSize * 1.8;
+        const shipWidth = config.cellSize * 9.6; // Triplicado (era 3.2, ahora 9.6)
+        const shipHeight = config.cellSize * 5.4; // Triplicado (era 1.8, ahora 5.4)
 
         ctx.save();
         ctx.translate(shipCenterX, shipCenterY);
@@ -1975,234 +1998,241 @@
         ctx.rotate(sway);
         ctx.translate(0, bobbing * 10);
 
-        // === CASCO DEL BARCO === 
-        // Parte inferior del casco (más oscura, bajo el agua)
-        ctx.fillStyle = "#2e1a16";
-        ctx.strokeStyle = "#1a1a1a";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(0, shipHeight * 0.4, shipWidth * 0.45, shipHeight * 0.25, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-
-        // Parte superior del casco (más clara)
-        const hullGradient = ctx.createLinearGradient(0, -shipHeight * 0.2, 0, shipHeight * 0.3);
-        hullGradient.addColorStop(0, "#5d4037");
-        hullGradient.addColorStop(0.5, "#4e342e");
-        hullGradient.addColorStop(1, "#3e2723");
-        
-        ctx.fillStyle = hullGradient;
-        ctx.strokeStyle = "#2e1a16";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.ellipse(0, shipHeight * 0.1, shipWidth * 0.48, shipHeight * 0.35, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-
-        // Proa (punta del barco)
-        ctx.fillStyle = "#4e342e";
-        ctx.strokeStyle = "#3e2723";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(shipWidth * 0.48, shipHeight * 0.1);
-        ctx.lineTo(shipWidth * 0.6, shipHeight * 0.05);
-        ctx.lineTo(shipWidth * 0.55, shipHeight * 0.25);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // === DETALLES DEL CASCO ===
-        // Tablones del casco (líneas horizontales de madera)
-        ctx.strokeStyle = "#5d4037";
-        ctx.lineWidth = 1.5;
-        for (let i = -3; i <= 3; i++) {
+        // Usar imagen barco.png si está cargada, sino usar gráficos vectoriales
+        if (barcoImgLoaded) {
+            const imgWidth = shipWidth;
+            const imgHeight = shipHeight;
+            ctx.drawImage(barcoImg, -imgWidth/2, -imgHeight/2, imgWidth, imgHeight);
+        } else {
+            // === CASCO DEL BARCO === (gráficos vectoriales como fallback)
+            // Parte inferior del casco (más oscura, bajo el agua)
+            ctx.fillStyle = "#2e1a16";
+            ctx.strokeStyle = "#1a1a1a";
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            const y = shipHeight * 0.1 + i * shipHeight * 0.08;
-            const startX = -shipWidth * 0.45 + Math.abs(i) * 0.05 * shipWidth;
-            const endX = shipWidth * 0.45 - Math.abs(i) * 0.05 * shipWidth;
-            ctx.moveTo(startX, y);
-            ctx.lineTo(endX, y);
+            ctx.ellipse(0, shipHeight * 0.4, shipWidth * 0.45, shipHeight * 0.25, 0, 0, 2 * Math.PI);
+            ctx.fill();
             ctx.stroke();
-        }
 
-        // Clavos y herrajes metálicos
-        ctx.fillStyle = "#757575";
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const x = Math.cos(angle) * shipWidth * 0.4;
-            const y = shipHeight * 0.1 + Math.sin(angle) * shipHeight * 0.25;
+            // Parte superior del casco (más clara)
+            const hullGradient = ctx.createLinearGradient(0, -shipHeight * 0.2, 0, shipHeight * 0.3);
+            hullGradient.addColorStop(0, "#5d4037");
+            hullGradient.addColorStop(0.5, "#4e342e");
+            hullGradient.addColorStop(1, "#3e2723");
+            
+            ctx.fillStyle = hullGradient;
+            ctx.strokeStyle = "#2e1a16";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(0, shipHeight * 0.1, shipWidth * 0.48, shipHeight * 0.35, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            // Proa (punta del barco)
+            ctx.fillStyle = "#4e342e";
+            ctx.strokeStyle = "#3e2723";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(shipWidth * 0.48, shipHeight * 0.1);
+            ctx.lineTo(shipWidth * 0.6, shipHeight * 0.05);
+            ctx.lineTo(shipWidth * 0.55, shipHeight * 0.25);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // === DETALLES DEL CASCO ===
+            // Tablones del casco (líneas horizontales de madera)
+            ctx.strokeStyle = "#5d4037";
+            ctx.lineWidth = 1.5;
+            for (let i = -3; i <= 3; i++) {
+                ctx.beginPath();
+                const y = shipHeight * 0.1 + i * shipHeight * 0.08;
+                const startX = -shipWidth * 0.45 + Math.abs(i) * 0.05 * shipWidth;
+                const endX = shipWidth * 0.45 - Math.abs(i) * 0.05 * shipWidth;
+                ctx.moveTo(startX, y);
+                ctx.lineTo(endX, y);
+                ctx.stroke();
+            }
+
+            // Clavos y herrajes metálicos
+            ctx.fillStyle = "#757575";
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const x = Math.cos(angle) * shipWidth * 0.4;
+                const y = shipHeight * 0.1 + Math.sin(angle) * shipHeight * 0.25;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            // === CUBIERTA DEL BARCO ===
+            ctx.fillStyle = "#6d4c41";
+            ctx.strokeStyle = "#5d4037";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, -shipHeight * 0.05, shipWidth * 0.42, shipHeight * 0.15, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            // Tablones de la cubierta
+            ctx.strokeStyle = "#8d6e63";
+            ctx.lineWidth = 1;
+            for (let i = -4; i <= 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(-shipWidth * 0.35, -shipHeight * 0.05 + i * 8);
+                ctx.lineTo(shipWidth * 0.35, -shipHeight * 0.05 + i * 8);
+                ctx.stroke();
+            }
+
+            // === CABINA/CASETA ===
+            ctx.fillStyle = "#4e342e";
+            ctx.strokeStyle = "#3e2723";
+            ctx.lineWidth = 2;
+            ctx.fillRect(-shipWidth * 0.15, -shipHeight * 0.3, shipWidth * 0.3, shipHeight * 0.25);
+            ctx.strokeRect(-shipWidth * 0.15, -shipHeight * 0.3, shipWidth * 0.3, shipHeight * 0.25);
+
+            // Ventanas de la cabina
+            ctx.fillStyle = "#81c784";
+            ctx.fillRect(-shipWidth * 0.1, -shipHeight * 0.25, shipWidth * 0.08, shipHeight * 0.08);
+            ctx.fillRect(shipWidth * 0.02, -shipHeight * 0.25, shipWidth * 0.08, shipHeight * 0.08);
+
+            // Puerta de la cabina
+            ctx.fillStyle = "#3e2723";
+            ctx.strokeStyle = "#2e1a16";
+            ctx.lineWidth = 1;
+            ctx.fillRect(-shipWidth * 0.05, -shipHeight * 0.08, shipWidth * 0.1, shipHeight * 0.12);
+            ctx.strokeRect(-shipWidth * 0.05, -shipHeight * 0.08, shipWidth * 0.1, shipHeight * 0.12);
+
+            // === MÁSTIL PRINCIPAL ===
+            ctx.fillStyle = "#8d6e63";
+            ctx.strokeStyle = "#6d4c41";
+            ctx.lineWidth = 2;
+            ctx.fillRect(-config.cellSize * 0.06, -shipHeight * 0.9, config.cellSize * 0.12, shipHeight * 1.1);
+            ctx.strokeRect(-config.cellSize * 0.06, -shipHeight * 0.9, config.cellSize * 0.12, shipHeight * 1.1);
+
+            // Anillos del mástil
+            ctx.strokeStyle = "#5d4037";
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 3; i++) {
+                const ringY = -shipHeight * 0.7 + i * shipHeight * 0.3;
+                ctx.beginPath();
+                ctx.arc(0, ringY, config.cellSize * 0.08, 0, 2 * Math.PI);
+                ctx.stroke();
+            }
+
+            // === VELA PRINCIPAL ===
+            ctx.save();
+            
+            // Vela con gradiente y movimiento realista
+            const sailSway = Math.sin(timestamp / 900) * 0.12;
+            const sailGradient = ctx.createLinearGradient(-shipWidth * 0.3, -shipHeight * 0.7, shipWidth * 0.3, -shipHeight * 0.2);
+            sailGradient.addColorStop(0, "#f5f5dc");
+            sailGradient.addColorStop(0.3, "#fffde7");
+            sailGradient.addColorStop(0.7, "#f5f5dc");
+            sailGradient.addColorStop(1, "#e8e3d3");
+            
+            ctx.fillStyle = sailGradient;
+            ctx.strokeStyle = "#d7ccc8";
+            ctx.lineWidth = 2;
+            
+            // Vela principal con forma más realista
+            ctx.beginPath();
+            ctx.moveTo(-shipWidth * 0.38, -shipHeight * 0.75);
+            ctx.quadraticCurveTo(-shipWidth * 0.25 + sailSway * 25, -shipHeight * 0.55, -shipWidth * 0.38, -shipHeight * 0.15);
+            ctx.lineTo(shipWidth * 0.25, -shipHeight * 0.15);
+            ctx.quadraticCurveTo(shipWidth * 0.4 + sailSway * 20, -shipHeight * 0.55, shipWidth * 0.25, -shipHeight * 0.75);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Costuras y reparches en la vela
+            ctx.strokeStyle = "#d7ccc8";
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 4; i++) {
+                const lineY = -shipHeight * 0.7 + i * shipHeight * 0.15;
+                ctx.beginPath();
+                ctx.moveTo(-shipWidth * 0.35, lineY);
+                ctx.lineTo(shipWidth * 0.22, lineY);
+                ctx.stroke();
+            }
+
+            // Agujeros y desgaste en la vela
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.beginPath();
+            ctx.ellipse(-shipWidth * 0.2, -shipHeight * 0.5, 6, 4, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(shipWidth * 0.15, -shipHeight * 0.35, 4, 3, 0, 0, 2 * Math.PI);
+            ctx.fill();
+
+            ctx.restore();
+
+            // === CUERDAS Y JARCIAS ===
+            ctx.strokeStyle = "#5d4037";
+            ctx.lineWidth = 1.5;
+            
+            // Cuerdas del mástil a la vela
+            ctx.beginPath();
+            ctx.moveTo(-config.cellSize * 0.06, -shipHeight * 0.8);
+            ctx.lineTo(-shipWidth * 0.35, -shipHeight * 0.7);
+            ctx.stroke();
             
             ctx.beginPath();
-            ctx.arc(x, y, 2, 0, 2 * Math.PI);
+            ctx.moveTo(config.cellSize * 0.06, -shipHeight * 0.8);
+            ctx.lineTo(shipWidth * 0.22, -shipHeight * 0.7);
+            ctx.stroke();
+
+            // === BANDERA ===
+            const flagSway = Math.sin(timestamp / 700) * 0.2;
+            ctx.save();
+            ctx.translate(0, -shipHeight * 0.9);
+            ctx.rotate(flagSway);
+            
+            // Asta de la bandera
+            ctx.fillStyle = "#5d4037";
+            ctx.fillRect(0, 0, 2, shipHeight * 0.2);
+            
+            // Bandera de rescate (naranja de emergencia)
+            ctx.fillStyle = "#ff5722";
+            ctx.strokeStyle = "#d84315";
+            ctx.lineWidth = 1;
+            ctx.fillRect(2, 0, shipWidth * 0.15, shipHeight * 0.12);
+            ctx.strokeRect(2, 0, shipWidth * 0.15, shipHeight * 0.12);
+            
+            // Símbolo de rescate en la bandera
+            ctx.fillStyle = "#fff";
+            ctx.font = `${config.cellSize * 0.25}px Arial`;
+            ctx.textAlign = "center";
+            ctx.fillText("SOS", 2 + shipWidth * 0.075, shipHeight * 0.08);
+            
+            ctx.restore();
+
+            // === EQUIPAMIENTO DE RESCATE ===
+            // Salvavidas
+            ctx.strokeStyle = "#ff5722";
+            ctx.fillStyle = "#fff";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(shipWidth * 0.3, -shipHeight * 0.1, 8, 0, 2 * Math.PI);
             ctx.fill();
-        }
+            ctx.stroke();
 
-        // === CUBIERTA DEL BARCO ===
-        ctx.fillStyle = "#6d4c41";
-        ctx.strokeStyle = "#5d4037";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(0, -shipHeight * 0.05, shipWidth * 0.42, shipHeight * 0.15, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
+            // Remos
+            ctx.fillStyle = "#8d6e63";
+            ctx.fillRect(-shipWidth * 0.4, shipHeight * 0.05, shipWidth * 0.15, 4);
+            ctx.fillRect(shipWidth * 0.25, shipHeight * 0.05, shipWidth * 0.15, 4);
 
-        // Tablones de la cubierta
-        ctx.strokeStyle = "#8d6e63";
-        ctx.lineWidth = 1;
-        for (let i = -4; i <= 4; i++) {
+            // Ancla pequeña
+            ctx.strokeStyle = "#424242";
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(-shipWidth * 0.35, -shipHeight * 0.05 + i * 8);
-            ctx.lineTo(shipWidth * 0.35, -shipHeight * 0.05 + i * 8);
+            ctx.moveTo(-shipWidth * 0.35, shipHeight * 0.2);
+            ctx.lineTo(-shipWidth * 0.35, shipHeight * 0.35);
+            ctx.moveTo(-shipWidth * 0.4, shipHeight * 0.35);
+            ctx.lineTo(-shipWidth * 0.3, shipHeight * 0.35);
             ctx.stroke();
         }
-
-        // === CABINA/CASETA ===
-        ctx.fillStyle = "#4e342e";
-        ctx.strokeStyle = "#3e2723";
-        ctx.lineWidth = 2;
-        ctx.fillRect(-shipWidth * 0.15, -shipHeight * 0.3, shipWidth * 0.3, shipHeight * 0.25);
-        ctx.strokeRect(-shipWidth * 0.15, -shipHeight * 0.3, shipWidth * 0.3, shipHeight * 0.25);
-
-        // Ventanas de la cabina
-        ctx.fillStyle = "#81c784";
-        ctx.fillRect(-shipWidth * 0.1, -shipHeight * 0.25, shipWidth * 0.08, shipHeight * 0.08);
-        ctx.fillRect(shipWidth * 0.02, -shipHeight * 0.25, shipWidth * 0.08, shipHeight * 0.08);
-
-        // Puerta de la cabina
-        ctx.fillStyle = "#3e2723";
-        ctx.strokeStyle = "#2e1a16";
-        ctx.lineWidth = 1;
-        ctx.fillRect(-shipWidth * 0.05, -shipHeight * 0.08, shipWidth * 0.1, shipHeight * 0.12);
-        ctx.strokeRect(-shipWidth * 0.05, -shipHeight * 0.08, shipWidth * 0.1, shipHeight * 0.12);
-
-        // === MÁSTIL PRINCIPAL ===
-        ctx.fillStyle = "#8d6e63";
-        ctx.strokeStyle = "#6d4c41";
-        ctx.lineWidth = 2;
-        ctx.fillRect(-config.cellSize * 0.06, -shipHeight * 0.9, config.cellSize * 0.12, shipHeight * 1.1);
-        ctx.strokeRect(-config.cellSize * 0.06, -shipHeight * 0.9, config.cellSize * 0.12, shipHeight * 1.1);
-
-        // Anillos del mástil
-        ctx.strokeStyle = "#5d4037";
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 3; i++) {
-            const ringY = -shipHeight * 0.7 + i * shipHeight * 0.3;
-            ctx.beginPath();
-            ctx.arc(0, ringY, config.cellSize * 0.08, 0, 2 * Math.PI);
-            ctx.stroke();
-        }
-
-        // === VELA PRINCIPAL ===
-        ctx.save();
-        
-        // Vela con gradiente y movimiento realista
-        const sailSway = Math.sin(timestamp / 900) * 0.12;
-        const sailGradient = ctx.createLinearGradient(-shipWidth * 0.3, -shipHeight * 0.7, shipWidth * 0.3, -shipHeight * 0.2);
-        sailGradient.addColorStop(0, "#f5f5dc");
-        sailGradient.addColorStop(0.3, "#fffde7");
-        sailGradient.addColorStop(0.7, "#f5f5dc");
-        sailGradient.addColorStop(1, "#e8e3d3");
-        
-        ctx.fillStyle = sailGradient;
-        ctx.strokeStyle = "#d7ccc8";
-        ctx.lineWidth = 2;
-        
-        // Vela principal con forma más realista
-        ctx.beginPath();
-        ctx.moveTo(-shipWidth * 0.38, -shipHeight * 0.75);
-        ctx.quadraticCurveTo(-shipWidth * 0.25 + sailSway * 25, -shipHeight * 0.55, -shipWidth * 0.38, -shipHeight * 0.15);
-        ctx.lineTo(shipWidth * 0.25, -shipHeight * 0.15);
-        ctx.quadraticCurveTo(shipWidth * 0.4 + sailSway * 20, -shipHeight * 0.55, shipWidth * 0.25, -shipHeight * 0.75);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // Costuras y reparches en la vela
-        ctx.strokeStyle = "#d7ccc8";
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 4; i++) {
-            const lineY = -shipHeight * 0.7 + i * shipHeight * 0.15;
-            ctx.beginPath();
-            ctx.moveTo(-shipWidth * 0.35, lineY);
-            ctx.lineTo(shipWidth * 0.22, lineY);
-            ctx.stroke();
-        }
-
-        // Agujeros y desgaste en la vela
-        ctx.fillStyle = "rgba(0,0,0,0.2)";
-        ctx.beginPath();
-        ctx.ellipse(-shipWidth * 0.2, -shipHeight * 0.5, 6, 4, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(shipWidth * 0.15, -shipHeight * 0.35, 4, 3, 0, 0, 2 * Math.PI);
-        ctx.fill();
-
-        ctx.restore();
-
-        // === CUERDAS Y JARCIAS ===
-        ctx.strokeStyle = "#5d4037";
-        ctx.lineWidth = 1.5;
-        
-        // Cuerdas del mástil a la vela
-        ctx.beginPath();
-        ctx.moveTo(-config.cellSize * 0.06, -shipHeight * 0.8);
-        ctx.lineTo(-shipWidth * 0.35, -shipHeight * 0.7);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(config.cellSize * 0.06, -shipHeight * 0.8);
-        ctx.lineTo(shipWidth * 0.22, -shipHeight * 0.7);
-        ctx.stroke();
-
-        // === BANDERA ===
-        const flagSway = Math.sin(timestamp / 700) * 0.2;
-        ctx.save();
-        ctx.translate(0, -shipHeight * 0.9);
-        ctx.rotate(flagSway);
-        
-        // Asta de la bandera
-        ctx.fillStyle = "#5d4037";
-        ctx.fillRect(0, 0, 2, shipHeight * 0.2);
-        
-        // Bandera de rescate (naranja de emergencia)
-        ctx.fillStyle = "#ff5722";
-        ctx.strokeStyle = "#d84315";
-        ctx.lineWidth = 1;
-        ctx.fillRect(2, 0, shipWidth * 0.15, shipHeight * 0.12);
-        ctx.strokeRect(2, 0, shipWidth * 0.15, shipHeight * 0.12);
-        
-        // Símbolo de rescate en la bandera
-        ctx.fillStyle = "#fff";
-        ctx.font = `${config.cellSize * 0.25}px Arial`;
-        ctx.textAlign = "center";
-        ctx.fillText("SOS", 2 + shipWidth * 0.075, shipHeight * 0.08);
-        
-        ctx.restore();
-
-        // === EQUIPAMIENTO DE RESCATE ===
-        // Salvavidas
-        ctx.strokeStyle = "#ff5722";
-        ctx.fillStyle = "#fff";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(shipWidth * 0.3, -shipHeight * 0.1, 8, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-
-        // Remos
-        ctx.fillStyle = "#8d6e63";
-        ctx.fillRect(-shipWidth * 0.4, shipHeight * 0.05, shipWidth * 0.15, 4);
-        ctx.fillRect(shipWidth * 0.25, shipHeight * 0.05, shipWidth * 0.15, 4);
-
-        // Ancla pequeña
-        ctx.strokeStyle = "#424242";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-shipWidth * 0.35, shipHeight * 0.2);
-        ctx.lineTo(-shipWidth * 0.35, shipHeight * 0.35);
-        ctx.moveTo(-shipWidth * 0.4, shipHeight * 0.35);
-        ctx.lineTo(-shipWidth * 0.3, shipHeight * 0.35);
-        ctx.stroke();
 
         ctx.restore();
     }
