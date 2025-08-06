@@ -79,12 +79,99 @@
         .star.selected {
             transform: scale(1.18);
         }
+        .config-btn {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 10px 22px;
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+        .config-btn:hover {
+            background: linear-gradient(135deg, #66bb6a, #388e3c);
+        }
+        .config-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 15;
+            background: rgba(30,20,10,0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .config-content {
+            background: #3e2723;
+            padding: 32px 36px 28px 36px;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px #000a;
+            text-align: center;
+            min-width: 380px;
+            max-width: 90vw;
+        }
+        .volume-control {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .volume-slider {
+            width: 200px;
+            height: 6px;
+            border-radius: 3px;
+            background: #666;
+            outline: none;
+            cursor: pointer;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff9800;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .volume-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff9800;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        .fullscreen-btn {
+            background: linear-gradient(135deg, #2196f3, #1565c0);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        .fullscreen-btn:hover {
+            background: linear-gradient(135deg, #42a5f5, #1976d2);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
         <button class="back-btn" onclick="showControls()" style="margin-left: 10px;">🎮 Controles</button>
+        <button class="config-btn" onclick="showConfig()">⚙️ Configuración</button>
         <h1>Laberinto Volcán</h1>
         <div class="subtitle">¡Encuentra la salida en el laberinto!</div>
         <canvas id="mazeCanvas"></canvas>
@@ -100,6 +187,66 @@
         </div>
         <div id="starContainer" style="font-size:2.2rem;margin-bottom:18px;"></div>
         <button id="startGameBtn" class="back-btn" style="margin-top:10px;">Empezar a jugar</button>
+      </div>
+    </div>
+
+    <!-- Modal de Configuración -->
+    <div id="configModal" class="config-modal">
+      <div class="config-content">
+        <h2 style="color:#ff9800;margin-bottom:24px;">⚙️ Configuración</h2>
+        
+        <!-- Control de Volumen Maestro -->
+        <div style="margin-bottom:24px;">
+          <h3 style="color:#ffcc80;margin-bottom:12px;">🔊 Volumen Maestro</h3>
+          <div class="volume-control">
+            <span style="color:#ffe0b2;">🔇</span>
+            <input type="range" id="masterVolumeSlider" class="volume-slider" min="0" max="100" value="70">
+            <span style="color:#ffe0b2;">🔊</span>
+          </div>
+          <div id="volumeDisplay" style="color:#ffcc80;margin-top:8px;">Volumen: 70%</div>
+        </div>
+
+        <!-- Control de Volumen por Categorías -->
+        <div style="margin-bottom:24px;">
+          <h3 style="color:#ffcc80;margin-bottom:12px;">🎵 Volúmenes Específicos</h3>
+          
+          <div style="margin-bottom:12px;">
+            <label style="color:#ffe0b2;display:block;margin-bottom:4px;">Música:</label>
+            <div class="volume-control">
+              <input type="range" id="musicVolumeSlider" class="volume-slider" min="0" max="100" value="40">
+              <span id="musicVolumeDisplay" style="color:#ffcc80;margin-left:10px;">40%</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="color:#ffe0b2;display:block;margin-bottom:4px;">Efectos:</label>
+            <div class="volume-control">
+              <input type="range" id="sfxVolumeSlider" class="volume-slider" min="0" max="100" value="80">
+              <span id="sfxVolumeDisplay" style="color:#ffcc80;margin-left:10px;">80%</span>
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="color:#ffe0b2;display:block;margin-bottom:4px;">Ambiente:</label>
+            <div class="volume-control">
+              <input type="range" id="ambientVolumeSlider" class="volume-slider" min="0" max="100" value="60">
+              <span id="ambientVolumeDisplay" style="color:#ffcc80;margin-left:10px;">60%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pantalla Completa -->
+        <div style="margin-bottom:24px;">
+          <h3 style="color:#ffcc80;margin-bottom:12px;">📺 Pantalla</h3>
+          <button id="fullscreenBtn" class="fullscreen-btn">🖥️ Pantalla Completa</button>
+          <button id="exitFullscreenBtn" class="fullscreen-btn" style="display:none;">🚪 Salir Pantalla Completa</button>
+        </div>
+
+        <!-- Botones de Acción -->
+        <div>
+          <button class="back-btn" onclick="closeConfig()" style="margin-right:10px;">Cerrar</button>
+          <button class="config-btn" onclick="resetAudioSettings()">🔄 Restablecer Audio</button>
+        </div>
       </div>
     </div>
     <script>
@@ -133,15 +280,171 @@
 
 🎵 EXPERIENCIA SONORA COMPLETA:
 • Pasos realistas en el bosque
-• Música épica de aventura
+• Música épica de aventura (extendida)
 • Sonido de olas del mar
 • Retumbar del volcán
 • Burbujeo de lava
 • Grito de aviso dramático
 • Sonidos de victoria/derrota
 
+⚙️ Usa el botón Configuración para ajustar volúmenes y pantalla completa
+
 ¡Buena suerte, aventurero!`);
     }
+
+    // Funciones de configuración
+    function saveAudioConfig() {
+        const config = {
+            masterVolume: masterVolume,
+            sfx: audioConfig.sfx,
+            ambient: audioConfig.ambient,
+            music: audioConfig.music,
+            ui: audioConfig.ui
+        };
+        localStorage.setItem('volcanoMazeAudioConfig', JSON.stringify(config));
+        console.log("🔄 Configuración guardada en localStorage");
+    }
+
+    function loadAudioConfig() {
+        const savedConfig = localStorage.getItem('volcanoMazeAudioConfig');
+        if (savedConfig) {
+            try {
+                const config = JSON.parse(savedConfig);
+                masterVolume = config.masterVolume || 0.7;
+                audioConfig.sfx = config.sfx || 0.8;
+                audioConfig.ambient = config.ambient || 0.1;
+                audioConfig.music = config.music || 0.4;
+                audioConfig.ui = config.ui || 0.5;
+                console.log("🔊 Configuración cargada desde localStorage");
+                return true;
+            } catch (e) {
+                console.log("⚠️ Error al cargar configuración guardada");
+                return false;
+            }
+        }
+        return false;
+    }
+
+    function showConfig() {
+        document.getElementById('configModal').style.display = 'flex';
+        updateVolumeDisplays();
+        updateFullscreenButtons();
+    }
+
+    function closeConfig() {
+        document.getElementById('configModal').style.display = 'none';
+    }
+
+    function updateVolumeDisplays() {
+        // Actualizar displays de volumen
+        const masterSlider = document.getElementById('masterVolumeSlider');
+        const musicSlider = document.getElementById('musicVolumeSlider');
+        const sfxSlider = document.getElementById('sfxVolumeSlider');
+        const ambientSlider = document.getElementById('ambientVolumeSlider');
+
+        masterSlider.value = Math.round(masterVolume * 100);
+        musicSlider.value = Math.round(audioConfig.music * 100);
+        sfxSlider.value = Math.round(audioConfig.sfx * 100);
+        ambientSlider.value = Math.round(audioConfig.ambient * 100);
+
+        document.getElementById('volumeDisplay').textContent = `Volumen: ${masterSlider.value}%`;
+        document.getElementById('musicVolumeDisplay').textContent = `${musicSlider.value}%`;
+        document.getElementById('sfxVolumeDisplay').textContent = `${sfxSlider.value}%`;
+        document.getElementById('ambientVolumeDisplay').textContent = `${ambientSlider.value}%`;
+    }
+
+    function updateFullscreenButtons() {
+        const isFullscreen = document.fullscreenElement !== null;
+        document.getElementById('fullscreenBtn').style.display = isFullscreen ? 'none' : 'inline-block';
+        document.getElementById('exitFullscreenBtn').style.display = isFullscreen ? 'inline-block' : 'none';
+    }
+
+    function resetAudioSettings() {
+        masterVolume = 0.7;
+        audioConfig.music = 0.4;
+        audioConfig.sfx = 0.8;
+        audioConfig.ambient = 0.1;
+        audioConfig.ui = 0.5;
+        updateVolumeDisplays();
+        saveAudioConfig(); // Guardar la configuración reseteada
+        console.log("🔄 Configuración de audio restablecida y guardada");
+    }
+
+    // Event listeners para los sliders de volumen
+    document.addEventListener('DOMContentLoaded', function() {
+        // Cargar configuración guardada al iniciar
+        loadAudioConfig();
+        
+        // Actualizar displays después de cargar configuración
+        setTimeout(() => {
+            updateVolumeDisplays();
+        }, 100);
+        
+        // Slider de volumen maestro
+        const masterSlider = document.getElementById('masterVolumeSlider');
+        masterSlider.addEventListener('input', function() {
+            masterVolume = this.value / 100;
+            document.getElementById('volumeDisplay').textContent = `Volumen: ${this.value}%`;
+            saveAudioConfig(); // Guardar cambio
+        });
+
+        // Slider de música
+        const musicSlider = document.getElementById('musicVolumeSlider');
+        musicSlider.addEventListener('input', function() {
+            audioConfig.music = this.value / 100;
+            document.getElementById('musicVolumeDisplay').textContent = `${this.value}%`;
+            saveAudioConfig(); // Guardar cambio
+        });
+
+        // Slider de efectos
+        const sfxSlider = document.getElementById('sfxVolumeSlider');
+        sfxSlider.addEventListener('input', function() {
+            audioConfig.sfx = this.value / 100;
+            document.getElementById('sfxVolumeDisplay').textContent = `${this.value}%`;
+            saveAudioConfig(); // Guardar cambio
+        });
+
+        // Slider de ambiente
+        const ambientSlider = document.getElementById('ambientVolumeSlider');
+        ambientSlider.addEventListener('input', function() {
+            audioConfig.ambient = this.value / 100;
+            document.getElementById('ambientVolumeDisplay').textContent = `${this.value}%`;
+            saveAudioConfig(); // Guardar cambio
+        });
+
+        // Botones de pantalla completa
+        document.getElementById('fullscreenBtn').addEventListener('click', function() {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen();
+            } else if (document.documentElement.msRequestFullscreen) {
+                document.documentElement.msRequestFullscreen();
+            }
+        });
+
+        document.getElementById('exitFullscreenBtn').addEventListener('click', function() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        });
+
+        // Listener para cambios de pantalla completa
+        document.addEventListener('fullscreenchange', updateFullscreenButtons);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButtons);
+        document.addEventListener('msfullscreenchange', updateFullscreenButtons);
+
+        // Cerrar modal de configuración con Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('configModal').style.display === 'flex') {
+                closeConfig();
+            }
+        });
+    });
 
     // Añade esto al principio del <script> (antes de cualquier lógica del juego)
     let selectedDifficulty = 3; // Por defecto 3 estrellas
@@ -161,7 +464,7 @@
     // Configuración de volúmenes por categoría
     const audioConfig = {
         sfx: 0.8,      // Efectos de sonido
-        ambient: 0.6,   // Sonidos ambientales
+        ambient: 0.1,   // Sonidos ambientales (10%)
         music: 0.4,     // Música de fondo
         ui: 0.5         // Sonidos de interfaz
     };
@@ -196,6 +499,20 @@
             return gainNode;
         },
 
+        // Función helper para aplicar volumen final (categoría + master)
+        applyFinalVolume(gainNode, category, baseVolume = 1.0) {
+            const categoryVolume = audioConfig[category] || 1.0;
+            const finalVolume = baseVolume * categoryVolume * masterVolume;
+            
+            // Modificar todos los valores programados del gainNode
+            const currentTime = audioContext.currentTime;
+            const currentGain = gainNode.gain.value;
+            
+            // Escalar proporcionalmente
+            gainNode.gain.cancelScheduledValues(currentTime);
+            gainNode.gain.setValueAtTime(currentGain * finalVolume, currentTime);
+        },
+
         // Función helper para crear filtros
         createFilter(type, frequency, Q = 1) {
             const filter = audioContext.createBiquadFilter();
@@ -208,8 +525,8 @@
         // Función para aplicar volumen de categoría
         applyVolumeCategory(gainNode, category) {
             const categoryVolume = audioConfig[category] || 1.0;
-            const currentGain = gainNode.gain.value;
-            gainNode.gain.setValueAtTime(currentGain * categoryVolume * masterVolume, audioContext.currentTime);
+            const finalVolume = categoryVolume * masterVolume;
+            gainNode.gain.setValueAtTime(finalVolume, audioContext.currentTime);
         },
 
         // ===== SONIDOS ESPECÍFICOS =====
@@ -219,42 +536,40 @@
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
             const now = audioContext.currentTime;
+            const categoryVolume = audioConfig.sfx * masterVolume;
             
             // Sonido principal del paso (pisada en tierra húmeda del bosque)
             const osc1 = this.createOscillator('sawtooth', 60 + Math.random() * 30);
-            const gain1 = this.createGainWithEnvelope(0.02, 0.08, 0.2, 0.15, 0.12);
+            const gain1 = this.createGainWithEnvelope(0.02, 0.08, 0.2, 0.15, 0.12 * categoryVolume);
             const filter1 = this.createFilter('lowpass', 150 + Math.random() * 80, 1.5);
             
             osc1.connect(filter1);
             filter1.connect(gain1);
             gain1.connect(audioContext.destination);
-            this.applyVolumeCategory(gain1, 'sfx');
             
             osc1.start(now);
             osc1.stop(now + 0.25);
 
             // Sonido de hojas crujiendo
             const osc2 = this.createOscillator('square', 1500 + Math.random() * 800);
-            const gain2 = this.createGainWithEnvelope(0.01, 0.03, 0.1, 0.08, 0.08);
+            const gain2 = this.createGainWithEnvelope(0.01, 0.03, 0.1, 0.08, 0.08 * categoryVolume);
             const filter2 = this.createFilter('highpass', 1200 + Math.random() * 600);
             
             osc2.connect(filter2);
             filter2.connect(gain2);
             gain2.connect(audioContext.destination);
-            this.applyVolumeCategory(gain2, 'sfx');
             
             osc2.start(now);
             osc2.stop(now + 0.12);
 
             // Sonido de ramas pequeñas
             const osc3 = this.createOscillator('triangle', 800 + Math.random() * 400);
-            const gain3 = this.createGainWithEnvelope(0.005, 0.02, 0.05, 0.06, 0.04);
+            const gain3 = this.createGainWithEnvelope(0.005, 0.02, 0.05, 0.06, 0.04 * categoryVolume);
             const filter3 = this.createFilter('bandpass', 900, 3);
             
             osc3.connect(filter3);
             filter3.connect(gain3);
             gain3.connect(audioContext.destination);
-            this.applyVolumeCategory(gain3, 'sfx');
             
             osc3.start(now + 0.02);
             osc3.stop(now + 0.1);
@@ -265,10 +580,11 @@
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
             const now = audioContext.currentTime;
+            const categoryVolume = audioConfig.ui * masterVolume;
             
             // Grito humano simulado - primera parte (¡Ay!)
             const osc1 = this.createOscillator('sawtooth', 800);
-            const gain1 = this.createGainWithEnvelope(0.01, 0.1, 0.8, 0.2, 0.25);
+            const gain1 = this.createGainWithEnvelope(0.01, 0.1, 0.8, 0.2, 0.25 * categoryVolume);
             const filter1 = this.createFilter('bandpass', 1200, 5);
             
             // Modulación para simular la voz humana
@@ -280,14 +596,13 @@
             osc1.connect(filter1);
             filter1.connect(gain1);
             gain1.connect(audioContext.destination);
-            this.applyVolumeCategory(gain1, 'sfx');
             
             osc1.start(now);
             osc1.stop(now + 0.4);
 
             // Segunda parte del grito (¡Uda!)
             const osc2 = this.createOscillator('triangle', 600);
-            const gain2 = this.createGainWithEnvelope(0.02, 0.08, 0.6, 0.25, 0.22);
+            const gain2 = this.createGainWithEnvelope(0.02, 0.08, 0.6, 0.25, 0.22 * categoryVolume);
             const filter2 = this.createFilter('bandpass', 900, 4);
             
             osc2.frequency.setValueAtTime(600, now + 0.25);
@@ -297,14 +612,13 @@
             osc2.connect(filter2);
             filter2.connect(gain2);
             gain2.connect(audioContext.destination);
-            this.applyVolumeCategory(gain2, 'sfx');
             
             osc2.start(now + 0.25);
             osc2.stop(now + 0.7);
 
             // Eco/reverb del grito para mayor dramatismo
             const osc3 = this.createOscillator('sine', 700);
-            const gain3 = this.createGainWithEnvelope(0.1, 0.2, 0.3, 0.5, 0.08);
+            const gain3 = this.createGainWithEnvelope(0.1, 0.2, 0.3, 0.5, 0.08 * categoryVolume);
             const filter3 = this.createFilter('lowpass', 800, 2);
             
             osc3.frequency.setValueAtTime(700, now + 0.1);
@@ -313,14 +627,13 @@
             osc3.connect(filter3);
             filter3.connect(gain3);
             gain3.connect(audioContext.destination);
-            this.applyVolumeCategory(gain3, 'sfx');
             
             osc3.start(now + 0.1);
             osc3.stop(now + 0.8);
 
             // Grito adicional de urgencia (más agudo)
             const osc4 = this.createOscillator('square', 1400);
-            const gain4 = this.createGainWithEnvelope(0.005, 0.03, 0.4, 0.15, 0.15);
+            const gain4 = this.createGainWithEnvelope(0.005, 0.03, 0.4, 0.15, 0.15 * categoryVolume);
             const filter4 = this.createFilter('highpass', 1000);
             
             osc4.frequency.setValueAtTime(1400, now + 0.1);
@@ -330,7 +643,6 @@
             osc4.connect(filter4);
             filter4.connect(gain4);
             gain4.connect(audioContext.destination);
-            this.applyVolumeCategory(gain4, 'sfx');
             
             osc4.start(now + 0.1);
             osc4.stop(now + 0.35);
@@ -342,10 +654,11 @@
 
             const now = audioContext.currentTime;
             const duration = 8; // 8 segundos de olas
+            const ambientVolume = audioConfig.ambient * masterVolume;
             
             // Oscilador principal para el sonido base de las olas
             const osc1 = this.createOscillator('sine', 80);
-            const gain1 = this.createGainWithEnvelope(2.0, 2.0, 0.6, 2.0, 0.15);
+            const gain1 = this.createGainWithEnvelope(2.0, 2.0, 0.6, 2.0, 0.15 * ambientVolume);
             const filter1 = this.createFilter('lowpass', 200, 1);
             
             // Modulación lenta para simular el ir y venir de las olas
@@ -359,16 +672,16 @@
             osc1.connect(filter1);
             filter1.connect(gain1);
             gain1.connect(audioContext.destination);
-            this.applyVolumeCategory(gain1, 'ambient');
             
             // Ruido blanco para simular la espuma
             const osc2 = this.createOscillator('square', 2000);
-            const gain2 = this.createGainWithEnvelope(1.0, 1.5, 0.3, 3.5, 0.08);
+            const gain2 = this.createGainWithEnvelope(1.0, 1.5, 0.3, 3.5, 0.08 * ambientVolume);
             const filter2 = this.createFilter('highpass', 1500);
             
             const lfo2 = this.createOscillator('sine', 0.7);
             const lfoGain2 = audioContext.createGain();
             lfoGain2.gain.setValueAtTime(500, now);
+            
             
             lfo2.connect(lfoGain2);
             lfoGain2.connect(osc2.frequency);
@@ -376,7 +689,6 @@
             osc2.connect(filter2);
             filter2.connect(gain2);
             gain2.connect(audioContext.destination);
-            this.applyVolumeCategory(gain2, 'ambient');
             
             // Iniciar todos los osciladores
             lfo1.start(now);
@@ -403,10 +715,11 @@
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
             const now = audioContext.currentTime;
+            const sfxVolume = audioConfig.sfx * masterVolume;
             
             // Burbuja principal (sonido grave y viscoso)
             const osc1 = this.createOscillator('sawtooth', 40 + Math.random() * 20);
-            const gain1 = this.createGainWithEnvelope(0.1, 0.2, 0.3, 0.4, 0.18);
+            const gain1 = this.createGainWithEnvelope(0.1, 0.2, 0.3, 0.4, 0.18 * sfxVolume);
             const filter1 = this.createFilter('lowpass', 120 + Math.random() * 80, 2);
             
             osc1.frequency.exponentialRampToValueAtTime(80 + Math.random() * 40, now + 0.3);
@@ -414,20 +727,18 @@
             osc1.connect(filter1);
             filter1.connect(gain1);
             gain1.connect(audioContext.destination);
-            this.applyVolumeCategory(gain1, 'sfx');
             
             osc1.start(now);
             osc1.stop(now + 0.7);
 
             // Efecto de "pop" cuando explota la burbuja
             const osc2 = this.createOscillator('triangle', 200 + Math.random() * 100);
-            const gain2 = this.createGainWithEnvelope(0.01, 0.05, 0.0, 0.1, 0.12);
+            const gain2 = this.createGainWithEnvelope(0.01, 0.05, 0.0, 0.1, 0.12 * sfxVolume);
             const filter2 = this.createFilter('bandpass', 250, 5);
             
             osc2.connect(filter2);
             filter2.connect(gain2);
             gain2.connect(audioContext.destination);
-            this.applyVolumeCategory(gain2, 'sfx');
             
             osc2.start(now + 0.5);
             osc2.stop(now + 0.65);
@@ -438,6 +749,7 @@
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
             const now = audioContext.currentTime;
+            const sfxVolume = audioConfig.sfx * masterVolume;
             
             // Progresión de acordes triunfal
             const frequencies = [523, 659, 784, 1047]; // Do, Mi, Sol, Do (octava)
@@ -446,13 +758,12 @@
                 const delay = index * 0.2;
                 
                 const osc = this.createOscillator('triangle', freq);
-                const gain = this.createGainWithEnvelope(0.05, 0.3, 0.6, 0.8, 0.25);
+                const gain = this.createGainWithEnvelope(0.05, 0.3, 0.6, 0.8, 0.25 * sfxVolume);
                 const filter = this.createFilter('lowpass', freq * 2, 1);
                 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(audioContext.destination);
-                this.applyVolumeCategory(gain, 'sfx');
                 
                 osc.start(now + delay);
                 osc.stop(now + delay + 1.2);
@@ -461,11 +772,10 @@
             // Campanillas adicionales para el efecto mágico
             for (let i = 0; i < 5; i++) {
                 const osc = this.createOscillator('sine', 1047 + Math.random() * 523);
-                const gain = this.createGainWithEnvelope(0.02, 0.1, 0.0, 0.4, 0.15);
+                const gain = this.createGainWithEnvelope(0.02, 0.1, 0.0, 0.4, 0.15 * sfxVolume);
                 
                 osc.connect(gain);
                 gain.connect(audioContext.destination);
-                this.applyVolumeCategory(gain, 'sfx');
                 
                 const startTime = now + 0.8 + i * 0.1;
                 osc.start(startTime);
@@ -478,6 +788,7 @@
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
             const now = audioContext.currentTime;
+            const sfxVolume = audioConfig.sfx * masterVolume;
             
             // Progresión descendente dramática
             const frequencies = [523, 466, 415, 349, 311]; // Progresión descendente
@@ -486,13 +797,12 @@
                 const delay = index * 0.3;
                 
                 const osc = this.createOscillator('sawtooth', freq);
-                const gain = this.createGainWithEnvelope(0.1, 0.2, 0.7, 1.0, 0.2);
+                const gain = this.createGainWithEnvelope(0.1, 0.2, 0.7, 1.0, 0.2 * sfxVolume);
                 const filter = this.createFilter('lowpass', freq * 1.5, 2);
                 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(audioContext.destination);
-                this.applyVolumeCategory(gain, 'sfx');
                 
                 osc.start(now + delay);
                 osc.stop(now + delay + 1.3);
@@ -500,13 +810,12 @@
 
             // Efecto de "doom" al final
             const doom = this.createOscillator('square', 55);
-            const doomGain = this.createGainWithEnvelope(0.5, 0.5, 0.8, 1.5, 0.3);
+            const doomGain = this.createGainWithEnvelope(0.5, 0.5, 0.8, 1.5, 0.3 * sfxVolume);
             const doomFilter = this.createFilter('lowpass', 120, 3);
             
             doom.connect(doomFilter);
             doomFilter.connect(doomGain);
             doomGain.connect(audioContext.destination);
-            this.applyVolumeCategory(doomGain, 'sfx');
             
             doom.start(now + 1.2);
             doom.stop(now + 3.5);
@@ -518,10 +827,11 @@
 
             const now = audioContext.currentTime;
             const duration = 3;
+            const ambientVolume = audioConfig.ambient * masterVolume;
             
             // Retumbar profundo y amenazante
             const osc1 = this.createOscillator('sawtooth', 30);
-            const gain1 = this.createGainWithEnvelope(1.0, 0.5, 0.8, 1.0, 0.25);
+            const gain1 = this.createGainWithEnvelope(1.0, 0.5, 0.8, 1.0, 0.25 * ambientVolume);
             const filter1 = this.createFilter('lowpass', 100, 2);
             
             // Modulación para hacer el retumbar más realista
@@ -535,11 +845,10 @@
             osc1.connect(filter1);
             filter1.connect(gain1);
             gain1.connect(audioContext.destination);
-            this.applyVolumeCategory(gain1, 'ambient');
             
             // Frecuencias medias para profundidad
             const osc2 = this.createOscillator('triangle', 80);
-            const gain2 = this.createGainWithEnvelope(0.8, 0.4, 0.6, 1.2, 0.15);
+            const gain2 = this.createGainWithEnvelope(0.8, 0.4, 0.6, 1.2, 0.15 * ambientVolume);
             const filter2 = this.createFilter('bandpass', 150, 1);
             
             const lfo2 = this.createOscillator('sine', 1.3);
@@ -552,7 +861,6 @@
             osc2.connect(filter2);
             filter2.connect(gain2);
             gain2.connect(audioContext.destination);
-            this.applyVolumeCategory(gain2, 'ambient');
             
             // Iniciar todo
             lfo1.start(now);
@@ -567,56 +875,71 @@
             osc2.stop(now + duration);
         },
 
-        // 6. Música de fondo épica de aventura
+        // 6. Música de fondo épica de aventura (melodía extendida)
         playBackgroundMusic() {
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
             const now = audioContext.currentTime;
             
-            // Melodía principal (tema heroico simple)
-            const melody = [523, 587, 659, 698, 784, 698, 659, 587]; // Do, Re, Mi, Fa, Sol, Fa, Mi, Re
-            const baseLine = [131, 147, 165, 175, 196, 175, 165, 147]; // Línea de bajo
+            // Melodía principal extendida (tema heroico más largo)
+            const melody = [
+                // Frase 1: Do, Re, Mi, Fa, Sol, Fa, Mi, Re
+                523, 587, 659, 698, 784, 698, 659, 587,
+                // Frase 2: Mi, Fa, Sol, La, Si, La, Sol, Fa  
+                659, 698, 784, 880, 988, 880, 784, 698,
+                // Frase 3: Sol, La, Si, Do, Re, Do, Si, La
+                784, 880, 988, 1047, 1175, 1047, 988, 880,
+                // Frase 4: Fa, Sol, La, Sol, Fa, Mi, Re, Do
+                698, 784, 880, 784, 698, 659, 587, 523
+            ];
             
-            // Reproducir melodía
+            const baseLine = [
+                // Línea de bajo que acompaña cada frase
+                131, 147, 165, 175, 196, 175, 165, 147, // Do, Re, Mi, Fa, Sol, Fa, Mi, Re (bajo)
+                165, 175, 196, 220, 247, 220, 196, 175, // Mi, Fa, Sol, La, Si, La, Sol, Fa (bajo)
+                196, 220, 247, 262, 294, 262, 247, 220, // Sol, La, Si, Do, Re, Do, Si, La (bajo)
+                175, 196, 220, 196, 175, 165, 147, 131  // Fa, Sol, La, Sol, Fa, Mi, Re, Do (bajo)
+            ];
+            
+            // Reproducir melodía extendida
+            const musicVolume = audioConfig.music * masterVolume;
             melody.forEach((freq, index) => {
-                const startTime = now + index * 0.8;
+                const startTime = now + index * 0.6; // Ligeramente más rápido
                 
                 const osc = this.createOscillator('triangle', freq);
-                const gain = this.createGainWithEnvelope(0.1, 0.2, 0.6, 0.4, 0.08);
+                const gain = this.createGainWithEnvelope(0.08, 0.15, 0.5, 0.35, 0.08 * musicVolume);
                 const filter = this.createFilter('lowpass', freq * 2, 1);
                 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(audioContext.destination);
-                this.applyVolumeCategory(gain, 'music');
                 
                 osc.start(startTime);
-                osc.stop(startTime + 0.7);
+                osc.stop(startTime + 0.55);
             });
             
-            // Línea de bajo
+            // Línea de bajo extendida
             baseLine.forEach((freq, index) => {
-                const startTime = now + index * 0.8;
+                const startTime = now + index * 0.6;
                 
                 const osc = this.createOscillator('sine', freq);
-                const gain = this.createGainWithEnvelope(0.1, 0.3, 0.7, 0.4, 0.12);
+                const gain = this.createGainWithEnvelope(0.08, 0.2, 0.6, 0.35, 0.12 * musicVolume);
                 const filter = this.createFilter('lowpass', freq * 3, 1);
                 
                 osc.connect(filter);
                 filter.connect(gain);
                 gain.connect(audioContext.destination);
-                this.applyVolumeCategory(gain, 'music');
                 
                 osc.start(startTime);
-                osc.stop(startTime + 0.7);
+                osc.stop(startTime + 0.55);
             });
             
-            // Recursión para que la música continue (cada 6.4 segundos)
+            // Recursión para que la música continue (cada 19.2 segundos ahora - 4x más largo)
             setTimeout(() => {
                 if (audioEnabled && winMsg.style.display === "none") {
                     this.playBackgroundMusic();
                 }
-            }, 6400);
+            }, 19200);
         },
 
         // Función para cambiar volumen maestro
@@ -724,6 +1047,163 @@
         return getZoneType(x, y) === 'isla';
     }
 
+    // Nueva función para encontrar posición del avión cerca de la playa pero dentro de la isla
+    function findPlanePosition() {
+        const possiblePositions = [];
+        const minDistanceFromEdge = 3; // Mínimo 3 celdas de los bordes
+        const maxDistanceFromBeach = 8; // Máximo 8 celdas de la playa para estar "cerca"
+        
+        // Buscar posiciones válidas en toda la isla
+        for (let y = minDistanceFromEdge; y < config.rows - minDistanceFromEdge; y++) {
+            for (let x = minDistanceFromEdge; x < config.cols - minDistanceFromEdge; x++) {
+                if (getZoneType(x, y) === 'isla') {
+                    // Verificar que hay espacio para el claro (área 5x5)
+                    let hasSpace = true;
+                    for (let dy = -2; dy <= 2 && hasSpace; dy++) {
+                        for (let dx = -2; dx <= 2 && hasSpace; dx++) {
+                            const checkX = x + dx;
+                            const checkY = y + dy;
+                            if (checkX < 0 || checkX >= config.cols || 
+                                checkY < 0 || checkY >= config.rows ||
+                                getZoneType(checkX, checkY) !== 'isla') {
+                                hasSpace = false;
+                            }
+                        }
+                    }
+                    
+                    if (hasSpace) {
+                        // Verificar distancia a la playa (que esté cerca pero no demasiado)
+                        let distanceToBeach = Infinity;
+                        for (let checkY = 0; checkY < config.rows; checkY++) {
+                            for (let checkX = 0; checkX < config.cols; checkX++) {
+                                if (getZoneType(checkX, checkY) === 'orilla') {
+                                    const distance = Math.sqrt(Math.pow(x - checkX, 2) + Math.pow(y - checkY, 2));
+                                    distanceToBeach = Math.min(distanceToBeach, distance);
+                                }
+                            }
+                        }
+                        
+                        if (distanceToBeach <= maxDistanceFromBeach && distanceToBeach >= minDistanceFromEdge) {
+                            possiblePositions.push({
+                                x: x,
+                                y: y,
+                                distanceToBeach: distanceToBeach,
+                                side: getSideOfIsland(x, y) // Determinar en qué lado de la isla está
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (possiblePositions.length > 0) {
+            return possiblePositions[Math.floor(Math.random() * possiblePositions.length)];
+        }
+        
+        // Fallback: posición central de la isla
+        return {
+            x: Math.floor(config.cols / 2),
+            y: Math.floor(config.rows / 2),
+            side: 'center'
+        };
+    }
+
+    // Función para determinar en qué lado de la isla está una posición
+    function getSideOfIsland(x, y) {
+        const centerX = config.cols / 2;
+        const centerY = config.rows / 2;
+        const deltaX = x - centerX;
+        const deltaY = y - centerY;
+        
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            return deltaX > 0 ? 'east' : 'west';
+        } else {
+            return deltaY > 0 ? 'south' : 'north';
+        }
+    }
+
+    // Función para encontrar posición del bote en el lado opuesto al avión
+    function findBoatPosition(planeSide) {
+        const oppositeSide = getOppositeSide(planeSide);
+        const possiblePositions = [];
+        
+        // Buscar posiciones en la playa del lado opuesto que toquen el laberinto
+        for (let y = 1; y < config.rows - 4; y++) { // Dejar espacio para el bote 3x3
+            for (let x = 1; x < config.cols - 4; x++) {
+                // Verificar que está en el lado correcto de la isla
+                const currentSide = getSideOfIsland(x, y);
+                if (currentSide === oppositeSide || oppositeSide === 'center') {
+                    
+                    // Verificar que el área 3x3 está en la orilla/playa
+                    let allInShore = true;
+                    let touchesIsland = false;
+                    
+                    for (let dy = 0; dy < 3 && allInShore; dy++) {
+                        for (let dx = 0; dx < 3 && allInShore; dx++) {
+                            const checkX = x + dx;
+                            const checkY = y + dy;
+                            const zoneType = getZoneType(checkX, checkY);
+                            
+                            if (zoneType !== 'orilla') {
+                                allInShore = false;
+                            }
+                            
+                            // Verificar si toca alguna celda de isla adyacente
+                            for (let adjY = checkY - 1; adjY <= checkY + 1; adjY++) {
+                                for (let adjX = checkX - 1; adjX <= checkX + 1; adjX++) {
+                                    if (adjX >= 0 && adjX < config.cols && 
+                                        adjY >= 0 && adjY < config.rows &&
+                                        getZoneType(adjX, adjY) === 'isla') {
+                                        touchesIsland = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (allInShore && touchesIsland) {
+                        possiblePositions.push({ x: x, y: y });
+                    }
+                }
+            }
+        }
+        
+        if (possiblePositions.length > 0) {
+            return possiblePositions[Math.floor(Math.random() * possiblePositions.length)];
+        }
+        
+        // Fallback: buscar cualquier posición válida en la orilla
+        for (let y = 1; y < config.rows - 4; y++) {
+            for (let x = 1; x < config.cols - 4; x++) {
+                let validArea = true;
+                for (let dy = 0; dy < 3 && validArea; dy++) {
+                    for (let dx = 0; dx < 3 && validArea; dx++) {
+                        if (getZoneType(x + dx, y + dy) !== 'orilla') {
+                            validArea = false;
+                        }
+                    }
+                }
+                if (validArea) {
+                    return { x: x, y: y };
+                }
+            }
+        }
+        
+        // Último fallback
+        return { x: 5, y: 5 };
+    }
+
+    // Función para obtener el lado opuesto
+    function getOppositeSide(side) {
+        switch(side) {
+            case 'north': return 'south';
+            case 'south': return 'north';
+            case 'east': return 'west';
+            case 'west': return 'east';
+            default: return 'south'; // Para 'center'
+        }
+    }
+
     function findRandomEmptyCell(maze, cols, rows) {
         let x, y;
         let attempts = 0; // Failsafe para evitar bucles infinitos
@@ -751,70 +1231,6 @@
             }
         }
         return true;
-    }
-
-    function findRandomEmptyEdgeCell(maze, cols, rows) {
-        const potentialPositions = [];
-        const portalSize = 3;
-
-        // Buscar específicamente en la zona de ORILLA
-        for (let y = 1; y <= rows - 1 - portalSize; y++) {
-            for (let x = 1; x <= cols - 1 - portalSize; x++) {
-                // Verificar que el área 3x3 esté despejada en el laberinto
-                if (!isAreaClear(maze, x, y, portalSize)) continue;
-
-                // Verificar que toda el área 3x3 esté en la zona de orilla
-                let allInOrilla = true;
-                for (let py = y; py < y + portalSize && allInOrilla; py++) {
-                    for (let px = x; px < x + portalSize && allInOrilla; px++) {
-                        if (getZoneType(px, py) !== 'orilla') {
-                            allInOrilla = false;
-                        }
-                    }
-                }
-
-                // Si toda el área está en la orilla, es una posición válida
-                if (allInOrilla) {
-                    potentialPositions.push({ x: x, y: y });
-                }
-            }
-        }
-
-        if (potentialPositions.length > 0) {
-            return potentialPositions[Math.floor(Math.random() * potentialPositions.length)];
-        }
-
-        // Fallback: buscar áreas que tengan al menos parte en la orilla
-        for (let y = 1; y <= rows - 1 - portalSize; y++) {
-            for (let x = 1; x <= cols - 1 - portalSize; x++) {
-                if (!isAreaClear(maze, x, y, portalSize)) continue;
-
-                // Verificar que al menos parte del área 3x3 esté en la orilla
-                let hasOrilla = false;
-                for (let py = y; py < y + portalSize && !hasOrilla; py++) {
-                    for (let px = x; px < x + portalSize && !hasOrilla; px++) {
-                        if (getZoneType(px, py) === 'orilla') {
-                            hasOrilla = true;
-                        }
-                    }
-                }
-
-                if (hasOrilla) {
-                    potentialPositions.push({ x: x, y: y });
-                }
-            }
-        }
-
-        if (potentialPositions.length > 0) {
-            return potentialPositions[Math.floor(Math.random() * potentialPositions.length)];
-        }
-
-        // Último fallback: cualquier posición despejada en la isla
-        let fallbackPos;
-        do {
-            fallbackPos = findRandomEmptyCell(maze, cols, rows);
-        } while (!isAreaClear(maze, fallbackPos.x, fallbackPos.y, 3));
-        return fallbackPos;
     }
 
     // Función para verificar si existe un camino entre dos puntos usando BFS
@@ -863,10 +1279,10 @@
         return false; // No se encontró camino
     }
 
-    // Crear laberinto y asegurar que hay una ruta válida (versión optimizada)
-    let maze, startPos, exitPos;
+    // Crear laberinto y posicionar elementos de manera robusta
+    let maze, startPos, exitPos, planePos;
     let attempts = 0;
-    const maxAttempts = 3; // Reducido de 10 a 3 para ser más rápido
+    const maxAttempts = 3;
 
     do {
         attempts++;
@@ -874,18 +1290,16 @@
         // Crear nuevo laberinto
         maze = generateMaze(config.rows, config.cols);
 
-        // Definir la salida en un borde y la entrada lejos de ella
-        const minDistance = Math.min(config.rows, config.cols) * 0.5; // Reducido de 0.7 a 0.5
+        // 1. Encontrar posición del avión (lado aleatorio de la isla, cerca de playa)
+        planePos = findPlanePosition();
+        console.log(`Avión posicionado en lado: ${planePos.side}, posición: (${planePos.x}, ${planePos.y})`);
 
-        // 1. Encontrar una posición para la salida en un borde.
-        exitPos = findRandomEmptyEdgeCell(maze, config.cols, config.rows);
+        // 2. Encontrar posición del bote en el lado opuesto
+        exitPos = findBoatPosition(planePos.side);
+        console.log(`Bote posicionado en posición: (${exitPos.x}, ${exitPos.y})`);
 
-        // 2. Encontrar una posición de inicio lejana a la salida.
-        let startAttempts = 0;
-        do {
-            startPos = findRandomEmptyCell(maze, config.cols, config.rows);
-            startAttempts++;
-        } while (getDistance(startPos, exitPos) < minDistance && startAttempts < 20);
+        // 3. Posición inicial del jugador será cerca del avión
+        startPos = { x: planePos.x, y: planePos.y };
 
         // Asegurarse de que el área del portal 3x3 esté completamente vacía
         for (let i = 0; i < 3; i++) {
@@ -896,14 +1310,15 @@
             }
         }
 
-        // Verificación rápida de ruta (solo en los primeros 2 intentos)
+        // Verificación de ruta (simplificada para ser más rápida)
         if (attempts <= 2) {
             if (hasValidPath(maze, startPos, exitPos)) {
-                break; // Tenemos un laberinto válido
+                console.log(`✓ Ruta válida encontrada en intento ${attempts}`);
+                break;
             }
             console.log(`Intento ${attempts}: No hay ruta válida, regenerando laberinto...`);
         } else {
-            // En el último intento, simplemente aceptar y crear una ruta forzada si es necesario
+            console.log("Último intento: aceptando configuración y creando ruta forzada si es necesario");
             break;
         }
         
@@ -930,153 +1345,35 @@
         }
     }
 
-    // Función para encontrar una posición para el avión lejos de los bordes de la isla (optimizada)
-    function findSafeCrashSite(maze, cols, rows) {
-        const validPositions = [];
-        const minDistanceFromEdge = 5; // Solo 5 celdas de distancia mínima
-        
-        // Buscar posiciones válidas de forma más eficiente
-        for (let y = minDistanceFromEdge + 5; y < rows - minDistanceFromEdge - 5; y += 3) { // Saltar de 3 en 3 para ser más rápido
-            for (let x = minDistanceFromEdge + 5; x < cols - minDistanceFromEdge - 5; x += 3) {
-                if (maze[y] && maze[y][x] === 0 && getZoneType(x, y) === 'isla') {
-                    // Verificación rápida: solo verificar 4 puntos en lugar de 8 direcciones
-                    let isSafe = true;
-                    const checkPoints = [
-                        [x - minDistanceFromEdge, y],
-                        [x + minDistanceFromEdge, y],
-                        [x, y - minDistanceFromEdge],
-                        [x, y + minDistanceFromEdge]
-                    ];
-                    
-                    for (const [checkX, checkY] of checkPoints) {
-                        if (checkX >= 0 && checkX < cols && checkY >= 0 && checkY < rows) {
-                            if (getZoneType(checkX, checkY) !== 'isla') {
-                                isSafe = false;
-                                break;
-                            }
-                        } else {
-                            isSafe = false;
-                            break;
-                        }
-                    }
-                    
-                    if (isSafe) {
-                        validPositions.push({x, y});
-                    }
-                }
-            }
-        }
-        
-        // Si encontramos posiciones válidas, elegir una aleatoria
-        if (validPositions.length > 0) {
-            const randomIndex = Math.floor(Math.random() * validPositions.length);
-            return validPositions[randomIndex];
-        }
-        
-        // Fallback simple: buscar cualquier posición en isla que no esté en los bordes
-        for (let y = 10; y < rows - 10; y += 5) {
-            for (let x = 10; x < cols - 10; x += 5) {
-                if (maze[y] && maze[y][x] === 0 && getZoneType(x, y) === 'isla') {
-                    return {x, y};
-                }
-            }
-        }
-        
-        // Si todo falla, usar el startPos original
-        return startPos;
-    }
-
-    // Jugador
-    let player = {x: startPos.x, y: startPos.y};
+    // Crear un claro alrededor de la posición del avión (área 7x7)
+    const clearingRadius = 3; // Radio del claro en celdas
     
-    // Encontrar una posición segura para el avión lejos de los bordes de la playa
-    const safeCrashPos = findSafeCrashSite(maze, config.cols, config.rows);
-    
-    // Posición del avión estrellado en una zona segura de la isla
-    const crashedPlane = {
-        x: safeCrashPos.x * config.cellSize - config.cellSize * 1.1,
-        y: safeCrashPos.y * config.cellSize + config.cellSize * 0.2
-    };
-
-    // Crear un claro alrededor del avión estrellado (eliminar paredes)
-    const crashCellX = Math.floor((crashedPlane.x + config.cellSize * 1.5) / config.cellSize);
-    const crashCellY = Math.floor((crashedPlane.y + config.cellSize * 1.5) / config.cellSize);
-    const clearingRadius = 4; // Radio del claro en celdas
-    
-    for (let y = crashCellY - clearingRadius; y <= crashCellY + clearingRadius; y++) {
-        for (let x = crashCellX - clearingRadius; x <= crashCellX + clearingRadius; x++) {
+    for (let y = planePos.y - clearingRadius; y <= planePos.y + clearingRadius; y++) {
+        for (let x = planePos.x - clearingRadius; x <= planePos.x + clearingRadius; x++) {
             if (x > 0 && x < config.cols - 1 && y > 0 && y < config.rows - 1) {
                 // Crear un claro circular
-                const distance = Math.sqrt(Math.pow(x - crashCellX, 2) + Math.pow(y - crashCellY, 2));
-                if (distance <= clearingRadius) {
+                const distance = Math.sqrt(Math.pow(x - planePos.x, 2) + Math.pow(y - planePos.y, 2));
+                if (distance <= clearingRadius && getZoneType(x, y) === 'isla') {
                     maze[y][x] = 0; // Convertir en camino
                 }
             }
         }
     }
 
-    // Reposicionar al jugador al lado del avión (no detrás) en la nueva posición segura
-    const newPlayerX = crashCellX + 3; // 3 celdas a la derecha del centro del avión
-    const newPlayerY = crashCellY; // En la misma línea vertical que el avión
+    // Jugador empieza junto al avión
+    let player = { x: planePos.x, y: planePos.y };
     
-    // Asegurar que la nueva posición del jugador esté dentro de los límites y sea válida
-    if (newPlayerX > 0 && newPlayerX < config.cols - 1 && 
-        newPlayerY > 0 && newPlayerY < config.rows - 1 &&
-        getZoneType(newPlayerX, newPlayerY) === 'isla') {
-        
-        // Asegurar que la celda del jugador esté libre
-        maze[newPlayerY][newPlayerX] = 0;
-        player.x = newPlayerX;
-        player.y = newPlayerY;
-        
-        // Verificar nuevamente que hay una ruta válida después de reposicionar (verificación simplificada)
-        // Solo hacer una verificación rápida, no completa
-        let hasQuickPath = true;
-        const deltaX = Math.abs(player.x - exitPos.x);
-        const deltaY = Math.abs(player.y - exitPos.y);
-        
-        // Si están muy lejos, probablemente hay un problema
-        if (deltaX + deltaY > config.cols * 0.8) {
-            console.log("Posiciones muy alejadas, creando conexión básica...");
-            hasQuickPath = false;
-        }
-        
-        if (!hasQuickPath) {
-            // Crear un camino simple y directo
-            let connectX = player.x;
-            let connectY = player.y;
-            let steps = 0;
-            
-            while ((connectX !== exitPos.x || connectY !== exitPos.y) && steps < 100) {
-                // Solo crear caminos en zona de isla
-                if (getZoneType(connectX, connectY) === 'isla') {
-                    maze[connectY][connectX] = 0;
-                }
-                
-                if (connectX < exitPos.x) connectX++;
-                else if (connectX > exitPos.x) connectX--;
-                else if (connectY < exitPos.y) connectY++;
-                else if (connectY > exitPos.y) connectY--;
-                
-                steps++;
-            }
-        }
-    } else {
-        // Si la nueva posición no es válida, mantener la posición original
-        console.log("Nueva posición del jugador no válida, manteniendo posición original");
-        // Reposicionar el avión más cerca de la posición original del jugador si es necesario
-        const fallbackCrashPos = {
-            x: startPos.x * config.cellSize - config.cellSize * 1.1,
-            y: startPos.y * config.cellSize + config.cellSize * 0.2
-        };
-        
-        // Actualizar crashedPlane para el dibujo
-        crashedPlane.x = fallbackCrashPos.x;
-        crashedPlane.y = fallbackCrashPos.y;
-    }
+    // Posición del avión estrellado (visual)
+    const crashedPlane = {
+        x: planePos.x * config.cellSize - config.cellSize * 1.1,
+        y: planePos.y * config.cellSize + config.cellSize * 0.2
+    };
 
-    // Verificación final simplificada: crear una ruta básica si es necesario
-    console.log("✓ Configuración del laberinto completada.");
+    console.log(`✓ Configuración del laberinto completada.`);
+    console.log(`  - Avión en: (${planePos.x}, ${planePos.y}) lado ${planePos.side}`);
+    console.log(`  - Bote en: (${exitPos.x}, ${exitPos.y})`);
+    console.log(`  - Jugador en: (${player.x}, ${player.y})`);
+    console.log(`  - Distancia avión-bote: ${Math.floor(getDistance(planePos, exitPos))} celdas`);
 
     // Centro del volcán
     const volcano = {
@@ -1738,7 +2035,7 @@
             // Reproducir sonido de victoria
             AudioSystem.playVictorySound();
             
-            winMsg.innerHTML = "¡Has escapado a través del portal!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
+            winMsg.innerHTML = "¡Has llegado al bote!<br><button class='back-btn' onclick='location.reload()'>Jugar de nuevo</button>";
             winMsg.style.display = "block";
         }
     }
