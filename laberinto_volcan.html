@@ -286,25 +286,110 @@
         return fallbackPos;
     }
 
-    // Crear laberinto
-    const maze = generateMaze(config.rows, config.cols);
+    // Función para verificar si existe un camino entre dos puntos usando BFS
+    function hasValidPath(maze, start, end) {
+        if (maze[start.y][start.x] !== 0 || maze[end.y][end.x] !== 0) {
+            return false; // Inicio o fin están bloqueados
+        }
+        
+        const visited = Array.from({length: config.rows}, () => Array(config.cols).fill(false));
+        const queue = [{x: start.x, y: start.y}];
+        visited[start.y][start.x] = true;
+        
+        const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+        
+        while (queue.length > 0) {
+            const current = queue.shift();
+            
+            // Si llegamos al destino
+            if (current.x === end.x && current.y === end.y) {
+                return true;
+            }
+            
+            // Explorar vecinos
+            for (const [dx, dy] of directions) {
+                const newX = current.x + dx;
+                const newY = current.y + dy;
+                
+                if (newX >= 0 && newX < config.cols && 
+                    newY >= 0 && newY < config.rows && 
+                    maze[newY][newX] === 0 && 
+                    !visited[newY][newX]) {
+                    
+                    // Verificar que la nueva posición esté en zona válida (isla o portal de salida)
+                    const zoneType = getZoneType(newX, newY);
+                    const isInExitPortal = (newX >= end.x && newX < end.x + 3 && 
+                                           newY >= end.y && newY < end.y + 3);
+                    
+                    if (zoneType === 'isla' || isInExitPortal) {
+                        visited[newY][newX] = true;
+                        queue.push({x: newX, y: newY});
+                    }
+                }
+            }
+        }
+        
+        return false; // No se encontró camino
+    }
 
-    // Definir la salida en un borde y la entrada lejos de ella
-    let startPos, exitPos;
-    const minDistance = Math.min(config.rows, config.cols) * 0.7; // Al menos 70% de la dimensión más pequeña
+    // Crear laberinto y asegurar que hay una ruta válida
+    let maze, startPos, exitPos;
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    // 1. Encontrar una posición para la salida en un borde.
-    exitPos = findRandomEmptyEdgeCell(maze, config.cols, config.rows);
-
-    // 2. Encontrar una posición de inicio lejana a la salida.
     do {
-        startPos = findRandomEmptyCell(maze, config.cols, config.rows);
-    } while (getDistance(startPos, exitPos) < minDistance);
+        attempts++;
+        
+        // Crear nuevo laberinto
+        maze = generateMaze(config.rows, config.cols);
 
-    // Asegurarse de que el área del portal 3x3 esté completamente vacía
-    for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-            maze[exitPos.y + j][exitPos.x + i] = 0;
+        // Definir la salida en un borde y la entrada lejos de ella
+        const minDistance = Math.min(config.rows, config.cols) * 0.7;
+
+        // 1. Encontrar una posición para la salida en un borde.
+        exitPos = findRandomEmptyEdgeCell(maze, config.cols, config.rows);
+
+        // 2. Encontrar una posición de inicio lejana a la salida.
+        do {
+            startPos = findRandomEmptyCell(maze, config.cols, config.rows);
+        } while (getDistance(startPos, exitPos) < minDistance);
+
+        // Asegurarse de que el área del portal 3x3 esté completamente vacía
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (exitPos.y + j < config.rows && exitPos.x + i < config.cols) {
+                    maze[exitPos.y + j][exitPos.x + i] = 0;
+                }
+            }
+        }
+
+        // Verificar si hay una ruta válida después de crear el portal
+        if (hasValidPath(maze, startPos, exitPos)) {
+            break; // Tenemos un laberinto válido
+        }
+        
+        console.log(`Intento ${attempts}: No hay ruta válida, regenerando laberinto...`);
+        
+    } while (attempts < maxAttempts);
+
+    // Si después de varios intentos no encontramos una ruta válida, forzamos una
+    if (attempts >= maxAttempts) {
+        console.log("Forzando creación de ruta válida...");
+        // Crear un camino directo simple desde inicio hasta salida, respetando las zonas
+        let currentX = startPos.x;
+        let currentY = startPos.y;
+        
+        while (currentX !== exitPos.x || currentY !== exitPos.y) {
+            // Solo crear caminos en zona de isla
+            if (getZoneType(currentX, currentY) === 'isla') {
+                maze[currentY][currentX] = 0; // Asegurar que el camino esté libre
+            }
+            
+            // Moverse hacia el objetivo
+            if (currentX < exitPos.x) currentX++;
+            else if (currentX > exitPos.x) currentX--;
+            else if (currentY < exitPos.y) currentY++;
+            else if (currentY > exitPos.y) currentY--;
         }
     }
 
@@ -334,8 +419,73 @@
     }
 
     // Reposicionar al jugador al lado del avión (no detrás)
-    player.x = crashCellX + 3; // 3 celdas a la derecha del centro del avión
-    player.y = crashCellY; // En la misma línea vertical que el avión
+    const newPlayerX = crashCellX + 3; // 3 celdas a la derecha del centro del avión
+    const newPlayerY = crashCellY; // En la misma línea vertical que el avión
+    
+    // Asegurar que la nueva posición del jugador esté dentro de los límites y sea válida
+    if (newPlayerX > 0 && newPlayerX < config.cols - 1 && 
+        newPlayerY > 0 && newPlayerY < config.rows - 1) {
+        
+        // Asegurar que la celda del jugador esté libre
+        maze[newPlayerY][newPlayerX] = 0;
+        player.x = newPlayerX;
+        player.y = newPlayerY;
+        
+        // Verificar nuevamente que hay una ruta válida después de reposicionar
+        if (!hasValidPath(maze, {x: player.x, y: player.y}, exitPos)) {
+            console.log("Ruta interrumpida después de crear el claro, restaurando conexión...");
+            // Crear un camino simple desde la nueva posición del jugador hasta una conexión existente
+            let connectX = player.x;
+            let connectY = player.y;
+            
+            // Moverse hacia el punto de inicio original hasta encontrar un camino
+            while ((connectX !== startPos.x || connectY !== startPos.y) && 
+                   !hasValidPath(maze, {x: connectX, y: connectY}, exitPos)) {
+                
+                // Solo crear caminos en zona de isla
+                if (getZoneType(connectX, connectY) === 'isla') {
+                    maze[connectY][connectX] = 0; // Liberar el camino
+                }
+                
+                if (connectX < startPos.x) connectX++;
+                else if (connectX > startPos.x) connectX--;
+                else if (connectY < startPos.y) connectY++;
+                else if (connectY > startPos.y) connectY--;
+            }
+        }
+    } else {
+        // Si la nueva posición no es válida, mantener la posición original
+        console.log("Nueva posición del jugador no válida, manteniendo posición original");
+    }
+
+    // Verificación final: Asegurar que siempre hay una ruta válida
+    if (!hasValidPath(maze, {x: player.x, y: player.y}, exitPos)) {
+        console.log("¡ADVERTENCIA! No hay ruta válida detectada. Forzando conexión...");
+        // Como último recurso, crear un camino directo
+        let currentX = player.x;
+        let currentY = player.y;
+        
+        while (currentX !== exitPos.x || currentY !== exitPos.y) {
+            // Solo crear caminos en zona de isla o en el portal de salida
+            const zoneType = getZoneType(currentX, currentY);
+            const isInExitPortal = (currentX >= exitPos.x && currentX < exitPos.x + 3 && 
+                                   currentY >= exitPos.y && currentY < exitPos.y + 3);
+            
+            if (zoneType === 'isla' || isInExitPortal) {
+                maze[currentY][currentX] = 0;
+            }
+            
+            // Moverse en línea recta hacia el objetivo
+            if (Math.abs(currentX - exitPos.x) > Math.abs(currentY - exitPos.y)) {
+                currentX += (exitPos.x > currentX) ? 1 : -1;
+            } else {
+                currentY += (exitPos.y > currentY) ? 1 : -1;
+            }
+        }
+        console.log("Ruta de emergencia creada.");
+    } else {
+        console.log("✓ Ruta válida confirmada desde inicio hasta salida.");
+    }
 
     // Centro del volcán
     const volcano = {
@@ -903,10 +1053,28 @@
         if (dx === 0 && dy === 0) return;
 
         const nx = player.x + dx, ny = player.y + dy;
-        if (maze[ny] && maze[ny][nx] === 0) {
-            player.x = nx;
-            player.y = ny;
+        
+        // Verificar que la nueva posición esté dentro de los límites
+        if (nx < 0 || nx >= config.cols || ny < 0 || ny >= config.rows) return;
+        
+        // Verificar que la celda esté libre en el laberinto
+        if (maze[ny][nx] !== 0) return;
+        
+        // Verificar que la nueva posición esté en la zona de isla (no en playa/orilla)
+        const newZoneType = getZoneType(nx, ny);
+        
+        // Permitir movimiento en la orilla solo si está dentro del área del portal de salida
+        const isInExitPortal = (nx >= exitPos.x && nx < exitPos.x + 3 && 
+                               ny >= exitPos.y && ny < exitPos.y + 3);
+        
+        if (newZoneType !== 'isla' && !isInExitPortal) {
+            // El personaje no puede caminar por la playa/orilla, excepto en el portal de salida
+            return;
         }
+        
+        // Si todas las verificaciones pasan, permitir el movimiento
+        player.x = nx;
+        player.y = ny;
     });
 
     let lastLavaUpdateTime = 0;
