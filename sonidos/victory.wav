@@ -1,0 +1,4 @@
+# Este es un archivo placeholder para victory.wav
+# En un entorno real, aquí iría el archivo de audio binario
+# El juego detectará que este archivo no es un audio válido y usará síntesis procedural
+PLACEHOLDER_AUDIO_FILE

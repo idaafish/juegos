@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generador de Audio para Laberinto Volcán</title>
+</head>
+<body>
+    <h1>Generador de Audio</h1>
+    <p>Este archivo genera archivos de audio básicos para el juego.</p>
+    
+    <div>
+        <button onclick="generateFootstep()">Generar Footstep</button>
+        <button onclick="generateMarkerSound()">Generar Marker Sound</button>
+        <button onclick="generateLavaBubble()">Generar Lava Bubble</button>
+        <button onclick="generateVictory()">Generar Victory</button>
+        <button onclick="generateGameOver()">Generar Game Over</button>
+        <button onclick="generateAmbientWaves()">Generar Ambient Waves</button>
+        <button onclick="generateVolcanoRumble()">Generar Volcano Rumble</button>
+        <button onclick="generateBackgroundMusic()">Generar Background Music</button>
+    </div>
+    
+    <div id="output"></div>
+
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Función para crear y descargar un archivo WAV
+        async function createAndDownloadWAV(buffer, filename) {
+            // Convertir AudioBuffer a WAV
+            const wav = audioBufferToWav(buffer);
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            
+            // Crear enlace de descarga
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // Función para convertir AudioBuffer a WAV
+        function audioBufferToWav(buffer) {
+            const length = buffer.length;
+            const numberOfChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const bytesPerSample = 2;
+            const blockAlign = numberOfChannels * bytesPerSample;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = length * blockAlign;
+            const bufferSize = 44 + dataSize;
+            
+            const arrayBuffer = new ArrayBuffer(bufferSize);
+            const view = new DataView(arrayBuffer);
+            
+            // WAV header
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, bufferSize - 8, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numberOfChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bytesPerSample * 8, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true);
+            
+            // PCM data
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                for (let channel = 0; channel < numberOfChannels; channel++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+            
+            return arrayBuffer;
+        }
+        
+        // Generadores de sonido
+        
+        async function generateFootstep() {
+            const duration = 0.25;
+            const sampleRate = 44100;
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            // Generar sonido de pasos
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const envelope = Math.exp(-t * 8); // Envelope exponencial
+                
+                // Componente grave (pisada)
+                const low = Math.sin(2 * Math.PI * 75 * t) * 0.3;
+                // Componente agudo (hojas)
+                const high = (Math.random() - 0.5) * 0.2 * Math.exp(-t * 15);
+                
+                data[i] = (low + high) * envelope;
+            }
+            
+            await createAndDownloadWAV(buffer, 'footstep.wav');
+            document.getElementById('output').innerHTML += '<p>✓ footstep.wav generado</p>';
+        }
+        
+        async function generateMarkerSound() {
+            const duration = 0.8;
+            const sampleRate = 44100;
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let signal = 0;
+                
+                if (t < 0.4) {
+                    // Primera parte del grito
+                    const freq = 800 + 300 * Math.sin(t * 10);
+                    const envelope = Math.exp(-t * 3);
+                    signal = Math.sin(2 * Math.PI * freq * t) * envelope * 0.4;
+                } else if (t < 0.7) {
+                    // Segunda parte
+                    const freq = 600 - 250 * (t - 0.4) / 0.3;
+                    const envelope = Math.exp(-(t - 0.4) * 4);
+                    signal = Math.sin(2 * Math.PI * freq * t) * envelope * 0.3;
+                }
+                
+                data[i] = signal;
+            }
+            
+            await createAndDownloadWAV(buffer, 'marker_sound.wav');
+            document.getElementById('output').innerHTML += '<p>✓ marker_sound.wav generado</p>';
+        }
+        
+        async function generateLavaBubble() {
+            const duration = 0.7;
+            const sampleRate = 44100;
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const envelope = Math.exp(-t * 2);
+                
+                // Burbuja grave
+                const bubble = Math.sin(2 * Math.PI * (50 + 30 * t) * t) * 0.3;
+                // Pop agudo
+                const pop = t > 0.5 ? Math.sin(2 * Math.PI * 250 * t) * Math.exp(-(t - 0.5) * 20) * 0.2 : 0;
+                
+                data[i] = (bubble + pop) * envelope;
+            }
+            
+            await createAndDownloadWAV(buffer, 'lava_bubble.wav');
+            document.getElementById('output').innerHTML += '<p>✓ lava_bubble.wav generado</p>';
+        }
+        
+        async function generateVictory() {
+            const duration = 2.0;
+            const sampleRate = 44100;
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            const notes = [523, 659, 784, 1047]; // Do, Mi, Sol, Do
+            
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let signal = 0;
+                
+                // Tocar acordes
+                for (let n = 0; n < notes.length; n++) {
+                    const noteStart = n * 0.2;
+                    const noteEnd = noteStart + 1.2;
+                    
+                    if (t >= noteStart && t < noteEnd) {
+                        const noteTime = t - noteStart;
+                        const envelope = Math.exp(-noteTime * 1.5);
+                        signal += Math.sin(2 * Math.PI * notes[n] * t) * envelope * 0.15;
+                    }
+                }
+                
+                // Campanillas
+                if (t > 0.8) {
+                    const bellFreq = 1047 + 500 * Math.sin(t * 30);
+                    const bellEnv = Math.exp(-(t - 0.8) * 5);
+                    signal += Math.sin(2 * Math.PI * bellFreq * t) * bellEnv * 0.1;
+                }
+                
+                data[i] = signal;
+            }
+            
+            await createAndDownloadWAV(buffer, 'victory.wav');
+            document.getElementById('output').innerHTML += '<p>✓ victory.wav generado</p>';
+        }
+        
+        async function generateGameOver() {
+            const duration = 3.5;
+            const sampleRate = 44100;
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            const notes = [523, 466, 415, 349, 311]; // Progresión descendente
+            
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let signal = 0;
+                
+                // Progresión descendente
+                for (let n = 0; n < notes.length; n++) {
+                    const noteStart = n * 0.3;
+                    const noteEnd = noteStart + 1.3;
+                    
+                    if (t >= noteStart && t < noteEnd) {
+                        const noteTime = t - noteStart;
+                        const envelope = Math.exp(-noteTime * 0.8);
+                        signal += Math.sin(2 * Math.PI * notes[n] * t) * envelope * 0.2;
+                    }
+                }
+                
+                // Efecto doom
+                if (t > 1.2) {
+                    const doomEnv = Math.exp(-(t - 1.2) * 0.5);
+                    signal += Math.sin(2 * Math.PI * 55 * t) * doomEnv * 0.3;
+                }
+                
+                data[i] = signal;
+            }
+            
+            await createAndDownloadWAV(buffer, 'game_over.wav');
+            document.getElementById('output').innerHTML += '<p>✓ game_over.wav generado</p>';
+        }
+        
+        async function generateAmbientWaves() {
+            const duration = 8.0;
+            const sampleRate = 44100;
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                
+                // Olas graves
+                const waves = Math.sin(2 * Math.PI * 80 * t + Math.sin(2 * Math.PI * 0.3 * t) * 2) * 0.15;
+                // Espuma aguda
+                const foam = (Math.random() - 0.5) * 0.05 * Math.sin(2 * Math.PI * 0.7 * t);
+                
+                data[i] = waves + foam;
+            }
+            
+            await createAndDownloadWAV(buffer, 'ambient_waves.wav');
+            document.getElementById('output').innerHTML += '<p>✓ ambient_waves.wav generado</p>';
+        }
+        
+        async function generateVolcanoRumble() {
+            const duration = 3.0;
+            const sampleRate = 44100;
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                const envelope = 1 - Math.exp(-t * 2); // Fade in
+                
+                // Retumbar profundo
+                const rumble = Math.sin(2 * Math.PI * 30 * t + Math.sin(2 * Math.PI * 2 * t) * 1) * 0.25;
+                // Componente medio
+                const mid = Math.sin(2 * Math.PI * 80 * t + Math.sin(2 * Math.PI * 1.3 * t) * 1.5) * 0.15;
+                
+                data[i] = (rumble + mid) * envelope;
+            }
+            
+            await createAndDownloadWAV(buffer, 'volcano_rumble.wav');
+            document.getElementById('output').innerHTML += '<p>✓ volcano_rumble.wav generado</p>';
+        }
+        
+        async function generateBackgroundMusic() {
+            const duration = 19.2;
+            const sampleRate = 44100;
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            const melody = [523, 587, 659, 698, 784, 698, 659, 587, 659, 698, 784, 880, 988, 880, 784, 698, 784, 880, 988, 1047, 1175, 1047, 988, 880, 698, 784, 880, 784, 698, 659, 587, 523];
+            const baseLine = [131, 147, 165, 175, 196, 175, 165, 147, 165, 175, 196, 220, 247, 220, 196, 175, 196, 220, 247, 262, 294, 262, 247, 220, 175, 196, 220, 196, 175, 165, 147, 131];
+            
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let signal = 0;
+                
+                // Melodía
+                const noteIndex = Math.floor(t / 0.6) % melody.length;
+                const noteTime = (t % 0.6) / 0.6;
+                const envelope = Math.exp(-noteTime * 3);
+                
+                signal += Math.sin(2 * Math.PI * melody[noteIndex] * t) * envelope * 0.08;
+                signal += Math.sin(2 * Math.PI * baseLine[noteIndex] * t) * envelope * 0.12;
+                
+                data[i] = signal;
+            }
+            
+            await createAndDownloadWAV(buffer, 'background_music.wav');
+            document.getElementById('output').innerHTML += '<p>✓ background_music.wav generado</p>';
+        }
+    </script>
+</body>
+</html>

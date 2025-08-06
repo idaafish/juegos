@@ -469,6 +469,73 @@
         ui: 0.5         // Sonidos de interfaz
     };
 
+    // Variables para controlar bucles de audio
+    let currentAmbientWaves = null;
+    let currentBackgroundMusic = null;
+    let ambientWavesTimeout = null;
+    let backgroundMusicTimeout = null;
+
+    // Sistema de carga de archivos de audio
+    const audioFiles = {
+        footstep: null,
+        // marker_sound eliminado - sonaba como alarma
+        lava_bubble: null,
+        victory: null,
+        game_over: null,
+        ambient_waves: null,
+        volcano_rumble: null,
+        background_music: null
+    };
+
+    // Cargar archivos de audio
+    async function loadAudioFiles() {
+        const audioList = [
+            'footstep.wav',
+            // 'marker_sound.wav' eliminado - sonaba como alarma 
+            'lava_bubble.wav',
+            'victory.wav',
+            'game_over.wav',
+            'ambient_waves.wav',
+            'volcano_rumble.wav',
+            'background_music.wav'
+        ];
+
+        for (const fileName of audioList) {
+            try {
+                const response = await fetch(`sonidos/${fileName}`);
+                if (response.ok) {
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    const baseName = fileName.replace('.wav', '');
+                    audioFiles[baseName] = audioBuffer;
+                    console.log(`✓ Cargado: ${fileName}`);
+                } else {
+                    console.log(`⚠️ No encontrado: ${fileName} - usando síntesis procedural`);
+                }
+            } catch (error) {
+                console.log(`⚠️ Error cargando ${fileName}:`, error.message);
+            }
+        }
+    }
+
+    // Helper para reproducir archivo de audio con control de volumen
+    function playAudioFile(audioBuffer, volume = 1.0, loop = false) {
+        if (!audioEnabled || !audioBuffer) return null;
+
+        const source = audioContext.createBufferSource();
+        const gainNode = audioContext.createGain();
+        
+        source.buffer = audioBuffer;
+        source.loop = loop;
+        gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+        
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        source.start();
+        return source;
+    }
+
     // Sistema de audio centralizado
     const AudioSystem = {
         // Función para habilitar audio (necesario para cumplir políticas del navegador)
@@ -477,6 +544,8 @@
                 audioContext.resume().then(() => {
                     audioEnabled = true;
                     console.log("🔊 Sistema de audio habilitado");
+                    // Cargar archivos de audio después de habilitar el contexto
+                    loadAudioFiles();
                 });
             }
         },
@@ -535,6 +604,14 @@
         playFootstep() {
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
+            // Intentar usar archivo de audio primero
+            if (audioFiles.footstep) {
+                const volume = audioConfig.sfx * masterVolume * 0.12;
+                playAudioFile(audioFiles.footstep, volume);
+                return;
+            }
+
+            // Fallback a síntesis procedural
             const now = audioContext.currentTime;
             const categoryVolume = audioConfig.sfx * masterVolume;
             
@@ -575,83 +652,35 @@
             osc3.stop(now + 0.1);
         },
 
-        // Sonido de grito de aviso (cuando presionas espacio)
-        playMarkerSound() {
-            if (!audioEnabled || audioContext.state === 'suspended') return;
-
-            const now = audioContext.currentTime;
-            const categoryVolume = audioConfig.ui * masterVolume;
-            
-            // Grito humano simulado - primera parte (¡Ay!)
-            const osc1 = this.createOscillator('sawtooth', 800);
-            const gain1 = this.createGainWithEnvelope(0.01, 0.1, 0.8, 0.2, 0.25 * categoryVolume);
-            const filter1 = this.createFilter('bandpass', 1200, 5);
-            
-            // Modulación para simular la voz humana
-            osc1.frequency.setValueAtTime(800, now);
-            osc1.frequency.linearRampToValueAtTime(1100, now + 0.05);
-            osc1.frequency.linearRampToValueAtTime(900, now + 0.15);
-            osc1.frequency.exponentialRampToValueAtTime(600, now + 0.4);
-            
-            osc1.connect(filter1);
-            filter1.connect(gain1);
-            gain1.connect(audioContext.destination);
-            
-            osc1.start(now);
-            osc1.stop(now + 0.4);
-
-            // Segunda parte del grito (¡Uda!)
-            const osc2 = this.createOscillator('triangle', 600);
-            const gain2 = this.createGainWithEnvelope(0.02, 0.08, 0.6, 0.25, 0.22 * categoryVolume);
-            const filter2 = this.createFilter('bandpass', 900, 4);
-            
-            osc2.frequency.setValueAtTime(600, now + 0.25);
-            osc2.frequency.linearRampToValueAtTime(450, now + 0.35);
-            osc2.frequency.exponentialRampToValueAtTime(350, now + 0.7);
-            
-            osc2.connect(filter2);
-            filter2.connect(gain2);
-            gain2.connect(audioContext.destination);
-            
-            osc2.start(now + 0.25);
-            osc2.stop(now + 0.7);
-
-            // Eco/reverb del grito para mayor dramatismo
-            const osc3 = this.createOscillator('sine', 700);
-            const gain3 = this.createGainWithEnvelope(0.1, 0.2, 0.3, 0.5, 0.08 * categoryVolume);
-            const filter3 = this.createFilter('lowpass', 800, 2);
-            
-            osc3.frequency.setValueAtTime(700, now + 0.1);
-            osc3.frequency.exponentialRampToValueAtTime(400, now + 0.8);
-            
-            osc3.connect(filter3);
-            filter3.connect(gain3);
-            gain3.connect(audioContext.destination);
-            
-            osc3.start(now + 0.1);
-            osc3.stop(now + 0.8);
-
-            // Grito adicional de urgencia (más agudo)
-            const osc4 = this.createOscillator('square', 1400);
-            const gain4 = this.createGainWithEnvelope(0.005, 0.03, 0.4, 0.15, 0.15 * categoryVolume);
-            const filter4 = this.createFilter('highpass', 1000);
-            
-            osc4.frequency.setValueAtTime(1400, now + 0.1);
-            osc4.frequency.linearRampToValueAtTime(1800, now + 0.15);
-            osc4.frequency.exponentialRampToValueAtTime(1000, now + 0.35);
-            
-            osc4.connect(filter4);
-            filter4.connect(gain4);
-            gain4.connect(audioContext.destination);
-            
-            osc4.start(now + 0.1);
-            osc4.stop(now + 0.35);
-        },
-
         // 1. Sonido de olas del mar (ambiente constante)
         playAmbientWaves() {
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
+            // Detener olas anteriores si existen
+            if (currentAmbientWaves) {
+                currentAmbientWaves.stop();
+                currentAmbientWaves = null;
+            }
+            if (ambientWavesTimeout) {
+                clearTimeout(ambientWavesTimeout);
+                ambientWavesTimeout = null;
+            }
+
+            // Intentar usar archivo de audio primero
+            if (audioFiles.ambient_waves) {
+                const volume = audioConfig.ambient * masterVolume * 0.15;
+                currentAmbientWaves = playAudioFile(audioFiles.ambient_waves, volume, true); // loop = true
+                
+                // Programar siguiente reproducción por si el loop falla
+                ambientWavesTimeout = setTimeout(() => {
+                    if (audioEnabled && winMsg.style.display === "none") {
+                        this.playAmbientWaves();
+                    }
+                }, 10000);
+                return;
+            }
+
+            // Fallback a síntesis procedural
             const now = audioContext.currentTime;
             const duration = 8; // 8 segundos de olas
             const ambientVolume = audioConfig.ambient * masterVolume;
@@ -714,6 +743,14 @@
         playLavaBubble() {
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
+            // Intentar usar archivo de audio primero
+            if (audioFiles.lava_bubble) {
+                const volume = audioConfig.sfx * masterVolume * 0.18;
+                playAudioFile(audioFiles.lava_bubble, volume);
+                return;
+            }
+
+            // Fallback a síntesis procedural
             const now = audioContext.currentTime;
             const sfxVolume = audioConfig.sfx * masterVolume;
             
@@ -748,6 +785,14 @@
         playVictorySound() {
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
+            // Intentar usar archivo de audio primero
+            if (audioFiles.victory) {
+                const volume = audioConfig.sfx * masterVolume * 0.25;
+                playAudioFile(audioFiles.victory, volume);
+                return;
+            }
+
+            // Fallback a síntesis procedural
             const now = audioContext.currentTime;
             const sfxVolume = audioConfig.sfx * masterVolume;
             
@@ -787,6 +832,14 @@
         playGameOverSound() {
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
+            // Intentar usar archivo de audio primero
+            if (audioFiles.game_over) {
+                const volume = audioConfig.sfx * masterVolume * 0.20;
+                playAudioFile(audioFiles.game_over, volume);
+                return;
+            }
+
+            // Fallback a síntesis procedural
             const now = audioContext.currentTime;
             const sfxVolume = audioConfig.sfx * masterVolume;
             
@@ -825,6 +878,14 @@
         playVolcanoRumble() {
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
+            // Intentar usar archivo de audio primero
+            if (audioFiles.volcano_rumble) {
+                const volume = audioConfig.ambient * masterVolume * 0.25;
+                playAudioFile(audioFiles.volcano_rumble, volume);
+                return;
+            }
+
+            // Fallback a síntesis procedural
             const now = audioContext.currentTime;
             const duration = 3;
             const ambientVolume = audioConfig.ambient * masterVolume;
@@ -879,6 +940,31 @@
         playBackgroundMusic() {
             if (!audioEnabled || audioContext.state === 'suspended') return;
 
+            // Detener música anterior si existe
+            if (currentBackgroundMusic) {
+                currentBackgroundMusic.stop();
+                currentBackgroundMusic = null;
+            }
+            if (backgroundMusicTimeout) {
+                clearTimeout(backgroundMusicTimeout);
+                backgroundMusicTimeout = null;
+            }
+
+            // Intentar usar archivo de audio primero
+            if (audioFiles.background_music) {
+                const volume = audioConfig.music * masterVolume * 0.08;
+                currentBackgroundMusic = playAudioFile(audioFiles.background_music, volume, true); // loop = true
+                
+                // Programar siguiente reproducción por si el loop falla
+                backgroundMusicTimeout = setTimeout(() => {
+                    if (audioEnabled && winMsg.style.display === "none") {
+                        this.playBackgroundMusic();
+                    }
+                }, 19200);
+                return;
+            }
+
+            // Fallback a síntesis procedural
             const now = audioContext.currentTime;
             
             // Melodía principal extendida (tema heroico más largo)
@@ -953,6 +1039,26 @@
             if (audioConfig.hasOwnProperty(category)) {
                 audioConfig[category] = Math.max(0, Math.min(1, volume));
                 console.log(`🔊 Volumen ${category}: ${Math.round(audioConfig[category] * 100)}%`);
+            }
+        },
+
+        // Función para detener todos los sonidos en bucle
+        stopAllLoopingSounds() {
+            if (currentAmbientWaves) {
+                currentAmbientWaves.stop();
+                currentAmbientWaves = null;
+            }
+            if (currentBackgroundMusic) {
+                currentBackgroundMusic.stop();
+                currentBackgroundMusic = null;
+            }
+            if (ambientWavesTimeout) {
+                clearTimeout(ambientWavesTimeout);
+                ambientWavesTimeout = null;
+            }
+            if (backgroundMusicTimeout) {
+                clearTimeout(backgroundMusicTimeout);
+                backgroundMusicTimeout = null;
             }
         }
     };
@@ -2266,7 +2372,7 @@
             e.preventDefault();
             playerMarker.active = true;
             playerMarker.life = 5;
-            AudioSystem.playMarkerSound(); // Reproducir grito de aviso
+            // Audio de alarma eliminado por solicitud del usuario
             return;
         }
 
@@ -2338,6 +2444,9 @@
             lavaTime[player.y][player.x] !== -1 &&
             lavaStep >= lavaTime[player.y][player.x]
         ) {
+            // Detener todos los sonidos en bucle
+            AudioSystem.stopAllLoopingSounds();
+            
             // Reproducir sonido de derrota
             AudioSystem.playGameOverSound();
             
@@ -2351,6 +2460,9 @@
             player.x >= exitPos.x - 0.5 && player.x < exitPos.x + 3.5 &&
             player.y >= exitPos.y - 0.5 && player.y < exitPos.y + 3.5
         ) {
+            // Detener todos los sonidos en bucle
+            AudioSystem.stopAllLoopingSounds();
+            
             // Reproducir sonido de victoria
             AudioSystem.playVictorySound();
             
