@@ -1503,31 +1503,31 @@
                     if (lavaTime[y][x] !== -1 && eruptionStart !== null && lavaStep >= lavaTime[y][x]) {
                         ctx.fillStyle = "#ff3c00";
                     } else if (maze[y][x] === 1) {
-                        // Paredes de bosque denso con vegetación
-                        const seed = x * 1000 + y;
-                        const baseColors = [
-                            "#1b5e20", "#2e7d32", "#388e3c", "#43a047"
-                        ];
-                        const baseColorIndex = seed % baseColors.length;
-                        ctx.fillStyle = baseColors[baseColorIndex];
+                        if (Math.random() < 0.18) {
+                            ctx.fillStyle = "#4e342e";
+                        } else {
+                            ctx.fillStyle = "#184d27";
+                        }
                     } else {
                         ctx.fillStyle = "#b9f6ca";
                     }
                 }
                 ctx.fillRect(x * config.cellSize, y * config.cellSize, config.cellSize, config.cellSize);
-                
-                // Añadir detalles de vegetación después de dibujar el fondo
-                if (zoneType === 'isla' && maze[y][x] === 1) {
-                    drawForestWallDetails(x, y, timestamp);
-                }
             }
         }
 
         // Nuevo: Dibujar el barco pirata abandonado
         drawPirateShip(timestamp);
 
-        // Volcán (centro) - Volcán realista con lava burbujeante
-        drawVolcano(timestamp);
+        // Volcán (centro)
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(volcano.x*config.cellSize+config.cellSize/2, volcano.y*config.cellSize+config.cellSize/2, config.cellSize/2.2, 0, 2*Math.PI);
+        ctx.fillStyle = "#b71c1c";
+        ctx.shadowColor = "#ff9800";
+        ctx.shadowBlur = 18;
+        ctx.fill();
+        ctx.restore();
 
 
 
@@ -1619,6 +1619,144 @@
         } else {
             playerMarker.active = false;
         }
+    }
+
+    function drawPirateShip(timestamp) {
+        const shipCenterX = (exitPos.x + 1.5) * config.cellSize;
+        const shipCenterY = (exitPos.y + 1.5) * config.cellSize;
+        const shipWidth = config.cellSize * 2.8;
+        const shipHeight = config.cellSize * 1.4;
+
+        ctx.save();
+        ctx.translate(shipCenterX, shipCenterY);
+
+        // Resplandor dorado los primeros 2 segundos para indicar la salida
+        if (gameStartTime && performance.now() - gameStartTime < 2000) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(0, 0, shipWidth * 0.8, shipHeight * 0.8, 0, 0, 2 * Math.PI);
+            ctx.fillStyle = "rgba(255,215,0,0.3)";
+            ctx.shadowColor = "#ffd700";
+            ctx.shadowBlur = 20;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Ligero balanceo del barco
+        const sway = Math.sin(timestamp / 1500) * 0.02;
+        ctx.rotate(sway);
+
+        // Casco del barco (marrón oscuro envejecido)
+        ctx.fillStyle = "#3e2723";
+        ctx.strokeStyle = "#2e1a16";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0, shipHeight * 0.2, shipWidth * 0.5, shipHeight * 0.4, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.stroke();
+
+        // Tablones del casco (detalles de madera)
+        ctx.strokeStyle = "#5d4037";
+        ctx.lineWidth = 2;
+        for (let i = -2; i <= 2; i++) {
+            ctx.beginPath();
+            ctx.moveTo(-shipWidth * 0.4, shipHeight * 0.2 + i * shipHeight * 0.1);
+            ctx.lineTo(shipWidth * 0.4, shipHeight * 0.2 + i * shipHeight * 0.1);
+            ctx.stroke();
+        }
+
+        // Mástil principal (marrón claro)
+        ctx.fillStyle = "#8d6e63";
+        ctx.fillRect(-config.cellSize * 0.08, -shipHeight * 0.8, config.cellSize * 0.16, shipHeight * 1.2);
+
+        // Vela rasgada (blanca sucia con agujeros)
+        ctx.save();
+        ctx.fillStyle = "#f5f5dc";
+        ctx.strokeStyle = "#d7ccc8";
+        ctx.lineWidth = 2;
+        
+        // Vela principal con ondulación por el viento
+        const sailSway = Math.sin(timestamp / 800) * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(-shipWidth * 0.35, -shipHeight * 0.6);
+        ctx.quadraticCurveTo(-shipWidth * 0.2 + sailSway * 20, -shipHeight * 0.4, -shipWidth * 0.35, -shipHeight * 0.1);
+        ctx.lineTo(shipWidth * 0.2, -shipHeight * 0.1);
+        ctx.quadraticCurveTo(shipWidth * 0.35 + sailSway * 15, -shipHeight * 0.4, shipWidth * 0.2, -shipHeight * 0.6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Agujeros en la vela (simulando desgaste)
+        ctx.fillStyle = "rgba(0,0,0,0.3)";
+        ctx.beginPath();
+        ctx.ellipse(-shipWidth * 0.15, -shipHeight * 0.45, 8, 6, 0, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(shipWidth * 0.1, -shipHeight * 0.25, 6, 4, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Calavera pirata en la vela (pequeña)
+        ctx.fillStyle = "#424242";
+        ctx.font = `${config.cellSize * 0.4}px serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("☠", 0, -shipHeight * 0.35);
+        
+        ctx.restore();
+
+        // Bandera pirata en la punta del mástil
+        const flagSway = Math.sin(timestamp / 600) * 0.15;
+        ctx.save();
+        ctx.translate(0, -shipHeight * 0.8);
+        ctx.rotate(flagSway);
+        
+        // Asta de la bandera
+        ctx.fillStyle = "#5d4037";
+        ctx.fillRect(0, 0, 2, shipHeight * 0.25);
+        
+        // Bandera negra
+        ctx.fillStyle = "#212121";
+        ctx.fillRect(2, 0, shipWidth * 0.2, shipHeight * 0.15);
+        
+        // Calavera en la bandera
+        ctx.fillStyle = "#fff";
+        ctx.font = `${config.cellSize * 0.15}px serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("☠", shipWidth * 0.1 + 2, shipHeight * 0.1);
+        
+        ctx.restore();
+
+        // Cuerdas y aparejos (detalles)
+        ctx.strokeStyle = "#795548";
+        ctx.lineWidth = 1;
+        // Cuerdas desde el mástil
+        ctx.beginPath();
+        ctx.moveTo(0, -shipHeight * 0.6);
+        ctx.lineTo(-shipWidth * 0.3, -shipHeight * 0.1);
+        ctx.moveTo(0, -shipHeight * 0.6);
+        ctx.lineTo(shipWidth * 0.3, -shipHeight * 0.1);
+        ctx.stroke();
+
+        // Ancla en el costado (oxidada)
+        ctx.save();
+        ctx.translate(-shipWidth * 0.45, shipHeight * 0.1);
+        ctx.scale(0.6, 0.6);
+        ctx.fillStyle = "#8d6e63";
+        ctx.font = `${config.cellSize * 0.3}px serif`;
+        ctx.textAlign = "center";
+        ctx.fillText("⚓", 0, 0);
+        ctx.restore();
+
+        // Restos de naufragio en el agua (tablones flotando)
+        if (Math.sin(timestamp / 2000) > 0.5) {
+            ctx.save();
+            ctx.translate(-shipWidth * 0.7, shipHeight * 0.6);
+            ctx.rotate(Math.sin(timestamp / 1000) * 0.2);
+            ctx.fillStyle = "#6d4c41";
+            ctx.fillRect(-config.cellSize * 0.2, -config.cellSize * 0.05, config.cellSize * 0.4, config.cellSize * 0.1);
+            ctx.restore();
+        }
+
+        ctx.restore();
 
         // Aventurero estilo Indiana Jones (dibujado al final para estar por encima de todo)
         let highlight = false;
@@ -1781,432 +1919,6 @@
         ctx.restore();
     }
 
-    // Función para dibujar un volcán realista con lava burbujeante
-    function drawVolcano(timestamp) {
-        const volcanoX = volcano.x * config.cellSize + config.cellSize / 2;
-        const volcanoY = volcano.y * config.cellSize + config.cellSize / 2;
-        const baseRadius = config.cellSize * 0.8;
-        const craterRadius = config.cellSize * 0.4;
-        
-        ctx.save();
-        
-        // Base del volcán (roca volcánica oscura)
-        ctx.beginPath();
-        ctx.arc(volcanoX, volcanoY, baseRadius, 0, 2 * Math.PI);
-        const gradient1 = ctx.createRadialGradient(volcanoX, volcanoY, 0, volcanoX, volcanoY, baseRadius);
-        gradient1.addColorStop(0, "#2e1a16");
-        gradient1.addColorStop(0.7, "#3e2723");
-        gradient1.addColorStop(1, "#1c1c1c");
-        ctx.fillStyle = gradient1;
-        ctx.fill();
-        
-        // Textura rocosa del volcán
-        ctx.strokeStyle = "#1a1a1a";
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const x1 = volcanoX + Math.cos(angle) * baseRadius * 0.7;
-            const y1 = volcanoY + Math.sin(angle) * baseRadius * 0.7;
-            const x2 = volcanoX + Math.cos(angle) * baseRadius * 0.9;
-            const y2 = volcanoY + Math.sin(angle) * baseRadius * 0.9;
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-        }
-        
-        // Cráter interior (lava burbujeante)
-        ctx.beginPath();
-        ctx.arc(volcanoX, volcanoY, craterRadius, 0, 2 * Math.PI);
-        
-        // Animación de lava burbujeante
-        const t = timestamp / 300;
-        const lavaIntensity = 0.5 + 0.5 * Math.sin(t * 0.7);
-        const bubble1 = 0.3 + 0.2 * Math.sin(t * 1.3);
-        const bubble2 = 0.4 + 0.3 * Math.sin(t * 0.9 + 1);
-        
-        const lavaGradient = ctx.createRadialGradient(volcanoX, volcanoY, 0, volcanoX, volcanoY, craterRadius);
-        lavaGradient.addColorStop(0, `rgba(255, 255, 100, ${lavaIntensity})`);
-        lavaGradient.addColorStop(0.3, `rgba(255, 150, 0, ${bubble1})`);
-        lavaGradient.addColorStop(0.6, `rgba(255, 60, 0, ${bubble2})`);
-        lavaGradient.addColorStop(1, "#b71c1c");
-        
-        ctx.fillStyle = lavaGradient;
-        ctx.fill();
-        
-        // Resplandor exterior del volcán
-        ctx.shadowColor = "#ff9800";
-        ctx.shadowBlur = 25 + 10 * Math.sin(t * 0.5);
-        ctx.beginPath();
-        ctx.arc(volcanoX, volcanoY, craterRadius * 0.8, 0, 2 * Math.PI);
-        ctx.fillStyle = `rgba(255, 100, 0, ${0.6 + 0.4 * Math.sin(t * 0.8)})`;
-        ctx.fill();
-        
-        // Burbujas de lava individuales
-        for (let i = 0; i < 3; i++) {
-            const bubbleAngle = (t * 0.3 + i * 2.1) % (Math.PI * 2);
-            const bubbleRadius = craterRadius * (0.3 + 0.2 * Math.sin(t * 1.1 + i));
-            const bubbleX = volcanoX + Math.cos(bubbleAngle) * bubbleRadius * 0.5;
-            const bubbleY = volcanoY + Math.sin(bubbleAngle) * bubbleRadius * 0.5;
-            const bubbleSize = 3 + 2 * Math.sin(t * 1.5 + i * 1.7);
-            
-            ctx.beginPath();
-            ctx.arc(bubbleX, bubbleY, bubbleSize, 0, 2 * Math.PI);
-            ctx.fillStyle = `rgba(255, 200, 0, ${0.7 + 0.3 * Math.sin(t * 2 + i)})`;
-            ctx.fill();
-        }
-        
-        ctx.restore();
-    }
-
-    // Función para dibujar paredes de bosque denso con vegetación
-    function drawForestWallDetails(x, y, timestamp) {
-        const cellX = x * config.cellSize;
-        const cellY = y * config.cellSize;
-        const t = timestamp / 1000;
-        
-        // Usar coordenadas para generar vegetación consistente
-        const seed = x * 1000 + y;
-        
-        ctx.save();
-        
-        // Capa de vegetación más oscura (sombras y profundidad)
-        const darkColors = ["#0d2818", "#1a4d26", "#0f3f1c"];
-        const darkColorIndex = (seed * 3) % darkColors.length;
-        ctx.fillStyle = darkColors[darkColorIndex];
-        
-        // Crear patrones de vegetación irregular
-        for (let i = 0; i < 4; i++) {
-            const patchX = cellX + ((seed * 7 + i * 13) % config.cellSize);
-            const patchY = cellY + ((seed * 11 + i * 17) % config.cellSize);
-            const patchSize = 3 + ((seed * 5 + i * 7) % 6);
-            
-            ctx.beginPath();
-            ctx.arc(patchX, patchY, patchSize, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-        
-        // Añadir hojas brillantes ocasionales
-        if ((seed % 7) === 0) {
-            const leafColors = ["#81c784", "#a5d6a7", "#c8e6c9"];
-            const leafColorIndex = (seed * 2) % leafColors.length;
-            ctx.fillStyle = leafColors[leafColorIndex];
-            
-            const leafX = cellX + ((seed * 19) % (config.cellSize - 4)) + 2;
-            const leafY = cellY + ((seed * 23) % (config.cellSize - 4)) + 2;
-            const leafSize = 2 + ((seed * 3) % 4);
-            
-            ctx.beginPath();
-            ctx.arc(leafX, leafY, leafSize, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-        
-        // Troncos ocasionales (marrón)
-        if ((seed % 13) === 0) {
-            const trunkColors = ["#3e2723", "#4e342e", "#5d4037"];
-            const trunkColorIndex = (seed * 4) % trunkColors.length;
-            ctx.fillStyle = trunkColors[trunkColorIndex];
-            
-            const trunkX = cellX + ((seed * 29) % (config.cellSize - 6)) + 3;
-            const trunkY = cellY;
-            const trunkWidth = 2 + ((seed * 2) % 3);
-            const trunkHeight = config.cellSize;
-            
-            ctx.fillRect(trunkX, trunkY, trunkWidth, trunkHeight);
-        }
-        
-        // Efecto de movimiento sutil del viento en algunas celdas
-        if ((seed % 17) === 0) {
-            const windOffset = Math.sin(t * 2 + seed * 0.1) * 0.5;
-            ctx.fillStyle = "rgba(129, 199, 132, 0.3)";
-            
-            const windX = cellX + config.cellSize / 2 + windOffset;
-            const windY = cellY + ((seed * 31) % config.cellSize);
-            const windSize = 1 + Math.abs(windOffset);
-            
-            ctx.beginPath();
-            ctx.arc(windX, windY, windSize, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-        
-        // Pequeñas flores ocasionales
-        if ((seed % 23) === 0) {
-            const flowerColors = ["#ffeb3b", "#ffc107", "#ff9800", "#f44336"];
-            const flowerColorIndex = (seed * 5) % flowerColors.length;
-            ctx.fillStyle = flowerColors[flowerColorIndex];
-            
-            const flowerX = cellX + ((seed * 37) % (config.cellSize - 4)) + 2;
-            const flowerY = cellY + ((seed * 41) % (config.cellSize - 4)) + 2;
-            const flowerSize = 1.5;
-            
-            ctx.beginPath();
-            ctx.arc(flowerX, flowerY, flowerSize, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-        
-        ctx.restore();
-    }
-
-    function drawPirateShip(timestamp) {
-        // Mejor centrado: posicionar el barco más hacia el centro del área de 3x3
-        const shipCenterX = (exitPos.x + 1.5) * config.cellSize;
-        const shipCenterY = (exitPos.y + 1.2) * config.cellSize; // Ajuste vertical para mejor posición
-        const shipWidth = config.cellSize * 3.2;
-        const shipHeight = config.cellSize * 1.8;
-
-        ctx.save();
-        ctx.translate(shipCenterX, shipCenterY);
-
-        // Resplandor dorado los primeros 2 segundos para indicar la salida
-        if (gameStartTime && performance.now() - gameStartTime < 2000) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.ellipse(0, 0, shipWidth * 0.9, shipHeight * 0.9, 0, 0, 2 * Math.PI);
-            ctx.fillStyle = "rgba(255,215,0,0.3)";
-            ctx.shadowColor = "#ffd700";
-            ctx.shadowBlur = 25;
-            ctx.fill();
-            ctx.restore();
-        }
-
-        // Ligero balanceo del barco más realista
-        const sway = Math.sin(timestamp / 1800) * 0.03;
-        const bobbing = Math.sin(timestamp / 1200) * 0.01;
-        ctx.rotate(sway);
-        ctx.translate(0, bobbing * 10);
-
-        // === CASCO DEL BARCO === 
-        // Parte inferior del casco (más oscura, bajo el agua)
-        ctx.fillStyle = "#2e1a16";
-        ctx.strokeStyle = "#1a1a1a";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(0, shipHeight * 0.4, shipWidth * 0.45, shipHeight * 0.25, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-
-        // Parte superior del casco (más clara)
-        const hullGradient = ctx.createLinearGradient(0, -shipHeight * 0.2, 0, shipHeight * 0.3);
-        hullGradient.addColorStop(0, "#5d4037");
-        hullGradient.addColorStop(0.5, "#4e342e");
-        hullGradient.addColorStop(1, "#3e2723");
-        
-        ctx.fillStyle = hullGradient;
-        ctx.strokeStyle = "#2e1a16";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.ellipse(0, shipHeight * 0.1, shipWidth * 0.48, shipHeight * 0.35, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-
-        // Proa (punta del barco)
-        ctx.fillStyle = "#4e342e";
-        ctx.strokeStyle = "#3e2723";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(shipWidth * 0.48, shipHeight * 0.1);
-        ctx.lineTo(shipWidth * 0.6, shipHeight * 0.05);
-        ctx.lineTo(shipWidth * 0.55, shipHeight * 0.25);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // === DETALLES DEL CASCO ===
-        // Tablones del casco (líneas horizontales de madera)
-        ctx.strokeStyle = "#5d4037";
-        ctx.lineWidth = 1.5;
-        for (let i = -3; i <= 3; i++) {
-            ctx.beginPath();
-            const y = shipHeight * 0.1 + i * shipHeight * 0.08;
-            const startX = -shipWidth * 0.45 + Math.abs(i) * 0.05 * shipWidth;
-            const endX = shipWidth * 0.45 - Math.abs(i) * 0.05 * shipWidth;
-            ctx.moveTo(startX, y);
-            ctx.lineTo(endX, y);
-            ctx.stroke();
-        }
-
-        // Clavos y herrajes metálicos
-        ctx.fillStyle = "#757575";
-        for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const x = Math.cos(angle) * shipWidth * 0.4;
-            const y = shipHeight * 0.1 + Math.sin(angle) * shipHeight * 0.25;
-            
-            ctx.beginPath();
-            ctx.arc(x, y, 2, 0, 2 * Math.PI);
-            ctx.fill();
-        }
-
-        // === CUBIERTA DEL BARCO ===
-        ctx.fillStyle = "#6d4c41";
-        ctx.strokeStyle = "#5d4037";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(0, -shipHeight * 0.05, shipWidth * 0.42, shipHeight * 0.15, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-
-        // Tablones de la cubierta
-        ctx.strokeStyle = "#8d6e63";
-        ctx.lineWidth = 1;
-        for (let i = -4; i <= 4; i++) {
-            ctx.beginPath();
-            ctx.moveTo(-shipWidth * 0.35, -shipHeight * 0.05 + i * 8);
-            ctx.lineTo(shipWidth * 0.35, -shipHeight * 0.05 + i * 8);
-            ctx.stroke();
-        }
-
-        // === CABINA/CASETA ===
-        ctx.fillStyle = "#4e342e";
-        ctx.strokeStyle = "#3e2723";
-        ctx.lineWidth = 2;
-        ctx.fillRect(-shipWidth * 0.15, -shipHeight * 0.3, shipWidth * 0.3, shipHeight * 0.25);
-        ctx.strokeRect(-shipWidth * 0.15, -shipHeight * 0.3, shipWidth * 0.3, shipHeight * 0.25);
-
-        // Ventanas de la cabina
-        ctx.fillStyle = "#81c784";
-        ctx.fillRect(-shipWidth * 0.1, -shipHeight * 0.25, shipWidth * 0.08, shipHeight * 0.08);
-        ctx.fillRect(shipWidth * 0.02, -shipHeight * 0.25, shipWidth * 0.08, shipHeight * 0.08);
-
-        // Puerta de la cabina
-        ctx.fillStyle = "#3e2723";
-        ctx.strokeStyle = "#2e1a16";
-        ctx.lineWidth = 1;
-        ctx.fillRect(-shipWidth * 0.05, -shipHeight * 0.08, shipWidth * 0.1, shipHeight * 0.12);
-        ctx.strokeRect(-shipWidth * 0.05, -shipHeight * 0.08, shipWidth * 0.1, shipHeight * 0.12);
-
-        // === MÁSTIL PRINCIPAL ===
-        ctx.fillStyle = "#8d6e63";
-        ctx.strokeStyle = "#6d4c41";
-        ctx.lineWidth = 2;
-        ctx.fillRect(-config.cellSize * 0.06, -shipHeight * 0.9, config.cellSize * 0.12, shipHeight * 1.1);
-        ctx.strokeRect(-config.cellSize * 0.06, -shipHeight * 0.9, config.cellSize * 0.12, shipHeight * 1.1);
-
-        // Anillos del mástil
-        ctx.strokeStyle = "#5d4037";
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 3; i++) {
-            const ringY = -shipHeight * 0.7 + i * shipHeight * 0.3;
-            ctx.beginPath();
-            ctx.arc(0, ringY, config.cellSize * 0.08, 0, 2 * Math.PI);
-            ctx.stroke();
-        }
-
-        // === VELA PRINCIPAL ===
-        ctx.save();
-        
-        // Vela con gradiente y movimiento realista
-        const sailSway = Math.sin(timestamp / 900) * 0.12;
-        const sailGradient = ctx.createLinearGradient(-shipWidth * 0.3, -shipHeight * 0.7, shipWidth * 0.3, -shipHeight * 0.2);
-        sailGradient.addColorStop(0, "#f5f5dc");
-        sailGradient.addColorStop(0.3, "#fffde7");
-        sailGradient.addColorStop(0.7, "#f5f5dc");
-        sailGradient.addColorStop(1, "#e8e3d3");
-        
-        ctx.fillStyle = sailGradient;
-        ctx.strokeStyle = "#d7ccc8";
-        ctx.lineWidth = 2;
-        
-        // Vela principal con forma más realista
-        ctx.beginPath();
-        ctx.moveTo(-shipWidth * 0.38, -shipHeight * 0.75);
-        ctx.quadraticCurveTo(-shipWidth * 0.25 + sailSway * 25, -shipHeight * 0.55, -shipWidth * 0.38, -shipHeight * 0.15);
-        ctx.lineTo(shipWidth * 0.25, -shipHeight * 0.15);
-        ctx.quadraticCurveTo(shipWidth * 0.4 + sailSway * 20, -shipHeight * 0.55, shipWidth * 0.25, -shipHeight * 0.75);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        // Costuras y reparches en la vela
-        ctx.strokeStyle = "#d7ccc8";
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 4; i++) {
-            const lineY = -shipHeight * 0.7 + i * shipHeight * 0.15;
-            ctx.beginPath();
-            ctx.moveTo(-shipWidth * 0.35, lineY);
-            ctx.lineTo(shipWidth * 0.22, lineY);
-            ctx.stroke();
-        }
-
-        // Agujeros y desgaste en la vela
-        ctx.fillStyle = "rgba(0,0,0,0.2)";
-        ctx.beginPath();
-        ctx.ellipse(-shipWidth * 0.2, -shipHeight * 0.5, 6, 4, 0, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(shipWidth * 0.15, -shipHeight * 0.35, 4, 3, 0, 0, 2 * Math.PI);
-        ctx.fill();
-
-        ctx.restore();
-
-        // === CUERDAS Y JARCIAS ===
-        ctx.strokeStyle = "#5d4037";
-        ctx.lineWidth = 1.5;
-        
-        // Cuerdas del mástil a la vela
-        ctx.beginPath();
-        ctx.moveTo(-config.cellSize * 0.06, -shipHeight * 0.8);
-        ctx.lineTo(-shipWidth * 0.35, -shipHeight * 0.7);
-        ctx.stroke();
-        
-        ctx.beginPath();
-        ctx.moveTo(config.cellSize * 0.06, -shipHeight * 0.8);
-        ctx.lineTo(shipWidth * 0.22, -shipHeight * 0.7);
-        ctx.stroke();
-
-        // === BANDERA ===
-        const flagSway = Math.sin(timestamp / 700) * 0.2;
-        ctx.save();
-        ctx.translate(0, -shipHeight * 0.9);
-        ctx.rotate(flagSway);
-        
-        // Asta de la bandera
-        ctx.fillStyle = "#5d4037";
-        ctx.fillRect(0, 0, 2, shipHeight * 0.2);
-        
-        // Bandera de rescate (naranja de emergencia)
-        ctx.fillStyle = "#ff5722";
-        ctx.strokeStyle = "#d84315";
-        ctx.lineWidth = 1;
-        ctx.fillRect(2, 0, shipWidth * 0.15, shipHeight * 0.12);
-        ctx.strokeRect(2, 0, shipWidth * 0.15, shipHeight * 0.12);
-        
-        // Símbolo de rescate en la bandera
-        ctx.fillStyle = "#fff";
-        ctx.font = `${config.cellSize * 0.25}px Arial`;
-        ctx.textAlign = "center";
-        ctx.fillText("SOS", 2 + shipWidth * 0.075, shipHeight * 0.08);
-        
-        ctx.restore();
-
-        // === EQUIPAMIENTO DE RESCATE ===
-        // Salvavidas
-        ctx.strokeStyle = "#ff5722";
-        ctx.fillStyle = "#fff";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(shipWidth * 0.3, -shipHeight * 0.1, 8, 0, 2 * Math.PI);
-        ctx.fill();
-        ctx.stroke();
-
-        // Remos
-        ctx.fillStyle = "#8d6e63";
-        ctx.fillRect(-shipWidth * 0.4, shipHeight * 0.05, shipWidth * 0.15, 4);
-        ctx.fillRect(shipWidth * 0.25, shipHeight * 0.05, shipWidth * 0.15, 4);
-
-        // Ancla pequeña
-        ctx.strokeStyle = "#424242";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-shipWidth * 0.35, shipHeight * 0.2);
-        ctx.lineTo(-shipWidth * 0.35, shipHeight * 0.35);
-        ctx.moveTo(-shipWidth * 0.4, shipHeight * 0.35);
-        ctx.lineTo(-shipWidth * 0.3, shipHeight * 0.35);
-        ctx.stroke();
-
-        ctx.restore();
-    }
-
     // Movimiento del jugador y comprobación de lava
     document.addEventListener('keydown', e => {
         if (winMsg.style.display !== "none") return;
@@ -2260,9 +1972,9 @@
         // Verificar que la nueva posición esté en la zona de isla (no en playa/orilla)
         const newZoneType = getZoneType(nx, ny);
         
-        // Permitir movimiento en la orilla solo si está dentro del área ampliada del portal de salida
-        const isInExitPortal = (nx >= exitPos.x - 0.5 && nx < exitPos.x + 3.5 && 
-                               ny >= exitPos.y - 0.5 && ny < exitPos.y + 3.5);
+        // Permitir movimiento en la orilla solo si está dentro del área del portal de salida
+        const isInExitPortal = (nx >= exitPos.x && nx < exitPos.x + 3 && 
+                               ny >= exitPos.y && ny < exitPos.y + 3);
         
         if (newZoneType !== 'isla' && !isInExitPortal) {
             // El personaje no puede caminar por la playa/orilla, excepto en el portal de salida
@@ -2315,11 +2027,10 @@
             winMsg.style.display = "block";
         }
 
-        // Comprobar si llegó a la salida (área ampliada para facilitar la victoria)
-        // Área ampliada: desde -0.5 hasta +3.5 en cada dirección para mayor tolerancia
+        // Comprobar si llegó a la salida (portal 3x3)
         if (
-            player.x >= exitPos.x - 0.5 && player.x < exitPos.x + 3.5 &&
-            player.y >= exitPos.y - 0.5 && player.y < exitPos.y + 3.5
+            player.x >= exitPos.x && player.x < exitPos.x + 3 &&
+            player.y >= exitPos.y && player.y < exitPos.y + 3
         ) {
             // Reproducir sonido de victoria
             AudioSystem.playVictorySound();
