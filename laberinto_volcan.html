@@ -1089,8 +1089,13 @@
             rows,
             cols,
             cellSize,
-            mazeRandomness: 0.85,
-            extraPathsRatio: 8,
+            mazeRandomness: 0.15,  // SÚPER BAJO - solo 15% aleatorio, 85% estratégico
+            extraPathsRatio: 80,   // MUY POCOS caminos extra (más alto = menos caminos)
+            complexityBoost: true, // Activar mayor complejidad
+            deadEndRatio: 2,       // MUCHÍSIMOS callejones sin salida (más bajo = más callejones)
+            loopRatio: 8,          // MUCHOS más bucles confusos (más bajo = más bucles)
+            narrowPathRatio: 4,    // MUCHOS cuellos de botella (más bajo = más estrechos)
+            branchingFactor: 0.1,  // Factor de ramificación MUY bajo
             eruptionDelay: 2000,
             lavaSpeedMs: 2400
         };
@@ -1100,7 +1105,7 @@
     canvas.width = config.cols * config.cellSize;
     canvas.height = config.rows * config.cellSize;
 
-    // Generar laberinto con algoritmo DFS, con dificultad intermedia
+    // Generar laberinto con algoritmo DFS mejorado - ALTA COMPLEJIDAD
     function generateMaze(rows, cols) {
         const maze = Array.from({length: rows}, () => Array(cols).fill(1)); // 1 = pared, 0 = camino
         const stack = [];
@@ -1110,6 +1115,8 @@
         const dirs = [
             [0, -2], [2, 0], [0, 2], [-2, 0]
         ];
+        
+        // Fase 1: Generación inicial EXTREMADAMENTE estructurada
         while (stack.length) {
             const [x, y] = stack[stack.length-1];
             let neighbors = [];
@@ -1120,15 +1127,17 @@
                 }
             }
             if (neighbors.length) {
-                // Dificultad intermedia: 85% aleatorio, 15% el más alejado
+                // EXTREMA complejidad: solo 15% aleatorio, 85% estratégico
                 let chosen;
                 if (Math.random() < config.mazeRandomness) {
                     chosen = neighbors[Math.floor(Math.random()*neighbors.length)];
                 } else {
+                    // Priorizar direcciones que maximicen complejidad y distancia
                     chosen = neighbors.sort((a, b) => {
-                        const da = Math.abs(a[0]-1) + Math.abs(a[1]-1);
-                        const db = Math.abs(b[0]-1) + Math.abs(b[1]-1);
-                        return db-da;
+                        // Algoritmo más sofisticado: combinar distancia del centro + evitar líneas rectas
+                        const da = Math.abs(a[0] - cols/2) + Math.abs(a[1] - rows/2) + Math.random() * 10;
+                        const db = Math.abs(b[0] - cols/2) + Math.abs(b[1] - rows/2) + Math.random() * 10;
+                        return db - da;
                     })[0];
                 }
                 const [nx, ny, dx, dy] = chosen;
@@ -1139,12 +1148,172 @@
                 stack.pop();
             }
         }
-        // Añade algunos caminos extra para hacerlo menos lineal pero no tan caótico
+        
+        // Fase 2: Crear MÍNIMOS caminos extra (máxima dificultad extrema)
         for (let i = 0; i < (rows * cols) / config.extraPathsRatio; i++) {
             let rx = Math.floor(Math.random()*(cols-2))+1;
             let ry = Math.floor(Math.random()*(rows-2))+1;
-            maze[ry][rx] = 0;
+            if (getZoneType(rx, ry) === 'isla') {
+                maze[ry][rx] = 0;
+            }
         }
+        
+        // Fase 3: Crear INFINITOS callejones sin salida
+        if (config.complexityBoost) {
+            for (let i = 0; i < (rows * cols) / config.deadEndRatio; i++) {
+                let rx = Math.floor(Math.random()*(cols-4))+2;
+                let ry = Math.floor(Math.random()*(rows-4))+2;
+                
+                if (getZoneType(rx, ry) === 'isla' && maze[ry][rx] === 1) {
+                    let hasAdjacentPath = false;
+                    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                        if (maze[ry+dy] && maze[ry+dy][rx+dx] === 0) {
+                            hasAdjacentPath = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasAdjacentPath) {
+                        // Crear callejones sin salida MEGA LARGOS (3-8 celdas)
+                        const deadEndLength = Math.floor(Math.random() * 6) + 3;
+                        let currentX = rx, currentY = ry;
+                        
+                        for (let j = 0; j < deadEndLength; j++) {
+                            if (currentX > 1 && currentX < cols-2 && 
+                                currentY > 1 && currentY < rows-2 &&
+                                getZoneType(currentX, currentY) === 'isla') {
+                                maze[currentY][currentX] = 0;
+                            }
+                            
+                            // Continuar en dirección que maximice confusión
+                            const randomDir = dirs[Math.floor(Math.random() * dirs.length)];
+                            currentX += randomDir[0] / 2;
+                            currentY += randomDir[1] / 2;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Fase 4: Crear TONELADAS de bucles para confusión máxima
+        for (let i = 0; i < (rows * cols) / config.loopRatio; i++) {
+            let rx = Math.floor(Math.random()*(cols-10))+5;
+            let ry = Math.floor(Math.random()*(rows-10))+5;
+            
+            if (getZoneType(rx, ry) === 'isla' && maze[ry][rx] === 1) {
+                // Crear bucles ENORMES y complejos (4x4 a 7x7)
+                const loopSize = Math.floor(Math.random() * 4) + 4; // 4-7
+                let canCreateLoop = true;
+                
+                for (let dy = 0; dy < loopSize && canCreateLoop; dy++) {
+                    for (let dx = 0; dx < loopSize && canCreateLoop; dx++) {
+                        if (rx+dx >= cols-1 || ry+dy >= rows-1 || 
+                            getZoneType(rx+dx, ry+dy) !== 'isla') {
+                            canCreateLoop = false;
+                        }
+                    }
+                }
+                
+                if (canCreateLoop) {
+                    // Crear bucle súper complejo con múltiples entradas y salidas
+                    for (let dx = 0; dx < loopSize; dx++) {
+                        maze[ry][rx+dx] = 0; // Top
+                        maze[ry+loopSize-1][rx+dx] = 0; // Bottom
+                    }
+                    for (let dy = 0; dy < loopSize; dy++) {
+                        maze[ry+dy][rx] = 0; // Left
+                        maze[ry+dy][rx+loopSize-1] = 0; // Right
+                    }
+                    
+                    // Añadir MUCHOS caminos internos para confusión extrema
+                    if (loopSize > 4) {
+                        for (let dy = 1; dy < loopSize-1; dy++) {
+                            for (let dx = 1; dx < loopSize-1; dx++) {
+                                if (Math.random() < 0.7) { // 70% de crear camino interno
+                                    maze[ry+dy][rx+dx] = 0;
+                                }
+                            }
+                        }
+                        
+                        // Crear divisiones internas adicionales
+                        const midX = Math.floor(loopSize / 2);
+                        const midY = Math.floor(loopSize / 2);
+                        for (let i = 1; i < loopSize-1; i++) {
+                            if (Math.random() < 0.6) {
+                                maze[ry+midY][rx+i] = 0; // División horizontal
+                                maze[ry+i][rx+midX] = 0; // División vertical
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Fase 5: MULTIPLICAR sublaberintos (muchos más)
+        for (let i = 0; i < (rows * cols) / 40; i++) { // Duplicado de 80 a 40
+            let rx = Math.floor(Math.random()*(cols-15))+7;
+            let ry = Math.floor(Math.random()*(rows-15))+7;
+            
+            if (getZoneType(rx, ry) === 'isla') {
+                // Crear sublaberintos más grandes (8x8)
+                const subSize = 8;
+                let canCreateSub = true;
+                
+                for (let dy = 0; dy < subSize && canCreateSub; dy++) {
+                    for (let dx = 0; dx < subSize && canCreateSub; dx++) {
+                        if (rx+dx >= cols-1 || ry+dy >= rows-1 || 
+                            getZoneType(rx+dx, ry+dy) !== 'isla') {
+                            canCreateSub = false;
+                        }
+                    }
+                }
+                
+                if (canCreateSub) {
+                    // Crear un mega-laberinto con patrón súper complejo
+                    for (let dy = 0; dy < subSize; dy++) {
+                        for (let dx = 0; dx < subSize; dx++) {
+                            // Patrón fractal más complejo
+                            if ((dx + dy) % 3 === 0 || 
+                                (dx === 0 || dx === subSize-1 || dy === 0 || dy === subSize-1) ||
+                                ((dx % 2 === 0 && dy % 2 === 1) || (dx % 2 === 1 && dy % 2 === 0))) {
+                                maze[ry+dy][rx+dx] = 0;
+                            } else if (Math.random() < 0.2) { // Solo 20% de crear caminos adicionales
+                                maze[ry+dy][rx+dx] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Fase 6: MAXIMIZAR cuellos de botella (muchos más)
+        for (let i = 0; i < (rows * cols) / config.narrowPathRatio; i++) {
+            let rx = Math.floor(Math.random()*(cols-4))+2;
+            let ry = Math.floor(Math.random()*(rows-4))+2;
+            
+            if (getZoneType(rx, ry) === 'isla' && maze[ry][rx] === 0) {
+                // Contar caminos adyacentes
+                let adjacentPaths = 0;
+                for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                    if (maze[ry+dy] && maze[ry+dy][rx+dx] === 0) {
+                        adjacentPaths++;
+                    }
+                }
+                
+                // Crear cuellos de botella más agresivos
+                if (adjacentPaths >= 2) { // Reducido de 3 a 2
+                    // Bloquear MÁS direcciones
+                    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+                        if (Math.random() < 0.6 && maze[ry+dy] && maze[ry+dy][rx+dx] === 0) { // Aumentado de 0.4 a 0.6
+                            if (Math.random() < 0.8) { // Aumentado de 0.6 a 0.8
+                                maze[ry+dy][rx+dx] = 1; // Bloquear más agresivamente
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         return maze;
     }
 
