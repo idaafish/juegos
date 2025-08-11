@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Laberinto Volcán</title>
+    <title>Laberinto Volcán - Nivel 2</title>
     <style>
         body {
             background: #2d1a0b;
@@ -199,101 +199,6 @@
             margin-bottom: 30px;
             line-height: 1.4;
         }
-        .story-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 25;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .story-content {
-            background: linear-gradient(145deg, #2d1810, #1a0f08);
-            padding: 50px 60px 45px 60px;
-            border-radius: 20px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
-            text-align: center;
-            min-width: 600px;
-            max-width: 80vw;
-            border: 3px solid #8b4513;
-            position: relative;
-        }
-        .story-title {
-            color: #ff6b35;
-            font-size: 2.8rem;
-            margin-bottom: 25px;
-            text-shadow: 0 0 15px #ff9800;
-            font-weight: bold;
-        }
-        .story-text {
-            color: #f4e4bc;
-            font-size: 1.3rem;
-            line-height: 1.8;
-            margin-bottom: 35px;
-            font-family: 'Courier New', monospace;
-            text-align: left;
-            background: rgba(0,0,0,0.4);
-            padding: 25px;
-            border-radius: 10px;
-            border-left: 4px solid #ff9800;
-            min-height: 200px;
-        }
-        .story-cursor {
-            display: inline-block;
-            width: 2px;
-            height: 1.2em;
-            background: #ff9800;
-            animation: blink 1s infinite;
-            margin-left: 2px;
-        }
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-        .story-continue-btn {
-            background: linear-gradient(135deg, #ff9800, #ff5722);
-            color: #222;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            opacity: 0;
-            transform: translateY(20px);
-            margin-right: 15px;
-        }
-        .story-continue-btn.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .story-continue-btn:hover {
-            background: linear-gradient(135deg, #ffd54f, #ff7043);
-            color: #000;
-            transform: scale(1.05);
-        }
-        .story-skip-btn {
-            background: linear-gradient(135deg, #4caf50, #2e7d32);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .story-skip-btn:hover {
-            background: linear-gradient(135deg, #66bb6a, #388e3c);
-            transform: scale(1.05);
-        }
         .level-option-btn {
             display: inline-block;
             margin: 10px 15px;
@@ -315,13 +220,13 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 15px rgba(255, 152, 0, 0.4);
         }
-        .level-option-btn.next {
-            background: linear-gradient(135deg, #4caf50, #2e7d32);
+        .level-option-btn.back {
+            background: linear-gradient(135deg, #2196f3, #1565c0);
         }
-        .level-option-btn.next:hover {
-            background: linear-gradient(135deg, #66bb6a, #388e3c);
+        .level-option-btn.back:hover {
+            background: linear-gradient(135deg, #42a5f5, #1976d2);
             transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4);
+            box-shadow: 0 6px 15px rgba(33, 150, 243, 0.4);
         }
     </style>
 </head>
@@ -330,22 +235,22 @@
         <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
         <button class="back-btn" onclick="showControls()" style="margin-left: 10px;">🎮 Controles</button>
         <button class="config-btn" onclick="showConfig()">⚙️ Configuración</button>
-        <h1>Laberinto Volcán</h1>
-        <div class="subtitle">¡Encuentra la salida en el laberinto!</div>
+        <h1>Laberinto Volcán - Nivel 2</h1>
+        <div class="subtitle">¡El volcán está más activo! ¡Encuentra la salida rápidamente!</div>
         <canvas id="mazeCanvas"></canvas>
         <div class="win-msg" id="winMsg" style="display:none;">¡Has escapado del volcán!<br><button class="back-btn" onclick="location.reload()">Jugar de nuevo</button></div>
     </div>
-
-    <!-- Modal de Historia Inicial -->
-    <div id="storyModal" class="story-modal">
-        <div class="story-content">
-            <h2 class="story-title">🛩️ VOLCÁN ISLAND 🌋</h2>
-            <div class="story-text" id="storyText"></div>
-            <div>
-                <button id="storyContinueBtn" class="story-continue-btn">¡Comenzar la aventura!</button>
-                <button id="storySkipBtn" class="story-skip-btn">🎮 JUGAR</button>
-            </div>
+    <div id="difficultyModal" style="position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:10;background:rgba(30,20,10,0.92);display:flex;align-items:center;justify-content:center;">
+      <div style="background:#3e2723;padding:32px 36px 28px 36px;border-radius:18px;box-shadow:0 8px 32px #000a;text-align:center;min-width:320px;">
+        <h2 style="color:#ff9800;margin-bottom:18px;">Nivel 2 - Elige la dificultad</h2>
+        <div style="color:#ffe0b2;font-size:1.08rem;margin-bottom:18px;line-height:1.5;">
+          ¡Has llegado al segundo nivel!<br>
+          El volcán está más activo y la lava avanza más rápido.<br>
+          ¡Elige la dificultad y demuestra tu valía!
         </div>
+        <div id="starContainer" style="font-size:2.2rem;margin-bottom:18px;"></div>
+        <button id="startGameBtn" class="back-btn" style="margin-top:10px;">Empezar a jugar</button>
+      </div>
     </div>
 
     <!-- Modal de Configuración -->
@@ -408,20 +313,20 @@
       </div>
     </div>
 
-    <!-- Modal de Nivel Completado -->
+    <!-- Modal de Nivel 2 Completado -->
     <div id="levelCompleteModal" class="level-complete-modal">
       <div class="level-complete-content">
-        <h2 class="level-complete-title">🎉 ¡NIVEL COMPLETADO! 🎉</h2>
+        <h2 class="level-complete-title">🎉 ¡NIVEL 2 COMPLETADO! 🎉</h2>
         <div class="level-complete-subtitle">
-          ¡Has escapado del volcán exitosamente!<br>
+          ¡Increíble! Has completado el nivel más difícil del volcán.<br>
           ¿Qué te gustaría hacer ahora?
         </div>
         <div>
-          <button class="level-option-btn repeat" onclick="repeatLevel()">
-            🔄 Repetir Nivel
+          <button class="level-option-btn repeat" onclick="repeatLevel2()">
+            🔄 Repetir Nivel 2
           </button>
-          <button class="level-option-btn next" onclick="nextLevel()">
-            ➡️ Siguiente Nivel
+          <button class="level-option-btn back" onclick="backToLevel1()">
+            ⬅️ Volver a Nivel 1
           </button>
         </div>
       </div>
@@ -452,6 +357,14 @@
 • Verde: Isla (puedes caminar)
 • Dorado: Playa (NO puedes caminar)
 • Azul: Mar (NO puedes caminar)
+
+🏘️ PELIGROS:
+• 🔥 Lava: Te mata si te alcanza
+• 👥 Tribu Indígena: ¡Te perseguirán si te ven!
+  - 6 indígenas patrullan su poblado
+  - Si entras en su rango de visión, te perseguirán
+  - Corren más lento que tú, ¡pero no te dejes atrapar!
+  - También mueren si les toca la lava
 
 🚁 INICIO: Avión estrellado
 🏴‍☠️ SALIDA: Barco pirata en la orilla
@@ -548,7 +461,7 @@
         console.log("🔄 Configuración de audio restablecida y guardada");
     }
 
-    // Funciones del nivel completado
+    // Funciones del nivel 2 completado
     function showLevelCompletePopup() {
         // Detener todos los sonidos en bucle
         AudioSystem.stopAllLoopingSounds();
@@ -557,14 +470,14 @@
         document.getElementById('levelCompleteModal').style.display = 'flex';
     }
 
-    function repeatLevel() {
-        // Recargar la página para repetir el nivel actual
+    function repeatLevel2() {
+        // Recargar la página para repetir el nivel 2
         location.reload();
     }
 
-    function nextLevel() {
-        // Ir al siguiente nivel (LaberintoVolcan2.html)
-        window.location.href = 'laberinto_volcan2.html';
+    function backToLevel1() {
+        // Volver al primer nivel
+        window.location.href = 'laberinto_volcan.html';
     }
 
     // Event listeners para los sliders de volumen
@@ -644,14 +557,14 @@
     });
 
     // Añade esto al principio del <script> (antes de cualquier lógica del juego)
-    let selectedDifficulty = 1; // Dificultad fija en 1 estrella para el nivel 1
+    let selectedDifficulty = 4; // Por defecto 4 estrellas (más difícil que el nivel 1)
     const lavaSpeeds = [
-        Math.round(2400 * 0.85), // 1 estrella
-        Math.round(2160 * 0.85), // 2 estrellas
-        Math.round(1944 * 0.85), // 3 estrellas
-        Math.round(1749 * 0.85), // 4 estrellas
-        Math.round(1575 * 0.85)  // 5 estrellas
-    ]; // ms por paso de lava (1 a 5 estrellas)
+        Math.round(2000 * 0.75), // 1 estrella - más rápido que nivel 1
+        Math.round(1800 * 0.75), // 2 estrellas
+        Math.round(1620 * 0.75), // 3 estrellas
+        Math.round(1458 * 0.75), // 4 estrellas
+        Math.round(1312 * 0.75)  // 5 estrellas
+    ]; // ms por paso de lava (1 a 5 estrellas) - NIVEL 2: MÁS RÁPIDO
 
     // ===== SISTEMA DE AUDIO COMPLETO =====
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -847,50 +760,6 @@
             
             osc3.start(now + 0.02);
             osc3.stop(now + 0.1);
-        },
-
-        // Sonido de máquina de escribir para la historia
-        playTypewriterSound() {
-            if (!audioEnabled || audioContext.state === 'suspended') return;
-
-            const now = audioContext.currentTime;
-            const uiVolume = audioConfig.ui * masterVolume;
-            
-            // Sonido principal del golpe de tecla (mecánico)
-            const osc1 = this.createOscillator('square', 1200 + Math.random() * 400);
-            const gain1 = this.createGainWithEnvelope(0.005, 0.02, 0.3, 0.08, 0.15 * uiVolume);
-            const filter1 = this.createFilter('bandpass', 1500, 2);
-            
-            osc1.connect(filter1);
-            filter1.connect(gain1);
-            gain1.connect(audioContext.destination);
-            
-            osc1.start(now);
-            osc1.stop(now + 0.12);
-
-            // Sonido del mecanismo interno (más grave)
-            const osc2 = this.createOscillator('sawtooth', 200 + Math.random() * 100);
-            const gain2 = this.createGainWithEnvelope(0.01, 0.015, 0.1, 0.05, 0.08 * uiVolume);
-            const filter2 = this.createFilter('lowpass', 400, 1);
-            
-            osc2.connect(filter2);
-            filter2.connect(gain2);
-            gain2.connect(audioContext.destination);
-            
-            osc2.start(now);
-            osc2.stop(now + 0.08);
-
-            // Sonido metálico del resorte
-            const osc3 = this.createOscillator('triangle', 2000 + Math.random() * 800);
-            const gain3 = this.createGainWithEnvelope(0.002, 0.01, 0.05, 0.04, 0.06 * uiVolume);
-            const filter3 = this.createFilter('highpass', 2200, 3);
-            
-            osc3.connect(filter3);
-            filter3.connect(gain3);
-            gain3.connect(audioContext.destination);
-            
-            osc3.start(now + 0.01);
-            osc3.stop(now + 0.06);
         },
 
         // 1. Sonido de olas del mar (ambiente constante)
@@ -1304,6 +1173,69 @@
         }
     };
 
+    // ===== SONIDOS DE LA TRIBU =====
+    function playTribeAlertSound() {
+        if (!audioEnabled || audioContext.state === 'suspended') return;
+        
+        const now = audioContext.currentTime;
+        const sfxVolume = audioConfig.sfx * masterVolume;
+        
+        // Grito de guerra de los indígenas
+        const osc1 = AudioSystem.createOscillator('sawtooth', 300 + Math.random() * 200);
+        const gain1 = AudioSystem.createGainWithEnvelope(0.02, 0.1, 0.0, 0.3, 0.2 * sfxVolume);
+        const filter1 = AudioSystem.createFilter('bandpass', 400, 3);
+        
+        osc1.frequency.exponentialRampToValueAtTime(600 + Math.random() * 300, now + 0.1);
+        osc1.frequency.exponentialRampToValueAtTime(200 + Math.random() * 100, now + 0.4);
+        
+        osc1.connect(filter1);
+        filter1.connect(gain1);
+        gain1.connect(audioContext.destination);
+        
+        osc1.start(now);
+        osc1.stop(now + 0.5);
+    }
+    
+    function playTribeCaptureSound() {
+        if (!audioEnabled || audioContext.state === 'suspended') return;
+        
+        const now = audioContext.currentTime;
+        const sfxVolume = audioConfig.sfx * masterVolume;
+        
+        // Sonido dramático de captura
+        const frequencies = [400, 350, 300, 250, 200];
+        
+        frequencies.forEach((freq, index) => {
+            const delay = index * 0.1;
+            
+            const osc = AudioSystem.createOscillator('triangle', freq);
+            const gain = AudioSystem.createGainWithEnvelope(0.05, 0.2, 0.6, 0.5, 0.3 * sfxVolume);
+            const filter = AudioSystem.createFilter('lowpass', freq * 2, 2);
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.8);
+        });
+        
+        // Tambores tribales
+        for (let i = 0; i < 3; i++) {
+            const osc = AudioSystem.createOscillator('square', 80 + Math.random() * 40);
+            const gain = AudioSystem.createGainWithEnvelope(0.01, 0.05, 0.0, 0.2, 0.25 * sfxVolume);
+            const filter = AudioSystem.createFilter('lowpass', 150, 1);
+            
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioContext.destination);
+            
+            const startTime = now + 0.6 + i * 0.15;
+            osc.start(startTime);
+            osc.stop(startTime + 0.3);
+        }
+    }
+
     // Funciones de compatibilidad (para no romper el código existente)
     function enableAudio() {
         AudioSystem.enable();
@@ -1330,15 +1262,15 @@
             rows,
             cols,
             cellSize,
-            mazeRandomness: 0.15,  // SÚPER BAJO - solo 15% aleatorio, 85% estratégico
-            extraPathsRatio: 80,   // MUY POCOS caminos extra (más alto = menos caminos)
+            mazeRandomness: 0.10,  // NIVEL 2: AÚN MENOS aleatorio - solo 10% aleatorio, 90% estratégico
+            extraPathsRatio: 100,  // NIVEL 2: TODAVÍA MENOS caminos extra (más alto = menos caminos)
             complexityBoost: true, // Activar mayor complejidad
-            deadEndRatio: 2,       // MUCHÍSIMOS callejones sin salida (más bajo = más callejones)
-            loopRatio: 8,          // MUCHOS más bucles confusos (más bajo = más bucles)
-            narrowPathRatio: 4,    // MUCHOS cuellos de botella (más bajo = más estrechos)
-            branchingFactor: 0.1,  // Factor de ramificación MUY bajo
-            eruptionDelay: 2000,
-            lavaSpeedMs: 2400
+            deadEndRatio: 1.5,     // NIVEL 2: AÚN MÁS callejones sin salida (más bajo = más callejones)
+            loopRatio: 6,          // NIVEL 2: MUCHOS MÁS bucles confusos (más bajo = más bucles)
+            narrowPathRatio: 3,    // NIVEL 2: MUCHOS MÁS cuellos de botella (más bajo = más estrechos)
+            branchingFactor: 0.08, // NIVEL 2: Factor de ramificación EXTREMADAMENTE bajo
+            eruptionDelay: 1500,   // NIVEL 2: Erupción más rápida
+            lavaSpeedMs: 1800      // NIVEL 2: Lava base más rápida
         };
     }
 
@@ -1906,10 +1838,220 @@
     console.log(`  - Jugador en: (${player.x}, ${player.y})`);
     console.log(`  - Distancia avión-bote: ${Math.floor(getDistance(planePos, exitPos))} celdas`);
 
+    // ===== CREAR POBLADO INDÍGENA =====
+    createTribeVillage();
+    console.log(`✓ Poblado indígena creado en: (${tribeVillage.x}, ${tribeVillage.y})`);
+    console.log(`  - ${tribeHuts.length} casitas construidas`);
+    console.log(`  - ${tribeMembers.length} indígenas patrullando`);
+
+    // Lava: matriz con el tiempo en que la lava llega a cada celda, -1 si nunca llega
+        tribeHuts = [];
+        const centerX = tribeVillage.x + Math.floor(tribeConfig.villageSize / 2);
+        const centerY = tribeVillage.y + Math.floor(tribeConfig.villageSize / 2);
+        
+        // Posiciones para las 4 casitas en forma de cuadrado
+        const hutPositions = [
+            {x: centerX - 6, y: centerY - 3}, // Arriba izquierda
+            {x: centerX + 3, y: centerY - 3}, // Arriba derecha
+            {x: centerX - 6, y: centerY + 3}, // Abajo izquierda
+            {x: centerX + 3, y: centerY + 3}  // Abajo derecha
+        ];
+        
+        for (let i = 0; i < tribeConfig.numHuts; i++) {
+            const pos = hutPositions[i];
+            if (pos.x >= tribeVillage.x && pos.x + tribeConfig.hutSize <= tribeVillage.x + tribeConfig.villageSize &&
+                pos.y >= tribeVillage.y && pos.y + tribeConfig.hutSize <= tribeVillage.y + tribeConfig.villageSize) {
+                
+                tribeHuts.push({
+                    x: pos.x,
+                    y: pos.y,
+                    size: tribeConfig.hutSize
+                });
+            }
+        }
+    }
+    
+    function createTribeMembers() {
+        tribeMembers = [];
+        const centerX = tribeVillage.x + Math.floor(tribeConfig.villageSize / 2);
+        const centerY = tribeVillage.y + Math.floor(tribeConfig.villageSize / 2);
+        
+        for (let i = 0; i < tribeConfig.numMembers; i++) {
+            // Posición inicial aleatoria dentro del poblado
+            const angle = (i / tribeConfig.numMembers) * Math.PI * 2;
+            const radius = 3 + Math.random() * 4;
+            
+            tribeMembers.push({
+                id: i,
+                x: centerX + Math.cos(angle) * radius,
+                y: centerY + Math.sin(angle) * radius,
+                targetX: centerX + Math.cos(angle) * radius,
+                targetY: centerY + Math.sin(angle) * radius,
+                homeX: centerX,
+                homeY: centerY,
+                state: 'patrolling', // 'patrolling', 'chasing', 'returning', 'dead'
+                health: 100,
+                lastDirectionChange: 0,
+                visionAngle: Math.random() * Math.PI * 2, // Dirección de la mirada
+                alertLevel: 0 // 0-100, cuanto más alto más agresivo
+            });
+        }
+    }
+    
+    function updateTribeMembers(timestamp) {
+        for (let member of tribeMembers) {
+            if (member.state === 'dead') continue;
+            
+            // Verificar si el indígena está en la lava
+            const memberGridX = Math.floor(member.x);
+            const memberGridY = Math.floor(member.y);
+            
+            if (memberGridX >= 0 && memberGridX < config.cols && memberGridY >= 0 && memberGridY < config.rows) {
+                const currentTime = (timestamp - gameStartTime) / 1000;
+                if (lavaTime[memberGridY][memberGridX] !== -1 && currentTime >= lavaTime[memberGridY][memberGridX]) {
+                    // El indígena muere en la lava
+                    member.state = 'dead';
+                    member.health = 0;
+                    AudioSystem.playLavaBubble(); // Sonido de muerte
+                    continue;
+                }
+            }
+            
+            // Calcular distancia al jugador
+            const distanceToPlayer = getDistance(member, player);
+            
+            // Lógica de comportamiento según el estado
+            switch (member.state) {
+                case 'patrolling':
+                    // Patrullaje normal alrededor del poblado
+                    if (distanceToPlayer < tribeConfig.visionRange) {
+                        // ¡Jugador detectado!
+                        member.state = 'chasing';
+                        member.alertLevel = 100;
+                        member.targetX = player.x;
+                        member.targetY = player.y;
+                        
+                        // Reproducir sonido de alerta
+                        playTribeAlertSound();
+                    } else {
+                        // Continuar patrullando
+                        updatePatrolling(member, timestamp);
+                    }
+                    break;
+                    
+                case 'chasing':
+                    // Perseguir al jugador
+                    if (distanceToPlayer > tribeConfig.chaseRange) {
+                        // Jugador se alejó demasiado, volver al poblado
+                        member.state = 'returning';
+                        member.targetX = member.homeX;
+                        member.targetY = member.homeY;
+                        member.alertLevel = Math.max(0, member.alertLevel - 5);
+                    } else {
+                        // Continuar persecución
+                        member.targetX = player.x;
+                        member.targetY = player.y;
+                        
+                        // Verificar si alcanzó al jugador
+                        if (distanceToPlayer < 1.0) {
+                            // ¡El jugador ha sido capturado!
+                            killPlayer();
+                            return;
+                        }
+                    }
+                    break;
+                    
+                case 'returning':
+                    // Volver al poblado
+                    const distanceToHome = getDistance(member, {x: member.homeX, y: member.homeY});
+                    if (distanceToHome < 2) {
+                        member.state = 'patrolling';
+                        member.alertLevel = 0;
+                    }
+                    break;
+            }
+            
+            // Mover al indígena hacia su objetivo
+            moveTribeMember(member);
+        }
+    }
+    
+    function updatePatrolling(member, timestamp) {
+        // Cambiar dirección de patrullaje ocasionalmente
+        if (timestamp - member.lastDirectionChange > 3000 + Math.random() * 2000) {
+            const centerX = tribeVillage.x + Math.floor(tribeConfig.villageSize / 2);
+            const centerY = tribeVillage.y + Math.floor(tribeConfig.villageSize / 2);
+            
+            // Nuevo objetivo de patrulla alrededor del poblado
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 2 + Math.random() * tribeConfig.patrolRadius;
+            
+            member.targetX = centerX + Math.cos(angle) * radius;
+            member.targetY = centerY + Math.sin(angle) * radius;
+            member.lastDirectionChange = timestamp;
+        }
+    }
+    
+    function moveTribeMember(member) {
+        const dx = member.targetX - member.x;
+        const dy = member.targetY - member.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 0.1) {
+            // Velocidad ajustada según el estado
+            let speed = tribeConfig.speed;
+            if (member.state === 'chasing') speed *= 1.3; // Más rápido cuando persigue
+            if (member.state === 'returning') speed *= 0.8; // Más lento cuando regresa
+            
+            const moveX = (dx / distance) * speed;
+            const moveY = (dy / distance) * speed;
+            
+            const newX = member.x + moveX;
+            const newY = member.y + moveY;
+            
+            // Verificar colisiones con el laberinto
+            const gridX = Math.floor(newX);
+            const gridY = Math.floor(newY);
+            
+            if (gridX >= 0 && gridX < config.cols && gridY >= 0 && gridY < config.rows) {
+                if (maze[gridY][gridX] === 0) {
+                    member.x = newX;
+                    member.y = newY;
+                }
+            }
+        }
+    }
+    
+    function killPlayer() {
+        // El jugador ha sido capturado por la tribu
+        AudioSystem.stopAllLoopingSounds();
+        playTribeCaptureSound(); // Sonido específico de captura por la tribu
+        
+        winMsg.innerHTML = "¡Los indígenas te han capturado!<br><button class='back-btn' onclick='location.reload()'>Intentar de nuevo</button>";
+        winMsg.style.display = "block";
+    }
+
     // Centro del volcán
     const volcano = {
         x: Math.floor(config.cols / 2),
         y: Math.floor(config.rows / 2)
+    };
+
+    // ===== SISTEMA DE TRIBU INDÍGENA =====
+    let tribeVillage = null; // Posición del poblado
+    let tribeHuts = []; // Array de casitas (3x3 cada una)
+    let tribeMembers = []; // Array de 6 indígenas
+    
+    // Configuración de la tribu
+    const tribeConfig = {
+        villageSize: 15, // Tamaño del claro del poblado (15x15)
+        hutSize: 3, // Tamaño de cada casita (3x3)
+        numHuts: 4, // Número de casitas
+        numMembers: 6, // Número de indígenas
+        visionRange: 8, // Rango de visión de los indígenas
+        chaseRange: 12, // Rango máximo de persecución
+        speed: 0.15, // Velocidad de movimiento (más lento que el jugador)
+        patrolRadius: 6 // Radio de patrulla alrededor del poblado
     };
 
     // Lava: matriz con el tiempo en que la lava llega a cada celda, -1 si nunca llega
@@ -2157,6 +2299,126 @@
             playerMarker.life--;
         } else {
             playerMarker.active = false;
+        }
+
+        // ===== DIBUJAR TRIBU INDÍGENA =====
+        // Dibujar casitas del poblado
+        for (const hut of tribeHuts) {
+            ctx.fillStyle = '#8B4513'; // Color marrón para las casitas
+            ctx.fillRect(
+                hut.x * config.cellSize,
+                hut.y * config.cellSize,
+                hut.size * config.cellSize,
+                hut.size * config.cellSize
+            );
+            
+            // Techo triangular
+            ctx.fillStyle = '#654321';
+            ctx.beginPath();
+            const hutCenterX = hut.x * config.cellSize + (hut.size * config.cellSize) / 2;
+            const hutTopY = hut.y * config.cellSize;
+            const hutBottomY = (hut.y + hut.size) * config.cellSize;
+            
+            ctx.moveTo(hutCenterX, hutTopY - config.cellSize * 0.5); // Pico del techo
+            ctx.lineTo(hut.x * config.cellSize - config.cellSize * 0.2, hutTopY); // Esquina izquierda
+            ctx.lineTo((hut.x + hut.size) * config.cellSize + config.cellSize * 0.2, hutTopY); // Esquina derecha
+            ctx.closePath();
+            ctx.fill();
+            
+            // Puerta
+            ctx.fillStyle = '#2F1B14';
+            ctx.fillRect(
+                hutCenterX - config.cellSize * 0.3,
+                hutBottomY - config.cellSize * 0.8,
+                config.cellSize * 0.6,
+                config.cellSize * 0.8
+            );
+        }
+        
+        // Dibujar indígenas
+        for (const member of tribeMembers) {
+            if (member.state === 'dead') {
+                // Dibujar calavera para indígenas muertos
+                ctx.fillStyle = '#666';
+                ctx.fillRect(
+                    member.x * config.cellSize - config.cellSize * 0.2,
+                    member.y * config.cellSize - config.cellSize * 0.2,
+                    config.cellSize * 0.4,
+                    config.cellSize * 0.4
+                );
+                continue;
+            }
+            
+            ctx.save();
+            ctx.translate(member.x * config.cellSize + config.cellSize / 2, member.y * config.cellSize + config.cellSize / 2);
+            
+            // Color según el estado
+            let memberColor = '#8B4513'; // Marrón normal
+            if (member.state === 'chasing') {
+                memberColor = '#FF4444'; // Rojo cuando persigue
+                
+                // Efecto de alerta parpadeante
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(0, 0, config.cellSize * 0.7, 0, 2 * Math.PI);
+                ctx.fillStyle = "rgba(255,0,0,0.3)";
+                ctx.fill();
+                ctx.restore();
+            } else if (member.state === 'returning') {
+                memberColor = '#FFA500'; // Naranja cuando regresa
+            }
+            
+            // Cuerpo del indígena
+            ctx.fillStyle = memberColor;
+            ctx.beginPath();
+            ctx.arc(0, 0, config.cellSize * 0.25, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Cabeza
+            ctx.fillStyle = '#D2B48C'; // Color piel
+            ctx.beginPath();
+            ctx.arc(0, -config.cellSize * 0.15, config.cellSize * 0.15, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Ojos (solo si está despierto)
+            if (member.state !== 'patrolling' || member.alertLevel > 0) {
+                ctx.fillStyle = member.state === 'chasing' ? '#FF0000' : '#000';
+                ctx.beginPath();
+                ctx.arc(-config.cellSize * 0.05, -config.cellSize * 0.15, config.cellSize * 0.03, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(config.cellSize * 0.05, -config.cellSize * 0.15, config.cellSize * 0.03, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Lanza (arma)
+            if (member.state === 'chasing') {
+                ctx.strokeStyle = '#8B4513';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(config.cellSize * 0.4, -config.cellSize * 0.4);
+                ctx.stroke();
+                
+                // Punta de lanza
+                ctx.fillStyle = '#C0C0C0';
+                ctx.beginPath();
+                ctx.arc(config.cellSize * 0.4, -config.cellSize * 0.4, config.cellSize * 0.05, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Rango de visión (solo mostrar cuando está persiguiendo)
+            if (member.state === 'chasing') {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,0,0,0.2)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, tribeConfig.visionRange * config.cellSize, 0, 2 * Math.PI);
+                ctx.stroke();
+                ctx.restore();
+            }
+            
+            ctx.restore();
         }
 
         // Aventurero estilo Indiana Jones (dibujado al final para estar por encima de todo)
@@ -2864,6 +3126,9 @@
             winMsg.style.display = "block";
         }
 
+        // Actualizar tribu indígena
+        updateTribeMembers(timestamp);
+
         // Comprobar si llegó a la salida (área ampliada para facilitar la victoria)
         // Área ampliada: desde -0.5 hasta +3.5 en cada dirección para mayor tolerancia
         if (
@@ -2876,7 +3141,7 @@
             // Reproducir sonido de victoria
             AudioSystem.playVictorySound();
             
-            // Mostrar popup de opciones de nivel
+            // Mostrar popup de opciones de nivel 2
             showLevelCompletePopup();
         }
     }
@@ -2894,82 +3159,37 @@
         }
     }
 
-    // ===== HISTORIA INICIAL CON EFECTO MÁQUINA DE ESCRIBIR =====
-    const storyText = `Tu pequeña avioneta vuela tranquilamente sobre el océano Pacífico...
-
-De repente, una tormenta terrible te golpea sin previo aviso.
-
-¡CRASH! Tu avión se estrella en una isla volcánica remota.
-
-Despiertas entre los restos humeantes... El volcán está despertando!
-
-En la distancia, divisas un pequeño bote de rescate en la costa.
-
-¡Atraviesa el laberinto y llega al bote antes de que sea demasiado tarde!`;
-
-    let currentChar = 0;
-    let typewriterInterval = null;
-    let storyComplete = false;
-
-    function showStoryModal() {
-        document.getElementById('storyModal').style.display = 'flex';
-        startTypewriterEffect();
+    // Genera las estrellas
+    const starContainer = document.getElementById('starContainer');
+    for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.innerHTML = '★';
+        star.className = 'star' + (i <= selectedDifficulty ? '' : ' inactive');
+        star.dataset.value = i;
+        star.onclick = function() {
+            selectedDifficulty = i;
+            updateStars();
+        };
+        starContainer.appendChild(star);
     }
-
-    function startTypewriterEffect() {
-        const textElement = document.getElementById('storyText');
-        const continueBtn = document.getElementById('storyContinueBtn');
-        
-        currentChar = 0;
-        textElement.innerHTML = '';
-        continueBtn.classList.remove('show');
-        
-        typewriterInterval = setInterval(() => {
-            if (currentChar < storyText.length) {
-                const char = storyText[currentChar];
-                
-                if (char === '\n') {
-                    textElement.innerHTML += '<br>';
-                } else {
-                    textElement.innerHTML += char;
-                }
-                
-                // Reproducir sonido de máquina de escribir (no en espacios o saltos de línea)
-                if (char !== ' ' && char !== '\n') {
-                    AudioSystem.playTypewriterSound();
-                }
-                
-                currentChar++;
-                
-                // Añadir cursor parpadeante
-                textElement.innerHTML += '<span class="story-cursor"></span>';
-                
-                // Limpiar cursor anterior
-                setTimeout(() => {
-                    textElement.innerHTML = textElement.innerHTML.replace('<span class="story-cursor"></span>', '');
-                }, 50);
-                
+    function updateStars() {
+        const stars = starContainer.querySelectorAll('.star');
+        stars.forEach((star, idx) => {
+            if (idx < selectedDifficulty) {
+                star.classList.remove('inactive');
             } else {
-                // Historia completada
-                clearInterval(typewriterInterval);
-                storyComplete = true;
-                continueBtn.classList.add('show');
-                
-                // Añadir cursor final permanente
-                textElement.innerHTML += '<span class="story-cursor"></span>';
+                star.classList.add('inactive');
             }
-        }, 80); // Velocidad un poco más rápida (80ms por carácter)
+        });
     }
+    updateStars();
 
-    function closeStoryModal() {
-        // Detener el efecto de máquina de escribir si está corriendo
-        if (typewriterInterval) {
-            clearInterval(typewriterInterval);
-        }
+    // Botón de empezar
+    document.getElementById('startGameBtn').onclick = function() {
+        document.getElementById('difficultyModal').style.display = 'none';
+        config.lavaSpeedMs = lavaSpeeds[selectedDifficulty - 1];
         
-        document.getElementById('storyModal').style.display = 'none';
-        
-        // Habilitar audio y comenzar el juego
+        // Habilitar audio y comenzar sonidos ambientales
         AudioSystem.enable();
         
         // Comenzar música de fondo épica
@@ -2982,26 +3202,8 @@ En la distancia, divisas un pequeño bote de rescate en la costa.
             AudioSystem.playAmbientWaves();
         }, 2000);
         
-        // Empezar el juego
         requestAnimationFrame(gameLoop);
-    }
-
-    // Event listeners para la historia
-    document.getElementById('storyContinueBtn').onclick = closeStoryModal;
-    document.getElementById('storySkipBtn').onclick = closeStoryModal;
-    
-    // Permitir saltar con Escape
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('storyModal').style.display === 'flex') {
-            closeStoryModal();
-        }
-    });
-
-    // Configurar dificultad y mostrar historia al cargar
-    config.lavaSpeedMs = lavaSpeeds[selectedDifficulty - 1]; // 1 estrella
-    
-    // Mostrar la historia inicialmente
-    showStoryModal();
+    };
 
     window.addEventListener('resize', () => {
         config = resizeMazeConfig();

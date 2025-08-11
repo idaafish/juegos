@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Laberinto Volcán</title>
+    <title>Laberinto Volcán - Nivel 2</title>
     <style>
         body {
             background: #2d1a0b;
@@ -199,101 +199,6 @@
             margin-bottom: 30px;
             line-height: 1.4;
         }
-        .story-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 25;
-            background: rgba(0,0,0,0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .story-content {
-            background: linear-gradient(145deg, #2d1810, #1a0f08);
-            padding: 50px 60px 45px 60px;
-            border-radius: 20px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.9);
-            text-align: center;
-            min-width: 600px;
-            max-width: 80vw;
-            border: 3px solid #8b4513;
-            position: relative;
-        }
-        .story-title {
-            color: #ff6b35;
-            font-size: 2.8rem;
-            margin-bottom: 25px;
-            text-shadow: 0 0 15px #ff9800;
-            font-weight: bold;
-        }
-        .story-text {
-            color: #f4e4bc;
-            font-size: 1.3rem;
-            line-height: 1.8;
-            margin-bottom: 35px;
-            font-family: 'Courier New', monospace;
-            text-align: left;
-            background: rgba(0,0,0,0.4);
-            padding: 25px;
-            border-radius: 10px;
-            border-left: 4px solid #ff9800;
-            min-height: 200px;
-        }
-        .story-cursor {
-            display: inline-block;
-            width: 2px;
-            height: 1.2em;
-            background: #ff9800;
-            animation: blink 1s infinite;
-            margin-left: 2px;
-        }
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-        .story-continue-btn {
-            background: linear-gradient(135deg, #ff9800, #ff5722);
-            color: #222;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            opacity: 0;
-            transform: translateY(20px);
-            margin-right: 15px;
-        }
-        .story-continue-btn.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .story-continue-btn:hover {
-            background: linear-gradient(135deg, #ffd54f, #ff7043);
-            color: #000;
-            transform: scale(1.05);
-        }
-        .story-skip-btn {
-            background: linear-gradient(135deg, #4caf50, #2e7d32);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 10px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .story-skip-btn:hover {
-            background: linear-gradient(135deg, #66bb6a, #388e3c);
-            transform: scale(1.05);
-        }
         .level-option-btn {
             display: inline-block;
             margin: 10px 15px;
@@ -330,22 +235,10 @@
         <a href="inicio.html" class="back-btn">&larr; Volver al portal</a>
         <button class="back-btn" onclick="showControls()" style="margin-left: 10px;">🎮 Controles</button>
         <button class="config-btn" onclick="showConfig()">⚙️ Configuración</button>
-        <h1>Laberinto Volcán</h1>
-        <div class="subtitle">¡Encuentra la salida en el laberinto!</div>
+        <h1>Laberinto Volcán - Nivel 2</h1>
+        <div class="subtitle">¡El volcán está más activo! ¡Encuentra la salida rápidamente!</div>
         <canvas id="mazeCanvas"></canvas>
         <div class="win-msg" id="winMsg" style="display:none;">¡Has escapado del volcán!<br><button class="back-btn" onclick="location.reload()">Jugar de nuevo</button></div>
-    </div>
-
-    <!-- Modal de Historia Inicial -->
-    <div id="storyModal" class="story-modal">
-        <div class="story-content">
-            <h2 class="story-title">🛩️ VOLCÁN ISLAND 🌋</h2>
-            <div class="story-text" id="storyText"></div>
-            <div>
-                <button id="storyContinueBtn" class="story-continue-btn">¡Comenzar la aventura!</button>
-                <button id="storySkipBtn" class="story-skip-btn">🎮 JUGAR</button>
-            </div>
-        </div>
     </div>
 
     <!-- Modal de Configuración -->
@@ -411,17 +304,17 @@
     <!-- Modal de Nivel Completado -->
     <div id="levelCompleteModal" class="level-complete-modal">
       <div class="level-complete-content">
-        <h2 class="level-complete-title">🎉 ¡NIVEL COMPLETADO! 🎉</h2>
+        <h2 class="level-complete-title">🎉 ¡NIVEL 2 COMPLETADO! 🎉</h2>
         <div class="level-complete-subtitle">
-          ¡Has escapado del volcán exitosamente!<br>
+          ¡Increíble! Has completado el nivel más difícil del volcán.<br>
           ¿Qué te gustaría hacer ahora?
         </div>
         <div>
           <button class="level-option-btn repeat" onclick="repeatLevel()">
-            🔄 Repetir Nivel
+            🔄 Repetir Nivel 2
           </button>
           <button class="level-option-btn next" onclick="nextLevel()">
-            ➡️ Siguiente Nivel
+            ⬅️ Volver a Nivel 1
           </button>
         </div>
       </div>
@@ -558,13 +451,13 @@
     }
 
     function repeatLevel() {
-        // Recargar la página para repetir el nivel actual
+        // Recargar la página para repetir el nivel 2
         location.reload();
     }
 
     function nextLevel() {
-        // Ir al siguiente nivel (LaberintoVolcan2.html)
-        window.location.href = 'laberinto_volcan2.html';
+        // Volver al primer nivel
+        window.location.href = 'laberinto_volcan.html';
     }
 
     // Event listeners para los sliders de volumen
@@ -644,14 +537,14 @@
     });
 
     // Añade esto al principio del <script> (antes de cualquier lógica del juego)
-    let selectedDifficulty = 1; // Dificultad fija en 1 estrella para el nivel 1
+    let selectedDifficulty = 2; // Dificultad fija en 2 estrellas para el nivel 2
     const lavaSpeeds = [
-        Math.round(2400 * 0.85), // 1 estrella
-        Math.round(2160 * 0.85), // 2 estrellas
-        Math.round(1944 * 0.85), // 3 estrellas
-        Math.round(1749 * 0.85), // 4 estrellas
-        Math.round(1575 * 0.85)  // 5 estrellas
-    ]; // ms por paso de lava (1 a 5 estrellas)
+        Math.round(2000 * 0.75), // 1 estrella - más rápido que nivel 1
+        Math.round(1800 * 0.75), // 2 estrellas
+        Math.round(1620 * 0.75), // 3 estrellas
+        Math.round(1458 * 0.75), // 4 estrellas
+        Math.round(1312 * 0.75)  // 5 estrellas
+    ]; // ms por paso de lava (1 a 5 estrellas) - NIVEL 2: MÁS RÁPIDO
 
     // ===== SISTEMA DE AUDIO COMPLETO =====
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -847,50 +740,6 @@
             
             osc3.start(now + 0.02);
             osc3.stop(now + 0.1);
-        },
-
-        // Sonido de máquina de escribir para la historia
-        playTypewriterSound() {
-            if (!audioEnabled || audioContext.state === 'suspended') return;
-
-            const now = audioContext.currentTime;
-            const uiVolume = audioConfig.ui * masterVolume;
-            
-            // Sonido principal del golpe de tecla (mecánico)
-            const osc1 = this.createOscillator('square', 1200 + Math.random() * 400);
-            const gain1 = this.createGainWithEnvelope(0.005, 0.02, 0.3, 0.08, 0.15 * uiVolume);
-            const filter1 = this.createFilter('bandpass', 1500, 2);
-            
-            osc1.connect(filter1);
-            filter1.connect(gain1);
-            gain1.connect(audioContext.destination);
-            
-            osc1.start(now);
-            osc1.stop(now + 0.12);
-
-            // Sonido del mecanismo interno (más grave)
-            const osc2 = this.createOscillator('sawtooth', 200 + Math.random() * 100);
-            const gain2 = this.createGainWithEnvelope(0.01, 0.015, 0.1, 0.05, 0.08 * uiVolume);
-            const filter2 = this.createFilter('lowpass', 400, 1);
-            
-            osc2.connect(filter2);
-            filter2.connect(gain2);
-            gain2.connect(audioContext.destination);
-            
-            osc2.start(now);
-            osc2.stop(now + 0.08);
-
-            // Sonido metálico del resorte
-            const osc3 = this.createOscillator('triangle', 2000 + Math.random() * 800);
-            const gain3 = this.createGainWithEnvelope(0.002, 0.01, 0.05, 0.04, 0.06 * uiVolume);
-            const filter3 = this.createFilter('highpass', 2200, 3);
-            
-            osc3.connect(filter3);
-            filter3.connect(gain3);
-            gain3.connect(audioContext.destination);
-            
-            osc3.start(now + 0.01);
-            osc3.stop(now + 0.06);
         },
 
         // 1. Sonido de olas del mar (ambiente constante)
@@ -2894,83 +2743,13 @@
         }
     }
 
-    // ===== HISTORIA INICIAL CON EFECTO MÁQUINA DE ESCRIBIR =====
-    const storyText = `Tu pequeña avioneta vuela tranquilamente sobre el océano Pacífico...
-
-De repente, una tormenta terrible te golpea sin previo aviso.
-
-¡CRASH! Tu avión se estrella en una isla volcánica remota.
-
-Despiertas entre los restos humeantes... El volcán está despertando!
-
-En la distancia, divisas un pequeño bote de rescate en la costa.
-
-¡Atraviesa el laberinto y llega al bote antes de que sea demasiado tarde!`;
-
-    let currentChar = 0;
-    let typewriterInterval = null;
-    let storyComplete = false;
-
-    function showStoryModal() {
-        document.getElementById('storyModal').style.display = 'flex';
-        startTypewriterEffect();
-    }
-
-    function startTypewriterEffect() {
-        const textElement = document.getElementById('storyText');
-        const continueBtn = document.getElementById('storyContinueBtn');
-        
-        currentChar = 0;
-        textElement.innerHTML = '';
-        continueBtn.classList.remove('show');
-        
-        typewriterInterval = setInterval(() => {
-            if (currentChar < storyText.length) {
-                const char = storyText[currentChar];
-                
-                if (char === '\n') {
-                    textElement.innerHTML += '<br>';
-                } else {
-                    textElement.innerHTML += char;
-                }
-                
-                // Reproducir sonido de máquina de escribir (no en espacios o saltos de línea)
-                if (char !== ' ' && char !== '\n') {
-                    AudioSystem.playTypewriterSound();
-                }
-                
-                currentChar++;
-                
-                // Añadir cursor parpadeante
-                textElement.innerHTML += '<span class="story-cursor"></span>';
-                
-                // Limpiar cursor anterior
-                setTimeout(() => {
-                    textElement.innerHTML = textElement.innerHTML.replace('<span class="story-cursor"></span>', '');
-                }, 50);
-                
-            } else {
-                // Historia completada
-                clearInterval(typewriterInterval);
-                storyComplete = true;
-                continueBtn.classList.add('show');
-                
-                // Añadir cursor final permanente
-                textElement.innerHTML += '<span class="story-cursor"></span>';
-            }
-        }, 80); // Velocidad un poco más rápida (80ms por carácter)
-    }
-
-    function closeStoryModal() {
-        // Detener el efecto de máquina de escribir si está corriendo
-        if (typewriterInterval) {
-            clearInterval(typewriterInterval);
-        }
-        
-        document.getElementById('storyModal').style.display = 'none';
-        
-        // Habilitar audio y comenzar el juego
+    // Configurar dificultad y empezar el juego automáticamente
+    config.lavaSpeedMs = lavaSpeeds[selectedDifficulty - 1]; // 2 estrellas
+    
+    // Habilitar audio al hacer clic en la página (requerido por navegadores)
+    document.addEventListener('click', function enableAudio() {
         AudioSystem.enable();
+        document.removeEventListener('click', enableAudio);
         
         // Comenzar música de fondo épica
         setTimeout(() => {
@@ -2981,27 +2760,10 @@ En la distancia, divisas un pequeño bote de rescate en la costa.
         setTimeout(() => {
             AudioSystem.playAmbientWaves();
         }, 2000);
-        
-        // Empezar el juego
-        requestAnimationFrame(gameLoop);
-    }
+    }, { once: true });
 
-    // Event listeners para la historia
-    document.getElementById('storyContinueBtn').onclick = closeStoryModal;
-    document.getElementById('storySkipBtn').onclick = closeStoryModal;
-    
-    // Permitir saltar con Escape
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && document.getElementById('storyModal').style.display === 'flex') {
-            closeStoryModal();
-        }
-    });
-
-    // Configurar dificultad y mostrar historia al cargar
-    config.lavaSpeedMs = lavaSpeeds[selectedDifficulty - 1]; // 1 estrella
-    
-    // Mostrar la historia inicialmente
-    showStoryModal();
+    // Empezar el juego inmediatamente
+    requestAnimationFrame(gameLoop);
 
     window.addEventListener('resize', () => {
         config = resizeMazeConfig();
