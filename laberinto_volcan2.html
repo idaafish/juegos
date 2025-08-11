@@ -3,68 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Laberinto Volcán - Nivel 2</title>
+    <link rel="stylesheet" href="laberinto_volcan_shared.css">
     <style>
-        body {
-            background: #2d1a0b;
-            color: #fff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .container {
-            margin-top: 30px;
-            background: #3e2723;
-            border-radius: 18px;
-            padding: 24px 32px 32px 32px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        }
-        h1 {
-            text-align: center;
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-            color: #ff9800;
-        }
-        .subtitle {
-            text-align: center;
-            color: #ffcc80;
-            margin-bottom: 20px;
-        }
-        #mazeCanvas {
-            display: block;
-            margin: 0 auto 20px auto;
-            background: #1b0c02;
-            border: 3px solid #ff9800;
-            border-radius: 10px;
-            box-shadow: 0 0 24px #000a;
-            max-width: 95vw;
-            max-height: 80vh;
-        }
-        .back-btn {
-            display: inline-block;
-            margin-bottom: 18px;
-            padding: 10px 22px;
-            background: linear-gradient(135deg, #ff9800, #ff5722);
-            color: #222;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background 0.3s;
-        }
-        .back-btn:hover {
-            background: linear-gradient(135deg, #ffd54f, #ff7043);
-            color: #000;
-        }
-        .win-msg {
-            text-align: center;
-            font-size: 1.5rem;
-            color: #ffeb3b;
-            margin-top: 18px;
-        }
+        /* ===== ESTILOS ESPECÍFICOS NIVEL 2 ===== */
         .star {
             color: #ffeb3b;
             cursor: pointer;
@@ -78,155 +19,6 @@
         .star:hover,
         .star.selected {
             transform: scale(1.18);
-        }
-        .config-btn {
-            display: inline-block;
-            margin-left: 10px;
-            padding: 10px 22px;
-            background: linear-gradient(135deg, #4caf50, #2e7d32);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background 0.3s;
-        }
-        .config-btn:hover {
-            background: linear-gradient(135deg, #66bb6a, #388e3c);
-        }
-        .config-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 15;
-            background: rgba(30,20,10,0.95);
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        .config-content {
-            background: #3e2723;
-            padding: 32px 36px 28px 36px;
-            border-radius: 18px;
-            box-shadow: 0 8px 32px #000a;
-            text-align: center;
-            min-width: 380px;
-            max-width: 90vw;
-        }
-        .volume-control {
-            margin: 20px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-        }
-        .volume-slider {
-            width: 200px;
-            height: 6px;
-            border-radius: 3px;
-            background: #666;
-            outline: none;
-            cursor: pointer;
-        }
-        .volume-slider::-webkit-slider-thumb {
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #ff9800;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
-        .volume-slider::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #ff9800;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
-        .fullscreen-btn {
-            background: linear-gradient(135deg, #2196f3, #1565c0);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin: 10px 5px;
-            transition: background 0.3s;
-        }
-        .fullscreen-btn:hover {
-            background: linear-gradient(135deg, #42a5f5, #1976d2);
-        }
-        .level-complete-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 20;
-            background: rgba(30,20,10,0.95);
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-        .level-complete-content {
-            background: linear-gradient(145deg, #4a2c2a, #3e2723);
-            padding: 40px 45px 35px 45px;
-            border-radius: 20px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.7);
-            text-align: center;
-            min-width: 420px;
-            max-width: 90vw;
-            border: 2px solid #ff9800;
-        }
-        .level-complete-title {
-            color: #ffeb3b;
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            text-shadow: 0 0 10px #ff9800;
-        }
-        .level-complete-subtitle {
-            color: #ffe0b2;
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            line-height: 1.4;
-        }
-        .level-option-btn {
-            display: inline-block;
-            margin: 10px 15px;
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            color: white;
-        }
-        .level-option-btn.repeat {
-            background: linear-gradient(135deg, #ff9800, #ff5722);
-        }
-        .level-option-btn.repeat:hover {
-            background: linear-gradient(135deg, #ffd54f, #ff7043);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(255, 152, 0, 0.4);
-        }
-        .level-option-btn.next {
-            background: linear-gradient(135deg, #4caf50, #2e7d32);
-        }
-        .level-option-btn.next:hover {
-            background: linear-gradient(135deg, #66bb6a, #388e3c);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(76, 175, 80, 0.4);
         }
     </style>
 </head>
@@ -2774,5 +2566,6 @@
     });
 
     </script>
+    <script src="laberinto_volcan_shared.js"></script>
 </body>
 </html>
