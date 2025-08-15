@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Level 1 - World of Wherecraft</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', serif;
+            background: #1a1a1a;
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        body.dragging {
+            cursor: grabbing;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .map-viewport {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .map-world {
+            position: absolute;
+            width: 3000px;
+            height: 2000px;
+            background-image: url('ImagesWow/MapLevel1.jpeg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            /* Fallback si no encuentra la imagen */
+            background-color: #2d4a22;
+            transform-origin: 0 0;
+            transition: transform 0.1s ease-out;
+        }
+
+        /* Terrenos del mapa - Ya no son necesarios porque usamos imagen de fondo */
+        /* Comentados para mejor rendimiento */
+        /*
+        .terrain {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+        */
+
+        .forest {
+            background: 
+                radial-gradient(circle at 30% 30%, #228b22 0%, #006400 100%),
+                repeating-linear-gradient(
+                    45deg,
+                    #228b22 0px,
+                    #32cd32 3px,
+                    #228b22 6px,
+                    #006400 9px
+                );
+            background-size: 100% 100%, 20px 20px;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.3),
+                0 4px 15px rgba(34, 139, 34, 0.4);
+            border: 3px solid #006400;
+        }
+
+        .mountain {
+            background: 
+                radial-gradient(circle at 40% 20%, #a9a9a9 0%, #2f2f2f 100%),
+                repeating-linear-gradient(
+                    30deg,
+                    #696969 0px,
+                    #778899 5px,
+                    #696969 10px,
+                    #2f2f2f 15px
+                );
+            background-size: 100% 100%, 25px 25px;
+            box-shadow: 
+                inset 0 0 15px rgba(0, 0, 0, 0.5),
+                0 6px 20px rgba(47, 47, 47, 0.6);
+            border: 3px solid #2f2f2f;
+        }
+
+        .water {
+            background: 
+                radial-gradient(ellipse at 50% 30%, #87ceeb 0%, #4682b4 40%, #191970 100%),
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(135, 206, 235, 0.3) 0px,
+                    rgba(70, 130, 180, 0.5) 5px,
+                    rgba(135, 206, 235, 0.3) 10px
+                );
+            background-size: 100% 100%, 15px 15px;
+            box-shadow: 
+                inset 0 0 10px rgba(0, 0, 0, 0.3),
+                0 4px 20px rgba(70, 130, 180, 0.5);
+            border: 3px solid #4682b4;
+            animation: waterShimmer 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes waterShimmer {
+            0% { filter: brightness(1); }
+            100% { filter: brightness(1.2); }
+        }
+
+        @keyframes crystalGlow {
+            0% { 
+                filter: brightness(1);
+                transform: scale(1);
+            }
+            100% { 
+                filter: brightness(1.4);
+                transform: scale(1.1);
+            }
+        }
+
+        .desert {
+            background: 
+                radial-gradient(circle at 60% 40%, #f4a460 0%, #daa520 50%, #b8860b 100%),
+                repeating-linear-gradient(
+                    120deg,
+                    #daa520 0px,
+                    #f4a460 4px,
+                    #daa520 8px,
+                    #b8860b 12px
+                );
+            background-size: 100% 100%, 18px 18px;
+            box-shadow: 
+                inset 0 0 15px rgba(139, 69, 19, 0.4),
+                0 4px 15px rgba(218, 165, 32, 0.4);
+            border: 3px solid #b8860b;
+        }
+
+        /* Personajes en el mapa */
+        .character {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: characterBreathe 3s ease-in-out infinite;
+        }
+
+        .character-sprite {
+            font-size: 3rem;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            animation: characterFloat 2s ease-in-out infinite alternate;
+        }
+
+        .character-name {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-family: 'MedievalSharp', cursive;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            border: 1px solid #ffd700;
+            margin-bottom: 3px;
+        }
+
+        .character-health {
+            width: 80px;
+        }
+
+        .health-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(139, 69, 19, 0.8);
+            border-radius: 3px;
+            border: 1px solid #000;
+            overflow: hidden;
+        }
+
+        .health-fill {
+            height: 100%;
+            width: 100%;
+            border-radius: 2px;
+        }
+
+        .health-fill.alliance {
+            background: linear-gradient(90deg, #4169e1, #1e90ff);
+        }
+
+        .health-fill.horde {
+            background: linear-gradient(90deg, #dc143c, #ff4500);
+        }
+
+        @keyframes characterBreathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes characterFloat {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-5px); }
+        }
+
+        /* Recursos del mapa */
+        .resource-point {
+            position: absolute;
+            font-size: 2rem;
+            cursor: pointer;
+            animation: resourceGlow 2s ease-in-out infinite alternate;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+        }
+
+        .resource-point:hover {
+            transform: scale(1.2);
+            animation-duration: 0.5s;
+        }
+
+        @keyframes resourceGlow {
+            0% { 
+                filter: brightness(1);
+                transform: scale(1);
+            }
+            100% { 
+                filter: brightness(1.3);
+                transform: scale(1.1);
+            }
+        }
+
+        /* UI del juego */
+        .game-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .game-ui > * {
+            pointer-events: auto;
+        }
+
+        /* Minimapa */
+        .minimap-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 133px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 3px solid #8b4513;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .minimap {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                45deg,
+                #1a2f15 0%,
+                #243620 25%,
+                #2e4225 50%,
+                #243620 75%,
+                #1a2f15 100%
+            );
+            position: relative;
+            cursor: pointer;
+        }
+
+        .minimap-viewport {
+            position: absolute;
+            border: 2px solid #ffd700;
+            background: rgba(255, 215, 0, 0.2);
+            pointer-events: none;
+        }
+
+        .minimap-base {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid #fff;
+        }
+
+        .minimap-alliance {
+            background: #4169e1;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .minimap-horde {
+            background: #dc143c;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Panel de información */
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(139, 69, 19, 0.9);
+            border: 3px solid #2f1b14;
+            border-radius: 10px;
+            padding: 15px;
+            color: #fff;
+            min-width: 200px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .info-title {
+            font-family: 'MedievalSharp', cursive;
+            font-size: 1.1rem;
+            color: #ffd700;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        /* Controles */
+        .controls-help {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #8b4513;
+            border-radius: 8px;
+            padding: 10px;
+            color: #fff;
+            font-size: 0.8rem;
+            max-width: 250px;
+        }
+
+        .controls-title {
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* Zoom indicator */
+        .zoom-indicator {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #8b4513;
+            border-radius: 8px;
+            padding: 10px;
+            color: #fff;
+            font-size: 0.9rem;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* Botón de regreso */
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(145deg, #8b4513 0%, #a0522d 50%, #654321 100%);
+            border: 3px solid #2f1b14;
+            color: #fff;
+            padding: 10px 20px;
+            font-family: 'Cinzel', serif;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .back-button:hover {
+            background: linear-gradient(145deg, #a0522d 0%, #d2691e 50%, #8b4513 100%);
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Coordenadas */
+        .coordinates {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #8b4513;
+            border-radius: 5px;
+            padding: 5px 10px;
+            color: #ffd700;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Viewport del mapa -->
+        <div class="map-viewport" id="mapViewport">
+            <div class="map-world" id="mapWorld">
+                <!-- Elementos que se superponen a la imagen del mapa -->
+                
+                <!-- Aldeano de la Alianza en el centro del claro superior -->
+                <div class="character alliance-villager" style="position: absolute; top: 200px; left: 1200px;">
+                    <div class="character-sprite">🧙‍♂️</div>
+                    <div class="character-health">
+                        <div class="health-bar">
+                            <div class="health-fill alliance"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Aldeano de la Horda en el centro del claro inferior -->
+                <div class="character horde-villager" style="position: absolute; top: 1600px; left: 1200px;">
+                    <div class="character-sprite">🧌</div>
+                    <div class="character-health">
+                        <div class="health-bar">
+                            <div class="health-fill horde"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Puntos de interés menores (cristales, recursos) -->
+                <div class="resource-point" style="position: absolute; top: 800px; left: 600px;" title="Cristal de Maná">💎</div>
+                <div class="resource-point" style="position: absolute; top: 1200px; left: 2200px;" title="Mina de Oro">⚱️</div>
+                <div class="resource-point" style="position: absolute; top: 500px; left: 2500px;" title="Bosque Ancestral">🌳</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- UI del juego -->
+        <div class="game-ui">
+            <!-- Botón de regreso -->
+            <button class="back-button" onclick="volverASeleccion()">⬅️ SELECCIÓN FACCIÓN</button>
+
+            <!-- Panel de información -->
+            <div class="info-panel">
+                <div class="info-title">INFORMACIÓN</div>
+                <div class="info-item">
+                    <span>Facción:</span>
+                    <span id="playerFaction">Neutral</span>
+                </div>
+                <div class="info-item">
+                    <span>Nivel:</span>
+                    <span>1</span>
+                </div>
+                <div class="info-item">
+                    <span>Zona:</span>
+                    <span id="currentZone">Campo de Batalla</span>
+                </div>
+            </div>
+
+            <!-- Coordenadas -->
+            <div class="coordinates" id="coordinates">
+                X: 0, Y: 0
+            </div>
+
+            <!-- Minimapa -->
+            <div class="minimap-container">
+                <div class="minimap" id="minimap">
+                    <div class="minimap-viewport" id="minimapViewport"></div>
+                    <div class="minimap-base minimap-alliance"></div>
+                    <div class="minimap-base minimap-horde"></div>
+                </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="controls-help">
+                <div class="controls-title">CONTROLES:</div>
+                <div>🖱️ Click y arrastra: Mover mapa</div>
+                <div>⬆️⬇️⬅️➡️ Flechas: Mover mapa</div>
+                <div>🎯 Click minimapa: Ir a posición</div>
+                <div>🔍 Rueda ratón: Zoom</div>
+            </div>
+
+            <!-- Indicador de zoom -->
+            <div class="zoom-indicator">
+                <div style="color: #ffd700; margin-bottom: 5px;">ZOOM</div>
+                <div id="zoomLevel">100%</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class GameMap {
+            constructor() {
+                this.mapWorld = document.getElementById('mapWorld');
+                this.mapViewport = document.getElementById('mapViewport');
+                this.minimap = document.getElementById('minimap');
+                this.minimapViewport = document.getElementById('minimapViewport');
+                this.coordinates = document.getElementById('coordinates');
+                this.zoomLevel = document.getElementById('zoomLevel');
+                
+                // Estado del mapa
+                this.mapPosition = { x: -1200, y: -800 }; // Centrado inicial
+                this.zoom = 2.0; // Zoom inicial al 200%
+                this.minZoom = 0.5;
+                this.maxZoom = 3.0; // Aumentamos el zoom máximo
+                
+                // Control de arrastre
+                this.isDragging = false;
+                this.lastMousePos = { x: 0, y: 0 };
+                
+                // Dimensiones
+                this.mapSize = { width: 3000, height: 2000 };
+                this.viewportSize = { width: window.innerWidth, height: window.innerHeight };
+                
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.updateMapPosition();
+                this.updateMinimap();
+                this.updateZoomDisplay(); // Mostrar zoom inicial
+                this.loadPlayerFaction();
+                
+                // Centrar en la base de la facción del jugador
+                setTimeout(() => {
+                    this.centerOnPlayerBase();
+                }, 100);
+            }
+
+            loadPlayerFaction() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const faction = urlParams.get('faccion') || 'neutral';
+                document.getElementById('playerFaction').textContent = 
+                    faction === 'alianza' ? 'Alianza' : 
+                    faction === 'horda' ? 'Horda' : 'Neutral';
+            }
+
+            centerOnPlayerBase() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const faction = urlParams.get('faccion');
+                
+                // Con zoom 2.0, necesitamos ajustar las posiciones
+                const centerX = this.viewportSize.width / 2;
+                const centerY = this.viewportSize.height / 2;
+                
+                if (faction === 'alianza') {
+                    // Centrar en el claro superior donde está el aldeano de la Alianza
+                    this.mapPosition.x = centerX - (1200 * this.zoom); 
+                    this.mapPosition.y = centerY - (200 * this.zoom);  
+                } else if (faction === 'horda') {
+                    // Centrar en el claro inferior donde está el aldeano de la Horda
+                    this.mapPosition.x = centerX - (1200 * this.zoom); 
+                    this.mapPosition.y = centerY - (1600 * this.zoom); 
+                } else {
+                    // Centrar en el medio del mapa para neutral
+                    this.mapPosition.x = centerX - (1500 * this.zoom); // Centro horizontal
+                    this.mapPosition.y = centerY - (1000 * this.zoom); // Centro vertical
+                }
+                
+                this.constrainMapPosition();
+                this.updateMapPosition();
+                this.updateMinimap();
+                this.updateZoomDisplay();
+            }
+
+            setupEventListeners() {
+                // Mouse events para arrastrar
+                this.mapViewport.addEventListener('mousedown', this.startDrag.bind(this));
+                document.addEventListener('mousemove', this.drag.bind(this));
+                document.addEventListener('mouseup', this.endDrag.bind(this));
+
+                // Teclado para movimiento
+                document.addEventListener('keydown', this.handleKeyboard.bind(this));
+
+                // Zoom con rueda del ratón
+                this.mapViewport.addEventListener('wheel', this.handleZoom.bind(this));
+
+                // Click en minimapa
+                this.minimap.addEventListener('click', this.handleMinimapClick.bind(this));
+
+                // Resize de ventana
+                window.addEventListener('resize', this.handleResize.bind(this));
+
+                // Prevenir context menu
+                this.mapViewport.addEventListener('contextmenu', e => e.preventDefault());
+            }
+
+            startDrag(e) {
+                this.isDragging = true;
+                this.lastMousePos = { x: e.clientX, y: e.clientY };
+                document.body.classList.add('dragging');
+                e.preventDefault();
+            }
+
+            drag(e) {
+                if (!this.isDragging) return;
+
+                const deltaX = e.clientX - this.lastMousePos.x;
+                const deltaY = e.clientY - this.lastMousePos.y;
+
+                this.mapPosition.x += deltaX;
+                this.mapPosition.y += deltaY;
+
+                this.constrainMapPosition();
+                this.updateMapPosition();
+                this.updateMinimap();
+
+                this.lastMousePos = { x: e.clientX, y: e.clientY };
+            }
+
+            endDrag() {
+                this.isDragging = false;
+                document.body.classList.remove('dragging');
+            }
+
+            handleKeyboard(e) {
+                const moveSpeed = 50;
+                let moved = false;
+
+                switch(e.key) {
+                    case 'ArrowUp':
+                    case 'w':
+                    case 'W':
+                        this.mapPosition.y += moveSpeed;
+                        moved = true;
+                        break;
+                    case 'ArrowDown':
+                    case 's':
+                    case 'S':
+                        this.mapPosition.y -= moveSpeed;
+                        moved = true;
+                        break;
+                    case 'ArrowLeft':
+                    case 'a':
+                    case 'A':
+                        this.mapPosition.x += moveSpeed;
+                        moved = true;
+                        break;
+                    case 'ArrowRight':
+                    case 'd':
+                    case 'D':
+                        this.mapPosition.x -= moveSpeed;
+                        moved = true;
+                        break;
+                }
+
+                if (moved) {
+                    e.preventDefault();
+                    this.constrainMapPosition();
+                    this.updateMapPosition();
+                    this.updateMinimap();
+                }
+            }
+
+            handleZoom(e) {
+                e.preventDefault();
+                
+                const zoomFactor = 0.1;
+                const oldZoom = this.zoom;
+                
+                if (e.deltaY < 0) {
+                    this.zoom = Math.min(this.maxZoom, this.zoom + zoomFactor);
+                } else {
+                    this.zoom = Math.max(this.minZoom, this.zoom - zoomFactor);
+                }
+
+                // Ajustar posición para zoom desde el centro
+                const centerX = this.viewportSize.width / 2;
+                const centerY = this.viewportSize.height / 2;
+                
+                const zoomRatio = this.zoom / oldZoom;
+                this.mapPosition.x = centerX - (centerX - this.mapPosition.x) * zoomRatio;
+                this.mapPosition.y = centerY - (centerY - this.mapPosition.y) * zoomRatio;
+
+                this.constrainMapPosition();
+                this.updateMapPosition();
+                this.updateMinimap();
+                this.updateZoomDisplay();
+            }
+
+            handleMinimapClick(e) {
+                const rect = this.minimap.getBoundingClientRect();
+                const clickX = (e.clientX - rect.left) / rect.width;
+                const clickY = (e.clientY - rect.top) / rect.height;
+
+                // Convertir a posición del mapa
+                const targetX = -clickX * this.mapSize.width + this.viewportSize.width / 2;
+                const targetY = -clickY * this.mapSize.height + this.viewportSize.height / 2;
+
+                this.mapPosition.x = targetX;
+                this.mapPosition.y = targetY;
+
+                this.constrainMapPosition();
+                this.updateMapPosition();
+                this.updateMinimap();
+            }
+
+            constrainMapPosition() {
+                const scaledWidth = this.mapSize.width * this.zoom;
+                const scaledHeight = this.mapSize.height * this.zoom;
+
+                this.mapPosition.x = Math.min(0, Math.max(this.viewportSize.width - scaledWidth, this.mapPosition.x));
+                this.mapPosition.y = Math.min(0, Math.max(this.viewportSize.height - scaledHeight, this.mapPosition.y));
+            }
+
+            updateMapPosition() {
+                this.mapWorld.style.transform = `translate(${this.mapPosition.x}px, ${this.mapPosition.y}px) scale(${this.zoom})`;
+                
+                // Actualizar coordenadas
+                const worldX = Math.round(-this.mapPosition.x / this.zoom);
+                const worldY = Math.round(-this.mapPosition.y / this.zoom);
+                this.coordinates.textContent = `X: ${worldX}, Y: ${worldY}`;
+            }
+
+            updateMinimap() {
+                const viewportX = (-this.mapPosition.x / this.zoom) / this.mapSize.width * 100;
+                const viewportY = (-this.mapPosition.y / this.zoom) / this.mapSize.height * 100;
+                const viewportWidth = (this.viewportSize.width / this.zoom) / this.mapSize.width * 100;
+                const viewportHeight = (this.viewportSize.height / this.zoom) / this.mapSize.height * 100;
+
+                this.minimapViewport.style.left = `${viewportX}%`;
+                this.minimapViewport.style.top = `${viewportY}%`;
+                this.minimapViewport.style.width = `${viewportWidth}%`;
+                this.minimapViewport.style.height = `${viewportHeight}%`;
+            }
+
+            updateZoomDisplay() {
+                this.zoomLevel.textContent = `${Math.round(this.zoom * 100)}%`;
+            }
+
+            handleResize() {
+                this.viewportSize.width = window.innerWidth;
+                this.viewportSize.height = window.innerHeight;
+                this.constrainMapPosition();
+                this.updateMapPosition();
+                this.updateMinimap();
+            }
+        }
+
+        // Funciones globales
+        function volverASeleccion() {
+            if (confirm('¿Regresar a la selección de facción?')) {
+                window.location.href = 'seleccion_faccion.html';
+            }
+        }
+
+        // Efectos de sonido
+        function playSound(frequency, duration) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                console.log('Audio no disponible');
+            }
+        }
+
+        // Inicializar el juego cuando se carga la página
+        let gameMap;
+        window.addEventListener('load', function() {
+            console.log('🎮 Cargando World of Wherecraft - Mapa Level 1');
+            gameMap = new GameMap();
+            playSound(400, 0.5); // Sonido de inicio
+            
+            // Mensaje de bienvenida
+            setTimeout(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const faction = urlParams.get('faccion');
+                const factionName = faction === 'alianza' ? 'Alianza' : faction === 'horda' ? 'Horda' : 'Neutral';
+                console.log(`Bienvenido al campo de batalla, ${factionName}!`);
+            }, 1000);
+        });
+
+        // Detectar zona actual basada en posición
+        function updateCurrentZone() {
+            const worldX = Math.round(-gameMap.mapPosition.x / gameMap.zoom);
+            const worldY = Math.round(-gameMap.mapPosition.y / gameMap.zoom);
+            
+            let zone = 'Campo de Batalla';
+            
+            if (worldY < 400) zone = 'Territorio de la Alianza';
+            else if (worldY > 1200) zone = 'Territorio de la Horda';
+            else if (worldX > 1800) zone = 'Tierras del Este';
+            else if (worldX < 600) zone = 'Tierras del Oeste';
+            
+            document.getElementById('currentZone').textContent = zone;
+        }
+
+        // Actualizar zona cada segundo
+        setInterval(updateCurrentZone, 1000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World of Wherecraft</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            height: 100vh;
+            background: linear-gradient(135deg, #2c1810 0%, #4a2c1a 50%, #1a0f08 100%);
+            font-family: 'Cinzel', serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Fondo animado con partículas */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, rgba(255, 215, 0, 0.3), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255, 165, 0, 0.2), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(255, 215, 0, 0.3), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255, 165, 0, 0.2), transparent),
+                radial-gradient(2px 2px at 160px 30px, rgba(255, 215, 0, 0.1), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkle 3s linear infinite;
+        }
+
+        @keyframes sparkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            gap: 30px;
+        }
+
+        .main-menu {
+            background: linear-gradient(145deg, #8b4513 0%, #a0522d 30%, #654321 100%);
+            border: 8px solid #2f1b14;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 
+                0 0 30px rgba(0, 0, 0, 0.8),
+                inset 0 0 20px rgba(255, 215, 0, 0.1),
+                0 0 60px rgba(139, 69, 19, 0.3);
+            position: relative;
+            min-width: 350px;
+            max-width: 380px;
+            text-align: center;
+        }
+
+        .main-menu::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            background: linear-gradient(45deg, #ffd700, #ff8c00, #ffd700, #ff8c00);
+            border-radius: 24px;
+            z-index: -1;
+            animation: borderGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes borderGlow {
+            0% { opacity: 0.5; }
+            100% { opacity: 0.8; }
+        }
+
+        .title {
+            font-family: 'MedievalSharp', cursive;
+            font-size: 3rem;
+            color: #ffd700;
+            text-shadow: 
+                3px 3px 0 #8b4513,
+                6px 6px 10px rgba(0, 0, 0, 0.8);
+            margin-bottom: 30px;
+            letter-spacing: 3px;
+            animation: titlePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .menu-btn {
+            background: linear-gradient(145deg, #d2691e 0%, #a0522d 50%, #8b4513 100%);
+            border: 3px solid #2f1b14;
+            color: #fff;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-family: 'Cinzel', serif;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .menu-btn:hover::before {
+            left: 100%;
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(145deg, #ff8c00 0%, #d2691e 50%, #a0522d 100%);
+            border-color: #ffd700;
+        }
+
+        .menu-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .character-left {
+            position: relative;
+            width: 220px;
+            height: 320px;
+            background: linear-gradient(145deg, #4682b4 0%, #2f4f4f 50%, #708090 100%);
+            border: 4px solid #2f1b14;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            animation: characterBounce 4s ease-in-out infinite;
+        }
+
+        .character-right {
+            position: relative;
+            width: 220px;
+            height: 320px;
+            background: linear-gradient(145deg, #8b0000 0%, #654321 50%, #2f1b14 100%);
+            border: 4px solid #2f1b14;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            animation: characterBounce 4s ease-in-out infinite reverse;
+        }
+
+        @keyframes characterBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .character-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .knight-title {
+            color: #87ceeb;
+        }
+
+        .orc-title {
+            color: #ff6347;
+        }
+
+        .character-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            border: 3px solid #ffd700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            animation: iconRotate 6s linear infinite;
+        }
+
+        @keyframes iconRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .knight-icon {
+            background: linear-gradient(45deg, #4682b4, #87ceeb);
+        }
+
+        .orc-icon {
+            background: linear-gradient(45deg, #8b0000, #ff6347);
+        }
+
+        .character-description {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #f0f0f0;
+            line-height: 1.3;
+            padding: 0 15px;
+        }
+
+        /* Efectos de partículas en los personajes */
+        .character-left::after,
+        .character-right::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border-radius: 24px;
+            background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            animation: auraGlow 3s ease-in-out infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes auraGlow {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+
+        @media (max-width: 1100px) {
+            .container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .character-left,
+            .character-right {
+                width: 180px;
+                height: 240px;
+            }
+            
+            .main-menu {
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 800px) {
+            .character-left,
+            .character-right {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Caballero a la izquierda -->
+        <div class="character-left">
+            <h3 class="character-title knight-title">CABALLERO</h3>
+            <div class="character-icon knight-icon">🛡️</div>
+            <p class="character-description">
+                Guerrero noble y valiente,<br>
+                protector de los inocentes.<br>
+                Maestro del combate cuerpo a cuerpo<br>
+                y defensor de la justicia.
+            </p>
+        </div>
+
+        <!-- Menú principal -->
+        <div class="main-menu">
+            <h1 class="title">WORLD OF WHERECRAFT</h1>
+            
+            <div class="menu-buttons">
+                <button class="menu-btn" onclick="nuevaPartida()">⚔️ NUEVA PARTIDA</button>
+                <button class="menu-btn" onclick="ponerCodigo()">🔑 PONER CÓDIGO</button>
+                <button class="menu-btn" onclick="configuracion()">⚙️ CONFIGURACIÓN</button>
+                <button class="menu-btn" onclick="salir()">🚪 SALIR</button>
+            </div>
+        </div>
+
+        <!-- Orco a la derecha -->
+        <div class="character-right">
+            <h3 class="character-title orc-title">ORCO</h3>
+            <div class="character-icon orc-icon">👹</div>
+            <p class="character-description">
+                Guerrero feroz y brutal,<br>
+                maestro de la destrucción.<br>
+                Fuerza descomunal y<br>
+                sed de batalla infinita.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Efectos de sonido (simulados con Audio API)
+        function playSound(type) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            switch(type) {
+                case 'hover':
+                    oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                    break;
+                case 'click':
+                    oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+                    break;
+            }
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        // Agregar efectos de sonido a los botones
+        document.querySelectorAll('.menu-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', () => playSound('hover'));
+            btn.addEventListener('click', () => playSound('click'));
+        });
+
+        // Funciones del menú
+        function nuevaPartida() {
+            console.log('🎮 Iniciando nueva partida...');
+            // Transición a la pantalla de selección de facción
+            window.location.href = 'seleccion_faccion.html';
+        }
+
+        function ponerCodigo() {
+            console.log('🔑 Abriendo sistema de códigos...');
+            const codigo = prompt('🔑 Ingresa tu código de partida guardada:');
+            if (codigo) {
+                if (codigo.toLowerCase() === 'wherecraft') {
+                    alert('✨ ¡Código válido! Bienvenido de vuelta, héroe.');
+                } else {
+                    alert('❌ Código incorrecto. Verifica e intenta nuevamente.');
+                }
+            }
+        }
+
+        function configuracion() {
+            console.log('⚙️ Abriendo configuración...');
+            alert('⚙️ CONFIGURACIÓN\n\n🔊 Volumen: 80%\n🎵 Música: Activada\n🎮 Dificultad: Normal\n🖱️ Controles: WASD + Mouse\n\n¡Configuración guardada!');
+        }
+
+        function salir() {
+            console.log('🚪 Saliendo del juego...');
+            if (confirm('🚪 ¿Estás seguro de que quieres abandonar World of Wherecraft?\n\n¡Tu aventura te espera!')) {
+                alert('👋 ¡Gracias por jugar World of Wherecraft!\n\n⚔️ ¡Que los vientos del destino te sean favorables!');
+                window.close();
+            }
+        }
+
+        // Efectos adicionales al cargar la página
+        window.addEventListener('load', function() {
+            console.log('🌟 World of Wherecraft cargado correctamente');
+            
+            // Animación de entrada del título
+            setTimeout(() => {
+                document.querySelector('.title').style.animation += ', fadeInScale 1s ease-out';
+            }, 500);
+        });
+
+        // Easter egg: Konami Code
+        let konamiCode = [];
+        const konamiSequence = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // ↑↑↓↓←→←→BA
+
+        document.addEventListener('keydown', function(e) {
+            konamiCode.push(e.keyCode);
+            if (konamiCode.length > konamiSequence.length) {
+                konamiCode.shift();
+            }
+            
+            if (konamiCode.length === konamiSequence.length && 
+                konamiCode.every((key, index) => key === konamiSequence[index])) {
+                alert('🎊 ¡CÓDIGO KONAMI ACTIVADO!\n\n🌟 ¡Has desbloqueado el modo desarrollador!\n⚡ +1000 puntos de experiencia bonus');
+                document.body.style.filter = 'hue-rotate(60deg)';
+                setTimeout(() => {
+                    document.body.style.filter = '';
+                }, 3000);
+                konamiCode = [];
+            }
+        });
+    </script>
+</body>
+</html>

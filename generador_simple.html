@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generador Simple de Imágenes</title>
+</head>
+<body>
+    <h1>Generador de Imágenes para el Laberinto</h1>
+    <div id="status">Preparando...</div>
+    <br>
+    <canvas id="canvas" width="64" height="64" style="border: 1px solid #ccc;"></canvas>
+    <br><br>
+    <button onclick="generateExplorer()">Generar explorador.png</button>
+    <button onclick="generateForestWall1()">Generar bosque1.png (Pared Densa)</button>
+    <button onclick="generateForestWall2()">Generar bosque2.png (Pared con Troncos)</button>
+    <button onclick="generateForestWall3()">Generar bosque3.png (Pared Rocosa)</button>
+    <button onclick="generateForestGround()">Generar suelo_bosque.png</button>
+    <br><br>
+    <div id="preview"></div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const status = document.getElementById('status');
+        const preview = document.getElementById('preview');
+        
+        function downloadCanvas(filename) {
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                status.textContent = `✓ ${filename} descargado`;
+            }, 'image/png');
+        }
+        
+        function generateExplorer() {
+            status.textContent = "Generando explorador...";
+            ctx.clearRect(0, 0, 64, 64);
+            
+            // Centrar en el canvas de 64x64
+            ctx.save();
+            ctx.translate(32, 32);
+            
+            const scale = 64 / 24; // Escala para ajustar al tamaño del canvas
+            
+            // --- CUERPO PRINCIPAL ---
+            // Torso (camisa beige)
+            ctx.fillStyle = "#d4b895";
+            ctx.fillRect(-6 * scale, -2 * scale, 12 * scale, 16 * scale);
+            
+            // Chaleco marrón encima
+            ctx.fillStyle = "#8b4513";
+            ctx.fillRect(-5 * scale, -1 * scale, 10 * scale, 12 * scale);
+            
+            // Cinturón
+            ctx.fillStyle = "#654321";
+            ctx.fillRect(-6 * scale, 8 * scale, 12 * scale, 3 * scale);
+            
+            // Hebilla del cinturón
+            ctx.fillStyle = "#c0c0c0";
+            ctx.fillRect(-1.5 * scale, 8.5 * scale, 3 * scale, 2 * scale);
+            
+            // --- PIERNAS ---
+            // Pantalones (caqui)
+            ctx.fillStyle = "#a0956b";
+            ctx.fillRect(-6 * scale, 11 * scale, 5 * scale, 10 * scale); // Pierna izquierda
+            ctx.fillRect(1 * scale, 11 * scale, 5 * scale, 10 * scale);  // Pierna derecha
+            
+            // --- BRAZOS ---
+            // Brazo izquierdo
+            ctx.fillStyle = "#d4b895";
+            ctx.fillRect(-9 * scale, 1 * scale, 4 * scale, 12 * scale);
+            
+            // Brazo derecho
+            ctx.fillRect(5 * scale, 1 * scale, 4 * scale, 12 * scale);
+            
+            // --- CABEZA ---
+            ctx.save();
+            ctx.translate(0, -8 * scale);
+            
+            // Cuello
+            ctx.fillStyle = "#f5d7b7";
+            ctx.fillRect(-2 * scale, 6 * scale, 4 * scale, 4 * scale);
+            
+            // Cara (óvalo más realista)
+            ctx.fillStyle = "#f5d7b7";
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 6 * scale, 7 * scale, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Ojos
+            ctx.fillStyle = "#000";
+            ctx.beginPath();
+            ctx.arc(-2 * scale, -1 * scale, 0.8 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(2 * scale, -1 * scale, 0.8 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Nariz
+            ctx.fillStyle = "#e6c2a6";
+            ctx.beginPath();
+            ctx.arc(0, 1 * scale, 1 * scale, 0, Math.PI);
+            ctx.fill();
+            
+            // Boca
+            ctx.strokeStyle = "#8b4513";
+            ctx.lineWidth = 1 * scale;
+            ctx.beginPath();
+            ctx.arc(0, 3 * scale, 2 * scale, 0.2, Math.PI - 0.2);
+            ctx.stroke();
+            
+            // --- SOMBRERO ICÓNICO ---
+            // Copa del sombrero (marrón oscuro)
+            ctx.fillStyle = "#3e2723";
+            ctx.beginPath();
+            ctx.ellipse(0, -4 * scale, 5 * scale, 6 * scale, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Ala del sombrero
+            ctx.fillStyle = "#5d4037";
+            ctx.beginPath();
+            ctx.ellipse(0, -2 * scale, 9 * scale, 3 * scale, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Banda del sombrero
+            ctx.fillStyle = "#654321";
+            ctx.fillRect(-5 * scale, -3 * scale, 10 * scale, 2 * scale);
+            
+            ctx.restore(); // Restaurar transformación de la cabeza
+            
+            // --- ACCESORIOS ---
+            // Látigo en el cinturón (lado derecho)
+            ctx.strokeStyle = "#8b4513";
+            ctx.lineWidth = 1.5 * scale;
+            ctx.beginPath();
+            ctx.moveTo(5 * scale, 10 * scale);
+            ctx.quadraticCurveTo(8 * scale, 12 * scale, 6 * scale, 15 * scale);
+            ctx.stroke();
+            
+            // Mochila pequeña (lado izquierdo)
+            ctx.fillStyle = "#654321";
+            ctx.fillRect(-8 * scale, 3 * scale, 3 * scale, 4 * scale);
+            
+            // --- BOTAS ---
+            ctx.fillStyle = "#654321";
+            // Bota izquierda
+            ctx.fillRect(-6 * scale, 19 * scale, 6 * scale, 4 * scale);
+            // Bota derecha
+            ctx.fillRect(0 * scale, 19 * scale, 6 * scale, 4 * scale);
+            
+            // Suela de las botas
+            ctx.fillStyle = "#2e1a16";
+            ctx.fillRect(-7 * scale, 22 * scale, 7 * scale, 2 * scale);
+            ctx.fillRect(-1 * scale, 22 * scale, 7 * scale, 2 * scale);
+            
+            // --- DETALLES FINALES ---
+            // Botones del chaleco
+            ctx.fillStyle = "#2e1a16";
+            for(let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.arc(0, 2 * scale + i * 3 * scale, 0.5 * scale, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+            
+            downloadCanvas('explorador.png');
+        }
+        
+        function generateForestWall1() {
+            status.textContent = "Generando pared densa...";
+            ctx.clearRect(0, 0, 64, 64);
+            
+            // Fondo muy oscuro
+            ctx.fillStyle = "#0d4f1a";
+            ctx.fillRect(0, 0, 64, 64);
+            
+            // Vegetación muy densa y oscura
+            const darkColors = ["#0a3d15", "#0f4a1c", "#1a5e26"];
+            
+            // Crear muchos puntos de vegetación densa
+            for (let i = 0; i < 35; i++) {
+                const x = (i * 11 + 3) % 64;
+                const y = (i * 13 + 7) % 64;
+                const size = 3 + (i % 5);
+                
+                ctx.fillStyle = darkColors[i % darkColors.length];
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Algunas hojas más claras para contraste
+            for (let i = 0; i < 8; i++) {
+                const x = (i * 19 + 5) % 60;
+                const y = (i * 23 + 10) % 60;
+                const size = 2;
+                
+                ctx.fillStyle = "#2e7d32";
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            downloadCanvas('bosque1.png');
+        }
+        
+        function generateForestWall2() {
+            status.textContent = "Generando pared con troncos...";
+            ctx.clearRect(0, 0, 64, 64);
+            
+            // Fondo base
+            ctx.fillStyle = "#1b5e20";
+            ctx.fillRect(0, 0, 64, 64);
+            
+            // Troncos principales verticales - MÁS VISIBLES
+            const trunkPositions = [8, 24, 40, 56];
+            for (let i = 0; i < trunkPositions.length; i++) {
+                const x = trunkPositions[i];
+                const width = 6 + (i % 2) * 2;
+                
+                // Tronco principal
+                ctx.fillStyle = "#3e2723";
+                ctx.fillRect(x - width/2, 0, width, 64);
+                
+                // Textura de corteza
+                ctx.fillStyle = "#2e1a16";
+                ctx.fillRect(x - width/2 + 1, 0, 1, 64);
+                ctx.fillRect(x + width/2 - 1, 0, 1, 64);
+                
+                // Marcas horizontales en la corteza
+                for (let j = 0; j < 8; j++) {
+                    ctx.fillRect(x - width/2, j * 8 + 2, width, 1);
+                }
+            }
+            
+            // Troncos horizontales ocasionales
+            for (let i = 0; i < 3; i++) {
+                const y = 15 + i * 18;
+                const width = 4;
+                
+                ctx.fillStyle = "#4e342e";
+                ctx.fillRect(0, y - width/2, 64, width);
+                
+                // Textura
+                ctx.fillStyle = "#3e2723";
+                ctx.fillRect(0, y - width/2 + 1, 64, 1);
+            }
+            
+            // Vegetación entre troncos
+            for (let i = 0; i < 15; i++) {
+                const x = (i * 17 + 12) % 64;
+                const y = (i * 19 + 8) % 64;
+                const size = 2 + (i % 3);
+                
+                ctx.fillStyle = "#43a047";
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            downloadCanvas('bosque2.png');
+        }
+        
+        function generateForestWall3() {
+            status.textContent = "Generando pared rocosa...";
+            ctx.clearRect(0, 0, 64, 64);
+            
+            // Fondo rocoso
+            ctx.fillStyle = "#424242";
+            ctx.fillRect(0, 0, 64, 64);
+            
+            // Rocas grandes
+            const rockPositions = [
+                {x: 12, y: 12, size: 8},
+                {x: 35, y: 8, size: 10},
+                {x: 52, y: 15, size: 7},
+                {x: 8, y: 35, size: 9},
+                {x: 28, y: 40, size: 11},
+                {x: 48, y: 45, size: 8},
+                {x: 15, y: 55, size: 6}
+            ];
+            
+            for (let rock of rockPositions) {
+                // Roca principal
+                ctx.fillStyle = "#5d4037";
+                ctx.beginPath();
+                ctx.ellipse(rock.x, rock.y, rock.size, rock.size * 0.8, 0, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Sombra de la roca
+                ctx.fillStyle = "#3e2723";
+                ctx.beginPath();
+                ctx.ellipse(rock.x + 1, rock.y + 1, rock.size * 0.8, rock.size * 0.6, 0, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Highlight en la roca
+                ctx.fillStyle = "#8d6e63";
+                ctx.beginPath();
+                ctx.ellipse(rock.x - 2, rock.y - 2, rock.size * 0.4, rock.size * 0.3, 0, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Musgo en las rocas
+            for (let i = 0; i < 12; i++) {
+                const x = (i * 21 + 5) % 60;
+                const y = (i * 17 + 10) % 60;
+                const size = 2 + (i % 2);
+                
+                ctx.fillStyle = "#66bb6a";
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Pequeñas piedrecitas
+            for (let i = 0; i < 20; i++) {
+                const x = (i * 13 + 3) % 64;
+                const y = (i * 11 + 6) % 64;
+                const size = 1 + (i % 2);
+                
+                ctx.fillStyle = "#757575";
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            downloadCanvas('bosque3.png');
+        }
+        
+        function generateForestGround() {
+            status.textContent = "Generando suelo del bosque...";
+            ctx.clearRect(0, 0, 64, 64);
+            
+            // Fondo base hierba
+            ctx.fillStyle = "#b9f6ca";
+            ctx.fillRect(0, 0, 64, 64);
+            
+            // Textura de tierra
+            const earthColors = ["#a5d6a7", "#c8e6c9", "#81c784", "#9ccc65"];
+            for (let i = 0; i < 80; i++) {
+                const x = (i * 7) % 64;
+                const y = (i * 11) % 64;
+                const size = 1 + (i % 2);
+                
+                ctx.fillStyle = earthColors[i % earthColors.length];
+                ctx.fillRect(x, y, size, size);
+            }
+            
+            // Hojas caídas
+            const leafColors = ["#ff8f00", "#ffb74d", "#ffc107", "#8bc34a", "#795548"];
+            for (let i = 0; i < 12; i++) {
+                const x = (i * 13 + 5) % 60;
+                const y = (i * 17 + 8) % 60;
+                const width = 3 + (i % 2);
+                const height = 2 + (i % 2);
+                
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate((i * 30) * Math.PI / 180);
+                ctx.fillStyle = leafColors[i % leafColors.length];
+                ctx.beginPath();
+                ctx.ellipse(0, 0, width, height, 0, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // Pequeñas piedras
+            for (let i = 0; i < 6; i++) {
+                const x = (i * 23 + 10) % 58;
+                const y = (i * 29 + 15) % 58;
+                const size = 1.5 + (i % 2) * 0.5;
+                
+                ctx.fillStyle = "#616161";
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Pequeñas ramitas
+            for (let i = 0; i < 4; i++) {
+                const x = (i * 31 + 12) % 58;
+                const y = (i * 37 + 18) % 58;
+                
+                ctx.strokeStyle = "#8d6e63";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + 6, y + 2);
+                ctx.stroke();
+            }
+            
+            downloadCanvas('suelo_bosque.png');
+        }
+        
+        status.textContent = "Listo para generar imágenes";
+    </script>
+</body>
+</html>

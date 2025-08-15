@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Mapa Level 1 - World of Wherecraft</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .generator-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        canvas {
+            border: 3px solid #8b4513;
+            margin: 20px auto;
+            display: block;
+            background: white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        .download-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #333;
+            border-radius: 15px;
+            border: 2px solid #8b4513;
+        }
+        
+        .instructions {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .preview {
+            margin: 20px 0;
+        }
+        
+        h1 {
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            margin-bottom: 30px;
+        }
+        
+        h2 {
+            color: #daa520;
+        }
+        
+        .terrain-legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .terrain-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.5);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        
+        .terrain-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="generator-container">
+        <h1>🗺️ Generador de Mapa Level 1 - World of Wherecraft</h1>
+        
+        <div class="instructions">
+            <h2>📋 Instrucciones:</h2>
+            <ol>
+                <li>Click en "Generar Mapa Level 1" para crear el mapa</li>
+                <li>El mapa tendrá terrenos variados, bases de facciones y elementos de juego</li>
+                <li>Click derecho en la imagen → "Guardar imagen como..." → "level1_map.jpg"</li>
+                <li>Guarda la imagen en la carpeta: <strong>ImagesWow/level1_map.jpg</strong></li>
+                <li>El mapa se cargará automáticamente en el juego</li>
+            </ol>
+        </div>
+        
+        <div class="terrain-legend">
+            <div class="terrain-item">
+                <div class="terrain-color" style="background: #228b22;"></div>
+                <span>🌿 Bosque</span>
+            </div>
+            <div class="terrain-item">
+                <div class="terrain-color" style="background: #696969;"></div>
+                <span>🏔️ Montaña</span>
+            </div>
+            <div class="terrain-item">
+                <div class="terrain-color" style="background: #4682b4;"></div>
+                <span>🌊 Agua</span>
+            </div>
+            <div class="terrain-item">
+                <div class="terrain-color" style="background: #daa520;"></div>
+                <span>🏜️ Desierto</span>
+            </div>
+            <div class="terrain-item">
+                <div class="terrain-color" style="background: #8fbc8f;"></div>
+                <span>🌱 Pradera</span>
+            </div>
+            <div class="terrain-item">
+                <div class="terrain-color" style="background: #a0522d;"></div>
+                <span>🛤️ Camino</span>
+            </div>
+        </div>
+        
+        <div class="download-section">
+            <h2>🎨 Mapa Generado:</h2>
+            <div class="preview">
+                <canvas id="mapCanvas" width="1200" height="800"></canvas>
+            </div>
+            
+            <button class="btn" onclick="generateLevel1Map()">🔄 Generar Mapa Level 1</button>
+            <button class="btn" onclick="downloadMap()">📥 Descargar Mapa (level1_map.jpg)</button>
+            <button class="btn" onclick="generateVariation()">🎲 Generar Variación</button>
+        </div>
+        
+        <div class="instructions">
+            <h2>🎮 Características del Mapa:</h2>
+            <ul>
+                <li><strong>🛡️ Base Alianza:</strong> Parte superior del mapa (azul)</li>
+                <li><strong>🔥 Base Horda:</strong> Parte inferior del mapa (roja)</li>
+                <li><strong>🌿 Bosques:</strong> Recursos de madera y refugio</li>
+                <li><strong>🏔️ Montañas:</strong> Obstáculos naturales y minerales</li>
+                <li><strong>🌊 Lagos y ríos:</strong> Fuentes de agua y barreras</li>
+                <li><strong>🏜️ Desiertos:</strong> Zonas áridas con tesoros ocultos</li>
+                <li><strong>🛤️ Caminos:</strong> Rutas de comercio y movimiento rápido</li>
+                <li><strong>🏗️ Estructuras:</strong> Torres, pueblos y puntos estratégicos</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let mapSeed = Math.random();
+        
+        function generateLevel1Map() {
+            const canvas = document.getElementById('mapCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar canvas
+            ctx.clearRect(0, 0, 1200, 800);
+            
+            // Fondo base (pradera)
+            const baseGradient = ctx.createLinearGradient(0, 0, 1200, 800);
+            baseGradient.addColorStop(0, '#9acd32');
+            baseGradient.addColorStop(0.3, '#8fbc8f');
+            baseGradient.addColorStop(0.7, '#7cfc00');
+            baseGradient.addColorStop(1, '#90ee90');
+            
+            ctx.fillStyle = baseGradient;
+            ctx.fillRect(0, 0, 1200, 800);
+            
+            // Añadir textura de hierba
+            generateGrassTexture(ctx);
+            
+            // Generar terrenos
+            generateForests(ctx);
+            generateMountains(ctx);
+            generateWaterBodies(ctx);
+            generateDeserts(ctx);
+            generateRoads(ctx);
+            
+            // Estructuras
+            generateStructures(ctx);
+            
+            // Bases de facciones
+            generateAllianceBase(ctx);
+            generateHordeBase(ctx);
+            
+            // Elementos decorativos
+            generateDecorations(ctx);
+            
+            console.log('✅ Mapa Level 1 generado correctamente');
+        }
+        
+        function generateGrassTexture(ctx) {
+            // Añadir textura sutil de hierba
+            for (let i = 0; i < 3000; i++) {
+                const x = Math.random() * 1200;
+                const y = Math.random() * 800;
+                const size = Math.random() * 2 + 1;
+                const alpha = Math.random() * 0.1 + 0.05;
+                
+                ctx.fillStyle = `rgba(34, ${Math.floor(139 + Math.random() * 40)}, 34, ${alpha})`;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+        
+        function generateForests(ctx) {
+            const forests = [
+                {x: 150, y: 200, w: 200, h: 150},
+                {x: 800, y: 100, w: 180, h: 200},
+                {x: 300, y: 500, w: 250, h: 180},
+                {x: 900, y: 600, w: 200, h: 120},
+                {x: 50, y: 600, w: 150, h: 150}
+            ];
+            
+            forests.forEach(forest => {
+                // Fondo del bosque
+                const forestGradient = ctx.createRadialGradient(
+                    forest.x + forest.w/2, forest.y + forest.h/2, 0,
+                    forest.x + forest.w/2, forest.y + forest.h/2, Math.max(forest.w, forest.h)/2
+                );
+                forestGradient.addColorStop(0, '#228b22');
+                forestGradient.addColorStop(0.7, '#006400');
+                forestGradient.addColorStop(1, '#013220');
+                
+                ctx.fillStyle = forestGradient;
+                drawIrregularShape(ctx, forest.x, forest.y, forest.w, forest.h);
+                
+                // Árboles individuales
+                for (let i = 0; i < 30; i++) {
+                    const treeX = forest.x + Math.random() * forest.w;
+                    const treeY = forest.y + Math.random() * forest.h;
+                    drawTree(ctx, treeX, treeY);
+                }
+            });
+        }
+        
+        function generateMountains(ctx) {
+            const mountains = [
+                {x: 500, y: 50, w: 250, h: 200},
+                {x: 1000, y: 300, w: 150, h: 180},
+                {x: 700, y: 600, w: 200, h: 150},
+                {x: 50, y: 350, w: 120, h: 100}
+            ];
+            
+            mountains.forEach(mountain => {
+                // Fondo de la montaña
+                const mountainGradient = ctx.createLinearGradient(
+                    mountain.x, mountain.y,
+                    mountain.x, mountain.y + mountain.h
+                );
+                mountainGradient.addColorStop(0, '#dcdcdc');
+                mountainGradient.addColorStop(0.3, '#a9a9a9');
+                mountainGradient.addColorStop(0.7, '#696969');
+                mountainGradient.addColorStop(1, '#2f2f2f');
+                
+                ctx.fillStyle = mountainGradient;
+                drawMountainShape(ctx, mountain.x, mountain.y, mountain.w, mountain.h);
+                
+                // Sombras y detalles
+                ctx.fillStyle = 'rgba(47, 47, 47, 0.3)';
+                drawMountainShadows(ctx, mountain.x, mountain.y, mountain.w, mountain.h);
+            });
+        }
+        
+        function generateWaterBodies(ctx) {
+            const waters = [
+                {x: 400, y: 300, w: 300, h: 100, type: 'river'},
+                {x: 850, y: 450, w: 200, h: 200, type: 'lake'},
+                {x: 100, y: 100, w: 150, h: 80, type: 'lake'},
+                {x: 600, y: 150, w: 120, h: 250, type: 'river'}
+            ];
+            
+            waters.forEach(water => {
+                // Agua base
+                const waterGradient = ctx.createRadialGradient(
+                    water.x + water.w/2, water.y + water.h/2, 0,
+                    water.x + water.w/2, water.y + water.h/2, Math.max(water.w, water.h)/2
+                );
+                waterGradient.addColorStop(0, '#87ceeb');
+                waterGradient.addColorStop(0.5, '#4682b4');
+                waterGradient.addColorStop(1, '#191970');
+                
+                ctx.fillStyle = waterGradient;
+                
+                if (water.type === 'river') {
+                    drawRiver(ctx, water.x, water.y, water.w, water.h);
+                } else {
+                    drawLake(ctx, water.x, water.y, water.w, water.h);
+                }
+                
+                // Efectos de agua
+                drawWaterEffects(ctx, water.x, water.y, water.w, water.h);
+            });
+        }
+        
+        function generateDeserts(ctx) {
+            const deserts = [
+                {x: 950, y: 50, w: 200, h: 150},
+                {x: 1050, y: 650, w: 130, h: 120},
+                {x: 200, y: 750, w: 180, h: 50}
+            ];
+            
+            deserts.forEach(desert => {
+                // Fondo del desierto
+                const desertGradient = ctx.createRadialGradient(
+                    desert.x + desert.w/2, desert.y + desert.h/2, 0,
+                    desert.x + desert.w/2, desert.y + desert.h/2, Math.max(desert.w, desert.h)/2
+                );
+                desertGradient.addColorStop(0, '#f4a460');
+                desertGradient.addColorStop(0.5, '#daa520');
+                desertGradient.addColorStop(1, '#b8860b');
+                
+                ctx.fillStyle = desertGradient;
+                drawIrregularShape(ctx, desert.x, desert.y, desert.w, desert.h);
+                
+                // Dunas
+                drawDunes(ctx, desert.x, desert.y, desert.w, desert.h);
+            });
+        }
+        
+        function generateRoads(ctx) {
+            ctx.strokeStyle = '#8b4513';
+            ctx.lineWidth = 12;
+            ctx.lineCap = 'round';
+            
+            // Camino principal horizontal
+            ctx.beginPath();
+            ctx.moveTo(0, 400);
+            ctx.quadraticCurveTo(300, 380, 600, 400);
+            ctx.quadraticCurveTo(900, 420, 1200, 400);
+            ctx.stroke();
+            
+            // Camino vertical
+            ctx.beginPath();
+            ctx.moveTo(600, 0);
+            ctx.quadraticCurveTo(620, 200, 600, 400);
+            ctx.quadraticCurveTo(580, 600, 600, 800);
+            ctx.stroke();
+            
+            // Caminos secundarios
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.moveTo(200, 200);
+            ctx.quadraticCurveTo(400, 250, 600, 200);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(600, 600);
+            ctx.quadraticCurveTo(800, 650, 1000, 600);
+            ctx.stroke();
+        }
+        
+        function generateStructures(ctx) {
+            // Torres de vigilancia
+            const towers = [
+                {x: 300, y: 100}, {x: 900, y: 200},
+                {x: 700, y: 500}, {x: 200, y: 600}
+            ];
+            
+            towers.forEach(tower => {
+                drawTower(ctx, tower.x, tower.y);
+            });
+            
+            // Pueblos
+            const villages = [
+                {x: 450, y: 350}, {x: 750, y: 150},
+                {x: 150, y: 500}
+            ];
+            
+            villages.forEach(village => {
+                drawVillage(ctx, village.x, village.y);
+            });
+        }
+        
+        function generateAllianceBase(ctx) {
+            const baseX = 500;
+            const baseY = 50;
+            const baseW = 200;
+            const baseH = 100;
+            
+            // Fondo de la base
+            const allianceGradient = ctx.createLinearGradient(baseX, baseY, baseX, baseY + baseH);
+            allianceGradient.addColorStop(0, '#4169e1');
+            allianceGradient.addColorStop(0.5, '#1e90ff');
+            allianceGradient.addColorStop(1, '#0066cc');
+            
+            ctx.fillStyle = allianceGradient;
+            ctx.fillRect(baseX, baseY, baseW, baseH);
+            
+            // Borde
+            ctx.strokeStyle = '#000080';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(baseX, baseY, baseW, baseH);
+            
+            // Símbolo de la Alianza
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('⚔️ ALIANZA', baseX + baseW/2, baseY + baseH/2 + 8);
+            
+            // Torres de la base
+            for (let i = 0; i < 4; i++) {
+                const towerX = baseX + (i * baseW/3) - 10;
+                const towerY = baseY - 20;
+                drawBaseTower(ctx, towerX, towerY, '#4169e1');
+            }
+        }
+        
+        function generateHordeBase(ctx) {
+            const baseX = 500;
+            const baseY = 650;
+            const baseW = 200;
+            const baseH = 100;
+            
+            // Fondo de la base
+            const hordeGradient = ctx.createLinearGradient(baseX, baseY, baseX, baseY + baseH);
+            hordeGradient.addColorStop(0, '#dc143c');
+            hordeGradient.addColorStop(0.5, '#b22222');
+            hordeGradient.addColorStop(1, '#8b0000');
+            
+            ctx.fillStyle = hordeGradient;
+            ctx.fillRect(baseX, baseY, baseW, baseH);
+            
+            // Borde
+            ctx.strokeStyle = '#660000';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(baseX, baseY, baseW, baseH);
+            
+            // Símbolo de la Horda
+            ctx.fillStyle = '#ffd700';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('🔥 HORDA', baseX + baseW/2, baseY + baseH/2 + 8);
+            
+            // Torres de la base
+            for (let i = 0; i < 4; i++) {
+                const towerX = baseX + (i * baseW/3) - 10;
+                const towerY = baseY + baseH;
+                drawBaseTower(ctx, towerX, towerY, '#dc143c');
+            }
+        }
+        
+        function generateDecorations(ctx) {
+            // Cristales mágicos
+            const crystals = [
+                {x: 350, y: 250, color: '#9370db'},
+                {x: 750, y: 400, color: '#ff6347'},
+                {x: 950, y: 500, color: '#32cd32'}
+            ];
+            
+            crystals.forEach(crystal => {
+                drawCrystal(ctx, crystal.x, crystal.y, crystal.color);
+            });
+            
+            // Ruinas antiguas
+            drawRuins(ctx, 800, 300);
+            drawRuins(ctx, 150, 450);
+        }
+        
+        // Funciones auxiliares de dibujo
+        function drawIrregularShape(ctx, x, y, w, h) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + h/2);
+            ctx.quadraticCurveTo(x + w/4, y, x + w/2, y + h/4);
+            ctx.quadraticCurveTo(x + 3*w/4, y, x + w, y + h/2);
+            ctx.quadraticCurveTo(x + 3*w/4, y + h, x + w/2, y + 3*h/4);
+            ctx.quadraticCurveTo(x + w/4, y + h, x, y + h/2);
+            ctx.fill();
+        }
+        
+        function drawTree(ctx, x, y) {
+            // Tronco
+            ctx.fillStyle = '#8b4513';
+            ctx.fillRect(x - 2, y, 4, 15);
+            
+            // Copa
+            ctx.fillStyle = '#228b22';
+            ctx.beginPath();
+            ctx.arc(x, y - 5, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawMountainShape(ctx, x, y, w, h) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + h);
+            ctx.lineTo(x + w/4, y + h/4);
+            ctx.lineTo(x + w/2, y);
+            ctx.lineTo(x + 3*w/4, y + h/3);
+            ctx.lineTo(x + w, y + h);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function drawMountainShadows(ctx, x, y, w, h) {
+            ctx.beginPath();
+            ctx.moveTo(x + w/2, y);
+            ctx.lineTo(x + 3*w/4, y + h/3);
+            ctx.lineTo(x + w, y + h);
+            ctx.lineTo(x + w/2, y + h);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function drawRiver(ctx, x, y, w, h) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + h/2);
+            for (let i = 0; i <= w; i += 10) {
+                const waveY = y + h/2 + Math.sin(i * 0.1) * h/4;
+                ctx.lineTo(x + i, waveY);
+            }
+            ctx.lineTo(x + w, y + h);
+            ctx.lineTo(x, y + h);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function drawLake(ctx, x, y, w, h) {
+            ctx.beginPath();
+            ctx.ellipse(x + w/2, y + h/2, w/2, h/2, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawWaterEffects(ctx, x, y, w, h) {
+            ctx.strokeStyle = 'rgba(135, 206, 235, 0.5)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath();
+                ctx.ellipse(x + w/2, y + h/2, w/2 - i*5, h/2 - i*3, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+        
+        function drawDunes(ctx, x, y, w, h) {
+            ctx.fillStyle = 'rgba(218, 165, 32, 0.3)';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.ellipse(x + i*w/3, y + h/2, w/6, h/4, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        function drawTower(ctx, x, y) {
+            // Base de la torre
+            ctx.fillStyle = '#696969';
+            ctx.fillRect(x - 10, y, 20, 30);
+            
+            // Techo
+            ctx.fillStyle = '#8b0000';
+            ctx.beginPath();
+            ctx.moveTo(x, y - 10);
+            ctx.lineTo(x - 15, y);
+            ctx.lineTo(x + 15, y);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Ventana
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(x - 3, y + 5, 6, 6);
+        }
+        
+        function drawVillage(ctx, x, y) {
+            // Casas
+            for (let i = 0; i < 3; i++) {
+                const houseX = x + i * 15 - 15;
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(houseX, y, 12, 12);
+                
+                // Techo
+                ctx.fillStyle = '#654321';
+                ctx.beginPath();
+                ctx.moveTo(houseX + 6, y - 5);
+                ctx.lineTo(houseX - 2, y);
+                ctx.lineTo(houseX + 14, y);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        function drawBaseTower(ctx, x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 20, 20);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, 20, 20);
+        }
+        
+        function drawCrystal(ctx, x, y, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(x, y - 15);
+            ctx.lineTo(x - 8, y);
+            ctx.lineTo(x, y + 15);
+            ctx.lineTo(x + 8, y);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Brillo
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.beginPath();
+            ctx.moveTo(x, y - 15);
+            ctx.lineTo(x - 4, y - 8);
+            ctx.lineTo(x, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        function drawRuins(ctx, x, y) {
+            ctx.fillStyle = '#708090';
+            ctx.fillRect(x, y, 30, 15);
+            ctx.fillRect(x + 35, y, 25, 20);
+            ctx.fillRect(x + 10, y - 10, 15, 10);
+        }
+        
+        function generateVariation() {
+            mapSeed = Math.random();
+            generateLevel1Map();
+        }
+        
+        function downloadMap() {
+            const canvas = document.getElementById('mapCanvas');
+            const link = document.createElement('a');
+            link.download = 'level1_map.jpg';
+            link.href = canvas.toDataURL('image/jpeg', 0.9);
+            link.click();
+            console.log('🎯 Descargando mapa como level1_map.jpg');
+        }
+        
+        // Generar mapa automáticamente al cargar
+        window.addEventListener('load', function() {
+            generateLevel1Map();
+        });
+    </script>
+</body>
+</html>

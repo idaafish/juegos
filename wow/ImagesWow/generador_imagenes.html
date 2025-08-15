@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Imágenes - World of Wherecraft</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+        }
+        
+        .generator-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        canvas {
+            border: 2px solid #666;
+            margin: 10px;
+            background: white;
+        }
+        
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+        }
+        
+        .download-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #333;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="generator-container">
+        <h1>🎨 Generador de Imágenes para World of Wherecraft</h1>
+        
+        <div class="download-section">
+            <h2>Imágenes Generadas:</h2>
+            <p>Haz click derecho en cualquier imagen y selecciona "Guardar imagen como..." para descargarla.</p>
+            
+            <h3>🌿 Texturas de Terreno:</h3>
+            <canvas id="grassTexture" width="200" height="200"></canvas>
+            <canvas id="stoneTexture" width="200" height="200"></canvas>
+            <canvas id="waterTexture" width="200" height="200"></canvas>
+            <canvas id="sandTexture" width="200" height="200"></canvas>
+            
+            <h3>🏰 Estructuras:</h3>
+            <canvas id="allianceBase" width="150" height="150"></canvas>
+            <canvas id="hordeBase" width="150" height="150"></canvas>
+            <canvas id="tower" width="100" height="120"></canvas>
+            
+            <h3>🗺️ Iconos del Mapa:</h3>
+            <canvas id="minimapTerrain" width="200" height="133"></canvas>
+        </div>
+        
+        <button class="btn" onclick="generateAllImages()">🔄 Regenerar Todas las Imágenes</button>
+        <button class="btn" onclick="downloadAll()">📥 Preparar Descarga de Todas</button>
+    </div>
+
+    <script>
+        function generateGrassTexture() {
+            const canvas = document.getElementById('grassTexture');
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo base verde
+            const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+            gradient.addColorStop(0, '#2d4a22');
+            gradient.addColorStop(0.5, '#3e5c2e');
+            gradient.addColorStop(1, '#4a6b35');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 200, 200);
+            
+            // Añadir textura de hierba
+            for (let i = 0; i < 1000; i++) {
+                const x = Math.random() * 200;
+                const y = Math.random() * 200;
+                const size = Math.random() * 3 + 1;
+                
+                ctx.fillStyle = `rgba(34, ${Math.floor(139 + Math.random() * 40)}, 34, ${0.3 + Math.random() * 0.4})`;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        function generateStoneTexture() {
+            const canvas = document.getElementById('stoneTexture');
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo base gris
+            const gradient = ctx.createRadialGradient(100, 100, 0, 100, 100, 100);
+            gradient.addColorStop(0, '#a9a9a9');
+            gradient.addColorStop(0.7, '#696969');
+            gradient.addColorStop(1, '#2f2f2f');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 200, 200);
+            
+            // Añadir grietas y textura
+            for (let i = 0; i < 50; i++) {
+                const x = Math.random() * 200;
+                const y = Math.random() * 200;
+                const width = Math.random() * 30 + 5;
+                const height = Math.random() * 5 + 1;
+                
+                ctx.fillStyle = `rgba(47, 47, 47, ${0.4 + Math.random() * 0.4})`;
+                ctx.fillRect(x, y, width, height);
+            }
+        }
+
+        function generateWaterTexture() {
+            const canvas = document.getElementById('waterTexture');
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo base azul
+            const gradient = ctx.createLinearGradient(0, 0, 200, 200);
+            gradient.addColorStop(0, '#87ceeb');
+            gradient.addColorStop(0.5, '#4682b4');
+            gradient.addColorStop(1, '#191970');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 200, 200);
+            
+            // Añadir ondas
+            for (let i = 0; i < 20; i++) {
+                const y = i * 10;
+                ctx.strokeStyle = `rgba(135, 206, 235, ${0.3 + Math.random() * 0.3})`;
+                ctx.lineWidth = 2 + Math.random() * 2;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                
+                for (let x = 0; x <= 200; x += 10) {
+                    const waveY = y + Math.sin(x * 0.1 + i) * 3;
+                    ctx.lineTo(x, waveY);
+                }
+                ctx.stroke();
+            }
+        }
+
+        function generateSandTexture() {
+            const canvas = document.getElementById('sandTexture');
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo base arena
+            const gradient = ctx.createRadialGradient(100, 100, 0, 100, 100, 141);
+            gradient.addColorStop(0, '#f4a460');
+            gradient.addColorStop(0.5, '#daa520');
+            gradient.addColorStop(1, '#b8860b');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 200, 200);
+            
+            // Añadir granos de arena
+            for (let i = 0; i < 2000; i++) {
+                const x = Math.random() * 200;
+                const y = Math.random() * 200;
+                const size = Math.random() * 2;
+                
+                ctx.fillStyle = `rgba(${244 + Math.random() * 20}, ${164 + Math.random() * 40}, ${96 + Math.random() * 20}, ${0.2 + Math.random() * 0.3})`;
+                ctx.fillRect(x, y, size, size);
+            }
+        }
+
+        function generateAllianceBase() {
+            const canvas = document.getElementById('allianceBase');
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo azul
+            const gradient = ctx.createLinearGradient(0, 0, 150, 150);
+            gradient.addColorStop(0, '#4169e1');
+            gradient.addColorStop(0.5, '#1e90ff');
+            gradient.addColorStop(1, '#0066cc');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 150, 150);
+            
+            // Escudo
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.moveTo(75, 20);
+            ctx.lineTo(100, 40);
+            ctx.lineTo(100, 80);
+            ctx.lineTo(75, 100);
+            ctx.lineTo(50, 80);
+            ctx.lineTo(50, 40);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Cruz en el escudo
+            ctx.fillStyle = '#0066cc';
+            ctx.fillRect(70, 30, 10, 50);
+            ctx.fillRect(55, 45, 40, 10);
+            
+            // Texto
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('ALIANZA', 75, 125);
+        }
+
+        function generateHordeBase() {
+            const canvas = document.getElementById('hordeBase');
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo rojo
+            const gradient = ctx.createLinearGradient(0, 0, 150, 150);
+            gradient.addColorStop(0, '#dc143c');
+            gradient.addColorStop(0.5, '#b22222');
+            gradient.addColorStop(1, '#8b0000');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 150, 150);
+            
+            // Símbolo de la Horda (estilizado)
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            // Parte superior
+            ctx.moveTo(75, 20);
+            ctx.lineTo(90, 35);
+            ctx.lineTo(85, 50);
+            ctx.lineTo(75, 45);
+            ctx.lineTo(65, 50);
+            ctx.lineTo(60, 35);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Parte inferior
+            ctx.beginPath();
+            ctx.moveTo(75, 45);
+            ctx.lineTo(95, 60);
+            ctx.lineTo(90, 90);
+            ctx.lineTo(75, 100);
+            ctx.lineTo(60, 90);
+            ctx.lineTo(55, 60);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Texto
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('HORDA', 75, 125);
+        }
+
+        function generateTower() {
+            const canvas = document.getElementById('tower');
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo transparente
+            ctx.clearRect(0, 0, 100, 120);
+            
+            // Torre base
+            const gradient = ctx.createLinearGradient(0, 0, 100, 120);
+            gradient.addColorStop(0, '#696969');
+            gradient.addColorStop(0.5, '#2f2f2f');
+            gradient.addColorStop(1, '#1a1a1a');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(30, 40, 40, 80);
+            
+            // Techo cónico
+            ctx.fillStyle = '#8b0000';
+            ctx.beginPath();
+            ctx.moveTo(50, 10);
+            ctx.lineTo(75, 40);
+            ctx.lineTo(25, 40);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Ventanas
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(40, 55, 8, 8);
+            ctx.fillRect(52, 55, 8, 8);
+            ctx.fillRect(40, 75, 8, 8);
+            ctx.fillRect(52, 75, 8, 8);
+            
+            // Puerta
+            ctx.fillStyle = '#8b4513';
+            ctx.fillRect(42, 95, 16, 25);
+        }
+
+        function generateMinimapTerrain() {
+            const canvas = document.getElementById('minimapTerrain');
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo del mapa
+            const gradient = ctx.createLinearGradient(0, 0, 200, 133);
+            gradient.addColorStop(0, '#1a2f15');
+            gradient.addColorStop(0.25, '#243620');
+            gradient.addColorStop(0.5, '#2e4225');
+            gradient.addColorStop(0.75, '#243620');
+            gradient.addColorStop(1, '#1a2f15');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 200, 133);
+            
+            // Terrenos en miniatura
+            // Bosques
+            ctx.fillStyle = '#228b22';
+            ctx.fillRect(33, 27, 13, 13); // Escalado del bosque original
+            ctx.fillRect(147, 53, 10, 10);
+            
+            // Montañas
+            ctx.fillStyle = '#696969';
+            ctx.fillRect(133, 13, 12, 12);
+            ctx.fillRect(53, 80, 15, 15);
+            
+            // Agua
+            ctx.fillStyle = '#4682b4';
+            ctx.fillRect(80, 40, 20, 10);
+            ctx.fillRect(160, 93, 13, 13);
+            
+            // Desierto
+            ctx.fillStyle = '#daa520';
+            ctx.fillRect(13, 67, 17, 12);
+            ctx.fillRect(173, 27, 12, 12);
+            
+            // Bases
+            ctx.fillStyle = '#4169e1'; // Alianza
+            ctx.fillRect(97, 7, 5, 5);
+            
+            ctx.fillStyle = '#dc143c'; // Horda
+            ctx.fillRect(97, 121, 5, 5);
+        }
+
+        function generateAllImages() {
+            generateGrassTexture();
+            generateStoneTexture();
+            generateWaterTexture();
+            generateSandTexture();
+            generateAllianceBase();
+            generateHordeBase();
+            generateTower();
+            generateMinimapTerrain();
+        }
+
+        function downloadAll() {
+            const canvases = ['grassTexture', 'stoneTexture', 'waterTexture', 'sandTexture', 
+                            'allianceBase', 'hordeBase', 'tower', 'minimapTerrain'];
+            
+            canvases.forEach(id => {
+                const canvas = document.getElementById(id);
+                const link = document.createElement('a');
+                link.download = `${id}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        // Generar imágenes al cargar la página
+        window.addEventListener('load', generateAllImages);
+    </script>
+</body>
+</html>

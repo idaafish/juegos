@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Mapa Ultra Detallado</title>
+    <style>
+        body {
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #ffd700;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        #status {
+            font-size: 18px;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0,0,0,0.7);
+            border-radius: 10px;
+            border: 2px solid #ffd700;
+        }
+        #preview {
+            margin: 20px 0;
+            border: 3px solid #ffd700;
+            border-radius: 10px;
+            max-width: 100%;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        .download-btn {
+            background: linear-gradient(45deg, #228b22, #32cd32);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .download-btn:hover {
+            background: linear-gradient(45deg, #32cd32, #228b22);
+            transform: translateY(-2px);
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ Generador de Mapa Ultra Detallado</h1>
+        <h2>World of Wherecraft - Bosques, Caminos y Ríos</h2>
+        
+        <div id="status">Iniciando generación del mapa detallado...</div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <canvas id="mapCanvas" width="3000" height="2000" style="display: none;"></canvas>
+        <img id="preview" style="display: none;">
+        
+        <div id="controls" style="display: none;">
+            <button class="download-btn" onclick="downloadMap()">📥 Descargar MapLevel1.jpeg</button>
+            <button class="download-btn" onclick="copyToGame()">🎮 Aplicar al Juego</button>
+        </div>
+    </div>
+
+    <script>
+        let canvas, ctx;
+        let progress = 0;
+
+        function init() {
+            canvas = document.getElementById('mapCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // Generar automáticamente al cargar
+            setTimeout(() => {
+                generateUltraDetailedMap();
+            }, 1000);
+        }
+
+        function updateProgress(percent, message) {
+            progress = percent;
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('status').textContent = message;
+        }
+
+        function generateUltraDetailedMap() {
+            updateProgress(10, "🌿 Creando base de césped natural...");
+            
+            // Base de césped con múltiples tonos
+            createNaturalGrassBase();
+            
+            setTimeout(() => {
+                updateProgress(20, "🏔️ Formando cordilleras y montañas...");
+                drawDetailedMountains();
+                
+                setTimeout(() => {
+                    updateProgress(35, "💧 Trazando ríos serpenteantes...");
+                    drawSerpentineRivers();
+                    
+                    setTimeout(() => {
+                        updateProgress(50, "🌲 Plantando bosques densos...");
+                        drawDenseForests();
+                        
+                        setTimeout(() => {
+                            updateProgress(65, "🛤️ Construyendo red de caminos...");
+                            drawRoadNetwork();
+                            
+                            setTimeout(() => {
+                                updateProgress(80, "🏰 Estableciendo asentamientos...");
+                                drawSettlements();
+                                
+                                setTimeout(() => {
+                                    updateProgress(95, "✨ Añadiendo toques finales...");
+                                    addUltraDetails();
+                                    
+                                    setTimeout(() => {
+                                        updateProgress(100, "✅ ¡Mapa ultra detallado completado!");
+                                        showPreview();
+                                    }, 500);
+                                }, 500);
+                            }, 500);
+                        }, 500);
+                    }, 500);
+                }, 500);
+            }, 500);
+        }
+
+        function createNaturalGrassBase() {
+            // Gradiente base natural
+            const gradient = ctx.createRadialGradient(
+                canvas.width/2, canvas.height/2, 0,
+                canvas.width/2, canvas.height/2, Math.max(canvas.width, canvas.height)/2
+            );
+            gradient.addColorStop(0, '#4a7c59');
+            gradient.addColorStop(0.3, '#2d5a27');
+            gradient.addColorStop(0.6, '#1e4a1e');
+            gradient.addColorStop(1, '#0f2f0f');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Añadir variaciones de césped
+            for (let i = 0; i < 5000; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const size = Math.random() * 5 + 1;
+                const alpha = Math.random() * 0.4 + 0.1;
+                
+                ctx.fillStyle = `rgba(${Math.floor(Math.random() * 50 + 50)}, ${Math.floor(Math.random() * 100 + 150)}, ${Math.floor(Math.random() * 50 + 50)}, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function drawDetailedMountains() {
+            // Cordillera del Norte
+            drawMountainRange([
+                {x: 1800, y: 150, w: 400, h: 300},
+                {x: 2100, y: 100, w: 350, h: 350},
+                {x: 2400, y: 200, w: 300, h: 250}
+            ], '#5a5a5a');
+
+            // Montañas del Sur
+            drawMountainRange([
+                {x: 600, y: 1300, w: 450, h: 400},
+                {x: 1000, y: 1200, w: 350, h: 350},
+                {x: 1300, y: 1350, w: 300, h: 300}
+            ], '#4a4a4a');
+
+            // Colinas del Este
+            drawHills(2500, 600, 400, 300);
+        }
+
+        function drawMountainRange(mountains, baseColor) {
+            mountains.forEach(mountain => {
+                // Montaña principal
+                ctx.fillStyle = baseColor;
+                ctx.beginPath();
+                ctx.moveTo(mountain.x, mountain.y + mountain.h);
+                
+                // Picos irregulares
+                const peaks = 5;
+                for (let i = 0; i <= peaks; i++) {
+                    const x = mountain.x + (mountain.w / peaks) * i;
+                    const y = mountain.y + Math.random() * mountain.h * 0.3;
+                    ctx.lineTo(x, y);
+                }
+                
+                ctx.lineTo(mountain.x + mountain.w, mountain.y + mountain.h);
+                ctx.closePath();
+                ctx.fill();
+
+                // Sombras y detalles
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.beginPath();
+                ctx.moveTo(mountain.x + mountain.w * 0.3, mountain.y + mountain.h * 0.3);
+                ctx.lineTo(mountain.x + mountain.w, mountain.y + mountain.h);
+                ctx.lineTo(mountain.x + mountain.w * 0.7, mountain.y + mountain.h);
+                ctx.closePath();
+                ctx.fill();
+            });
+        }
+
+        function drawHills(x, y, w, h) {
+            for (let i = 0; i < 8; i++) {
+                const hillX = x + Math.random() * w;
+                const hillY = y + Math.random() * h;
+                const radius = Math.random() * 80 + 40;
+                
+                ctx.fillStyle = '#6b8e23';
+                ctx.beginPath();
+                ctx.arc(hillX, hillY, radius, 0, Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function drawSerpentineRivers() {
+            // Río principal serpenteante
+            ctx.strokeStyle = '#4682b4';
+            ctx.lineWidth = 35;
+            ctx.lineCap = 'round';
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 800);
+            
+            // Curvas naturales del río
+            const riverPoints = [
+                {x: 300, y: 750},
+                {x: 600, y: 850},
+                {x: 900, y: 700},
+                {x: 1200, y: 780},
+                {x: 1500, y: 650},
+                {x: 1800, y: 720},
+                {x: 2100, y: 600},
+                {x: 2400, y: 680},
+                {x: 2700, y: 550},
+                {x: 3000, y: 600}
+            ];
+            
+            for (let i = 0; i < riverPoints.length - 1; i++) {
+                const current = riverPoints[i];
+                const next = riverPoints[i + 1];
+                const cpX = (current.x + next.x) / 2 + (Math.random() - 0.5) * 200;
+                const cpY = (current.y + next.y) / 2 + (Math.random() - 0.5) * 100;
+                
+                ctx.quadraticCurveTo(cpX, cpY, next.x, next.y);
+            }
+            ctx.stroke();
+
+            // Afluentes
+            drawTributary(500, 600, 800, 750);
+            drawTributary(1800, 400, 1900, 700);
+            drawTributary(2200, 900, 2400, 680);
+
+            // Lagos conectados
+            drawConnectedLake(1200, 650, 150, 100);
+            drawConnectedLake(2000, 550, 120, 80);
+        }
+
+        function drawTributary(x1, y1, x2, y2) {
+            ctx.strokeStyle = '#5f9ea0';
+            ctx.lineWidth = 20;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            const midX = (x1 + x2) / 2 + (Math.random() - 0.5) * 100;
+            const midY = (y1 + y2) / 2 + (Math.random() - 0.5) * 50;
+            ctx.quadraticCurveTo(midX, midY, x2, y2);
+            ctx.stroke();
+        }
+
+        function drawConnectedLake(x, y, w, h) {
+            ctx.fillStyle = '#4682b4';
+            ctx.beginPath();
+            ctx.ellipse(x, y, w, h, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Reflejo
+            ctx.fillStyle = 'rgba(135, 206, 235, 0.6)';
+            ctx.beginPath();
+            ctx.ellipse(x - w/3, y - h/3, w/3, h/3, 0, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function drawDenseForests() {
+            // Bosque del Noroeste - Denso
+            drawDenseForestArea(300, 200, 600, 400, 'darkgreen');
+            
+            // Bosque Central - Mixto
+            drawDenseForestArea(1000, 900, 800, 500, 'forestgreen');
+            
+            // Bosque del Sur - Tropical
+            drawDenseForestArea(200, 1400, 500, 350, 'darkgreen');
+            
+            // Bosque del Este - Coníferas
+            drawDenseForestArea(2200, 1100, 600, 600, 'darkslategray');
+        }
+
+        function drawDenseForestArea(x, y, width, height, forestType) {
+            const density = 0.8; // Muy denso
+            const treeCount = (width * height * density) / 1000;
+            
+            // Fondo del bosque
+            ctx.fillStyle = 'rgba(34, 100, 34, 0.7)';
+            ctx.fillRect(x, y, width, height);
+            
+            for (let i = 0; i < treeCount; i++) {
+                const treeX = x + Math.random() * width;
+                const treeY = y + Math.random() * height;
+                const treeSize = Math.random() * 20 + 15;
+                
+                drawDetailedTree(treeX, treeY, treeSize, forestType);
+            }
+        }
+
+        function drawDetailedTree(x, y, size, type) {
+            // Tronco con textura
+            ctx.fillStyle = '#654321';
+            const trunkWidth = size * 0.2;
+            const trunkHeight = size * 1.5;
+            ctx.fillRect(x - trunkWidth/2, y, trunkWidth, trunkHeight);
+            
+            // Sombra del tronco
+            ctx.fillStyle = '#4a3018';
+            ctx.fillRect(x, y, trunkWidth/2, trunkHeight);
+            
+            // Copa del árbol - varía según tipo
+            if (type === 'darkgreen') {
+                // Árbol frondoso
+                ctx.fillStyle = '#228b22';
+                ctx.beginPath();
+                ctx.arc(x, y - size * 0.3, size, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                ctx.fillStyle = '#006400';
+                ctx.beginPath();
+                ctx.arc(x + size * 0.3, y - size * 0.1, size * 0.7, 0, 2 * Math.PI);
+                ctx.fill();
+                
+            } else if (type === 'darkslategray') {
+                // Conífera
+                ctx.fillStyle = '#2f4f2f';
+                ctx.beginPath();
+                ctx.moveTo(x, y - size * 1.2);
+                ctx.lineTo(x - size * 0.6, y);
+                ctx.lineTo(x + size * 0.6, y);
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                // Árbol normal
+                ctx.fillStyle = '#32cd32';
+                ctx.beginPath();
+                ctx.arc(x, y - size * 0.2, size * 0.8, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function drawRoadNetwork() {
+            // Camino principal Este-Oeste
+            drawDetailedRoad([
+                {x: 0, y: 1000},
+                {x: 400, y: 980},
+                {x: 800, y: 1020},
+                {x: 1200, y: 990},
+                {x: 1600, y: 1030},
+                {x: 2000, y: 1000},
+                {x: 2400, y: 1020},
+                {x: 2800, y: 980},
+                {x: 3000, y: 1000}
+            ], 25);
+
+            // Camino Norte-Sur
+            drawDetailedRoad([
+                {x: 1500, y: 0},
+                {x: 1480, y: 300},
+                {x: 1520, y: 600},
+                {x: 1500, y: 900},
+                {x: 1480, y: 1200},
+                {x: 1500, y: 1500},
+                {x: 1520, y: 1800},
+                {x: 1500, y: 2000}
+            ], 25);
+
+            // Senderos secundarios
+            drawDetailedRoad([
+                {x: 600, y: 400},
+                {x: 900, y: 600},
+                {x: 1200, y: 800}
+            ], 15);
+
+            drawDetailedRoad([
+                {x: 2000, y: 300},
+                {x: 2200, y: 600},
+                {x: 2400, y: 900}
+            ], 15);
+        }
+
+        function drawDetailedRoad(points, width) {
+            // Base del camino
+            ctx.strokeStyle = '#8b7355';
+            ctx.lineWidth = width + 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            drawRoadPath(points);
+            
+            // Superficie del camino
+            ctx.strokeStyle = '#daa520';
+            ctx.lineWidth = width;
+            drawRoadPath(points);
+            
+            // Línea central
+            ctx.strokeStyle = '#b8860b';
+            ctx.lineWidth = 2;
+            drawRoadPath(points);
+            
+            // Añadir piedras en el camino
+            addRoadStones(points, width);
+        }
+
+        function drawRoadPath(points) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for (let i = 1; i < points.length; i++) {
+                if (i === points.length - 1) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                } else {
+                    const current = points[i];
+                    const next = points[i + 1];
+                    const cpX = current.x + (next.x - current.x) * 0.5;
+                    const cpY = current.y + (next.y - current.y) * 0.5;
+                    ctx.quadraticCurveTo(current.x, current.y, cpX, cpY);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function addRoadStones(points, width) {
+            for (let i = 0; i < points.length - 1; i++) {
+                const stones = Math.random() * 5 + 2;
+                for (let j = 0; j < stones; j++) {
+                    const t = Math.random();
+                    const x = points[i].x + (points[i + 1].x - points[i].x) * t;
+                    const y = points[i].y + (points[i + 1].y - points[i].y) * t;
+                    const offsetX = (Math.random() - 0.5) * width * 0.8;
+                    const offsetY = (Math.random() - 0.5) * width * 0.8;
+                    
+                    ctx.fillStyle = '#696969';
+                    ctx.beginPath();
+                    ctx.arc(x + offsetX, y + offsetY, Math.random() * 3 + 1, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function drawSettlements() {
+            // Capital de la Alianza
+            drawMajorCity(1500, 300, 'alliance');
+            
+            // Capital de la Horda
+            drawMajorCity(1500, 1600, 'horde');
+            
+            // Ciudades secundarias
+            drawTown(800, 600, 'neutral');
+            drawTown(2200, 800, 'neutral');
+            drawTown(600, 1400, 'neutral');
+            
+            // Aldeas
+            drawVillage(400, 900);
+            drawVillage(2600, 1200);
+            drawVillage(1000, 1700);
+        }
+
+        function drawMajorCity(x, y, faction) {
+            const color = faction === 'alliance' ? '#4169e1' : '#dc143c';
+            const size = 120;
+            
+            // Muralla exterior
+            ctx.strokeStyle = '#2f2f2f';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(x - size, y - size/2, size * 2, size);
+            
+            // Torres de esquina
+            for (let i = 0; i < 4; i++) {
+                const towerX = x + (i % 2 ? size : -size);
+                const towerY = y + (i < 2 ? -size/2 : size/2);
+                
+                ctx.fillStyle = color;
+                ctx.fillRect(towerX - 15, towerY - 15, 30, 30);
+                
+                // Bandera
+                ctx.fillStyle = faction === 'alliance' ? '#ffffff' : '#000000';
+                ctx.fillRect(towerX - 5, towerY - 25, 10, 15);
+            }
+            
+            // Castillo central
+            ctx.fillStyle = color;
+            ctx.fillRect(x - 40, y - 30, 80, 60);
+            
+            // Torre principal
+            ctx.fillRect(x - 20, y - 50, 40, 40);
+            
+            // Detalles arquitectónicos
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(x - 5, y - 60, 10, 10);
+        }
+
+        function drawTown(x, y, type) {
+            const buildingCount = 8;
+            const radius = 60;
+            
+            for (let i = 0; i < buildingCount; i++) {
+                const angle = (i / buildingCount) * 2 * Math.PI;
+                const buildingX = x + Math.cos(angle) * radius;
+                const buildingY = y + Math.sin(angle) * radius;
+                
+                // Casa
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(buildingX - 12, buildingY - 12, 24, 24);
+                
+                // Techo
+                ctx.fillStyle = '#dc143c';
+                ctx.beginPath();
+                ctx.moveTo(buildingX - 15, buildingY - 12);
+                ctx.lineTo(buildingX, buildingY - 25);
+                ctx.lineTo(buildingX + 15, buildingY - 12);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            // Plaza central
+            ctx.fillStyle = '#daa520';
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+
+        function drawVillage(x, y) {
+            for (let i = 0; i < 4; i++) {
+                const houseX = x + (i % 2) * 40 - 20;
+                const houseY = y + Math.floor(i / 2) * 30 - 15;
+                
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(houseX, houseY, 30, 25);
+                
+                ctx.fillStyle = '#654321';
+                ctx.beginPath();
+                ctx.moveTo(houseX - 2, houseY);
+                ctx.lineTo(houseX + 15, houseY - 12);
+                ctx.lineTo(houseX + 32, houseY);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function addUltraDetails() {
+            // Rocas dispersas
+            for (let i = 0; i < 200; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const size = Math.random() * 12 + 4;
+                
+                ctx.fillStyle = '#708090';
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+                
+                // Sombra de la roca
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.arc(x + size/3, y + size/3, size * 0.8, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Flores silvestres
+            for (let i = 0; i < 300; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                
+                ctx.fillStyle = `hsl(${Math.random() * 60 + 300}, 80%, 70%)`;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+            
+            // Arbustos
+            for (let i = 0; i < 150; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const size = Math.random() * 8 + 5;
+                
+                ctx.fillStyle = '#6b8e23';
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function showPreview() {
+            const preview = document.getElementById('preview');
+            preview.src = canvas.toDataURL('image/jpeg', 0.9);
+            preview.style.display = 'block';
+            
+            document.getElementById('controls').style.display = 'block';
+        }
+
+        function downloadMap() {
+            const link = document.createElement('a');
+            link.download = 'MapLevel1.jpeg';
+            link.href = canvas.toDataURL('image/jpeg', 0.9);
+            link.click();
+            
+            updateProgress(100, "📥 ¡MapLevel1.jpeg descargado! Guárdalo en la carpeta ImagesWow/");
+        }
+
+        function copyToGame() {
+            // Esta función simula copiar al juego
+            alert('¡Mapa generado! Para usarlo en el juego:\n\n1. Descarga el archivo MapLevel1.jpeg\n2. Guárdalo en la carpeta ImagesWow/\n3. Recarga el mapa del juego\n\n¡Ya verás bosques, ríos y caminos detallados!');
+        }
+
+        // Inicializar cuando se carga la página
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
